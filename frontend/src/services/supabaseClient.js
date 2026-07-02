@@ -8,3 +8,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+
+export const getAuthRedirectUrl = () => {
+  const siteUrl = import.meta.env.VITE_SITE_URL || 
+                  import.meta.env.VITE_REDIRECT_URL || 
+                  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+  return `${siteUrl}/auth/callback`;
+};
+

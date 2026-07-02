@@ -40,14 +40,28 @@ export function PlayerProvider({ children, user }) {
   // Fetch songs on mount
   useEffect(() => {
     getSongs().then(data => {
-      const mapped = data.map(s => ({
-        ...s,
-        id: s._id,
-        grade: s.class,
-        cover: s.thumbnailUrl || '',
-        durationSeconds: s.duration || 200,
-        premium: s.isPremium,
-      }));
+      const mapped = data.map(s => {
+        const durationSecs = s.duration || 200;
+        let formattedDuration = '';
+        if (typeof durationSecs === 'number' || !isNaN(Number(durationSecs))) {
+          const totalSecs = Number(durationSecs);
+          const mins = Math.floor(totalSecs / 60);
+          const secs = Math.floor(totalSecs % 60);
+          formattedDuration = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        } else {
+          formattedDuration = String(durationSecs);
+        }
+
+        return {
+          ...s,
+          id: s._id,
+          grade: s.class,
+          cover: s.thumbnailUrl || '',
+          durationSeconds: durationSecs,
+          duration: formattedDuration,
+          premium: s.isPremium,
+        };
+      });
       setGlobalTracks(mapped);
       if (mapped.length > 0 && !currentTrack) setCurrentTrack(mapped[0]);
     }).catch(console.error);
