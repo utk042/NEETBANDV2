@@ -77,7 +77,7 @@ export default function CommunityForum({ user }) {
     if (!user?.isLoggedIn) return alert('Please login to vote');
     try {
       const res = await api.post(`/forums/posts/${postId}/vote`, { optionIndex });
-      setPosts(posts.map(p => p._id === postId ? { ...p, pollOptions: res.data.pollOptions } : p));
+      setPosts(posts.map(p => p._id === postId ? { ...p, poll: res.data.poll } : p));
     } catch (error) {
       console.error('Error voting:', error);
     }
@@ -185,12 +185,12 @@ export default function CommunityForum({ user }) {
                       )}
 
                       {/* Poll */}
-                      {post.isPoll && post.pollOptions && (
+                      {post.poll && post.poll.options && post.poll.options.length > 0 && (
                         <div className="bg-surface-container rounded-2xl p-5 mb-6 border border-[var(--border-floating-card)]">
                           <h4 className="font-bold text-on-surface mb-4 flex items-center gap-2"><IconChartBar size={18} /> Poll</h4>
                           <div className="space-y-3">
-                            {post.pollOptions.map((opt, i) => {
-                              const totalVotes = post.pollOptions.reduce((acc, curr) => acc + curr.votes.length, 0);
+                            {post.poll.options.map((opt, i) => {
+                              const totalVotes = post.poll.options.reduce((acc, curr) => acc + curr.votes.length, 0);
                               const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
                               const userVotedForThis = user?.isLoggedIn && opt.votes.includes(user._id);
                               

@@ -160,8 +160,11 @@ const AdminForums = ({ api }) => {
         
         return { url, type, name };
       }),
-      isPoll,
-      pollOptions: isPoll ? pollOptions.filter(o => o.trim()).map(text => ({ text })) : []
+      poll: isPoll ? {
+        question: title,
+        options: pollOptions.filter(o => o.trim()).map(text => ({ text })),
+        active: true
+      } : null
     };
 
     try {
@@ -183,8 +186,8 @@ const AdminForums = ({ api }) => {
     setTitle(post.title);
     setContent(post.content);
     setAttachments(post.attachments ? post.attachments.map(att => att.url || att).join(', ') : '');
-    setIsPoll(post.isPoll || false);
-    setPollOptions(post.pollOptions && post.pollOptions.length > 0 ? post.pollOptions.map(o => o.text) : ['', '']);
+    setIsPoll(!!post.poll && !!post.poll.options && post.poll.options.length > 0);
+    setPollOptions(post.poll && post.poll.options && post.poll.options.length > 0 ? post.poll.options.map(o => o.text) : ['', '']);
     setIsEditing(true);
   };
 
@@ -376,7 +379,7 @@ const AdminForums = ({ api }) => {
                   <td className="p-4 font-medium text-on-surface">{post.title}</td>
                   <td className="p-4 text-on-surface-variant">{post.author?.name || 'Anonymous'}</td>
                   <td className="p-4">
-                    {post.isPoll ? (
+                    {post.poll && post.poll.options && post.poll.options.length > 0 ? (
                       <span className="bg-primary/10 text-primary text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1"><BarChart2 size={10} /> Poll</span>
                     ) : (
                       <span className="bg-surface-container-high text-on-surface-variant text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1">Standard</span>

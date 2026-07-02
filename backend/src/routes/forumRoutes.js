@@ -1,14 +1,14 @@
 import express from 'express';
 import ForumCategory from '../models/ForumCategory.js';
 import ForumPost from '../models/ForumPost.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { protect, authorize, premiumOnly } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
 // === CATEGORIES ===
 
 // Get all categories
-router.get('/categories', async (req, res) => {
+router.get('/categories', protect, premiumOnly, async (req, res) => {
   try {
     const categories = await ForumCategory.find().sort('order');
     res.json(categories);
@@ -53,7 +53,7 @@ router.delete('/categories/:id', protect, authorize('admin', 'owner'), async (re
 // === POSTS ===
 
 // Get posts for category
-router.get('/categories/:categoryId/posts', async (req, res) => {
+router.get('/categories/:categoryId/posts', protect, premiumOnly, async (req, res) => {
   try {
     const posts = await ForumPost.find({ category: req.params.categoryId })
       .populate('author', 'name role')
@@ -65,7 +65,7 @@ router.get('/categories/:categoryId/posts', async (req, res) => {
 });
 
 // Get all posts
-router.get('/posts', async (req, res) => {
+router.get('/posts', protect, premiumOnly, async (req, res) => {
   try {
     const posts = await ForumPost.find()
       .populate('author', 'name role')
@@ -77,7 +77,7 @@ router.get('/posts', async (req, res) => {
 });
 
 // Get single post
-router.get('/posts/:id', async (req, res) => {
+router.get('/posts/:id', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id)
       .populate('author', 'name role')
@@ -90,7 +90,7 @@ router.get('/posts/:id', async (req, res) => {
 });
 
 // Create post
-router.post('/posts', protect, async (req, res) => {
+router.post('/posts', protect, premiumOnly, async (req, res) => {
   try {
     const { category, title, content, attachments, poll } = req.body;
     
@@ -114,7 +114,7 @@ router.post('/posts', protect, async (req, res) => {
 });
 
 // Update post (Admin or Author)
-router.put('/posts/:id', protect, async (req, res) => {
+router.put('/posts/:id', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -130,6 +130,8 @@ router.put('/posts/:id', protect, async (req, res) => {
     
     post.title = req.body.title || post.title;
     post.content = req.body.content || post.content;
+    if (req.body.attachments !== undefined) post.attachments = req.body.attachments;
+    if (req.body.poll !== undefined) post.poll = req.body.poll;
 
     const updated = await post.save();
     res.json(updated);
@@ -139,7 +141,7 @@ router.put('/posts/:id', protect, async (req, res) => {
 });
 
 // Delete post
-router.delete('/posts/:id', protect, async (req, res) => {
+router.delete('/posts/:id', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -156,7 +158,7 @@ router.delete('/posts/:id', protect, async (req, res) => {
 });
 
 // Like/Unlike post
-router.post('/posts/:id/like', protect, async (req, res) => {
+router.post('/posts/:id/like', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -175,7 +177,7 @@ router.post('/posts/:id/like', protect, async (req, res) => {
 });
 
 // Vote in poll
-router.post('/posts/:id/vote', protect, async (req, res) => {
+router.post('/posts/:id/vote', protect, premiumOnly, async (req, res) => {
   try {
     const { optionIndex } = req.body;
     const post = await ForumPost.findById(req.params.id);
@@ -199,7 +201,7 @@ router.post('/posts/:id/vote', protect, async (req, res) => {
 });
 
 // Add comment
-router.post('/posts/:id/comments', protect, async (req, res) => {
+router.post('/posts/:id/comments', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -221,7 +223,7 @@ router.post('/posts/:id/comments', protect, async (req, res) => {
 });
 
 // Like/Unlike comment
-router.post('/posts/:id/comments/:commentId/like', protect, async (req, res) => {
+router.post('/posts/:id/comments/:commentId/like', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -237,6 +239,24 @@ router.post('/posts/:id/comments/:commentId/like', protect, async (req, res) => 
     }
     await post.save();
     res.json({ likes: comment.likes });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete comment (Admin/Owner)
+router.delete('/posts/:id/comments/:commentId', protect, authorize('admin', 'owner'), async (req, res) => {
+  try {
+    const post = await ForumPost.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    post.comments.pull(req.params.commentId);
+    await post.save();
+
+    const updatedPost = await ForumPost.findById(req.params.id)
+      .populate('author', 'name role')
+      .populate('comments.author', 'name role');
+    res.json(updatedPost.comments);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
