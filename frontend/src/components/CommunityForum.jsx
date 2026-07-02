@@ -177,8 +177,8 @@ export default function CommunityForum({ user }) {
                       {post.attachments && post.attachments.length > 0 && (
                         <div className="flex flex-wrap gap-3 mb-6">
                           {post.attachments.map((att, i) => (
-                            <a key={i} href={att} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl text-sm hover:text-primary transition-colors border border-[var(--border-floating-card)]">
-                              <IconPaperclip size={16} /> Attachment {i + 1}
+                            <a key={i} href={att.url || att} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl text-sm hover:text-primary transition-colors border border-[var(--border-floating-card)]">
+                              <IconPaperclip size={16} /> {att.name || `Attachment ${i + 1}`}
                             </a>
                           ))}
                         </div>
