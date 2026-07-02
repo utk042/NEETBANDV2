@@ -483,4 +483,58 @@ export const getAllSongAnalytics = async () => {
   return res.json();
 };
 
+// --- NEWSLETTER ---
+export const subscribeNewsletter = async (email) => {
+  const res = await fetch(`${API_URL}/newsletter/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Subscription failed');
+    } catch {
+      throw new Error(errText || 'Subscription failed');
+    }
+  }
+  return res.json();
+};
+
+export const getNewsletterSubscribers = async () => {
+  const res = await fetch(`${API_URL}/newsletter/subscribers`, {
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const updateNewsletterSubscriber = async (id, email) => {
+  const res = await fetch(`${API_URL}/newsletter/subscribers/${id}`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Update failed');
+    } catch {
+      throw new Error(errText || 'Update failed');
+    }
+  }
+  return res.json();
+};
+
+export const deleteNewsletterSubscriber = async (id) => {
+  const res = await fetch(`${API_URL}/newsletter/subscribers/${id}`, {
+    method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
 export default api;

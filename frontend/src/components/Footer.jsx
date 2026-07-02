@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { IconCircleCheckFilled, IconMail, IconPhone, IconMapPin, IconClock, IconHeartFilled } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import { subscribeNewsletter } from '../services/api';
 
-export default function Footer({ setCurrentPage }) {
+export default function Footer({ navigate }) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!email) {
       setError('Email is required');
@@ -18,9 +19,14 @@ export default function Footer({ setCurrentPage }) {
       setError('Please enter a valid email address');
       return;
     }
-    setSubscribed(true);
-    setError('');
-    setEmail('');
+    try {
+      await subscribeNewsletter(email);
+      setSubscribed(true);
+      setError('');
+      setEmail('');
+    } catch (err) {
+      setError(err.message || 'Subscription failed. Please try again.');
+    }
   };
 
   return (
@@ -43,7 +49,7 @@ export default function Footer({ setCurrentPage }) {
           {/* Newsletter Form input/button */}
           <div className="max-w-md w-full">
             {subscribed ? (
-              <div className="flex items-center gap-2.5 text-primary font-body-md text-sm bg-primary/10 border border-primary/20 px-4 py-3 rounded-2xl animate-pulse">
+              <div className="flex items-center gap-2.5 text-primary font-body-md text-sm bg-primary/10 border border-primary/20 px-4 py-3 rounded-2xl">
                 <IconCircleCheckFilled size={20} className="flex-shrink-0" />
                 <span>You’re in! Check your inbox for your first set of study tracks.</span>
               </div>
@@ -92,10 +98,10 @@ export default function Footer({ setCurrentPage }) {
           <div className="md:col-span-3 flex flex-col gap-4">
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Platform</h4>
             <nav className="flex flex-col gap-3">
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('home'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Syllabus Library</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('student-hub'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Student Hub</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights (Blog)</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('about'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">About Us</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Syllabus Library</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/student-hub'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Student Hub</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights (Blog)</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">About Us</a>
             </nav>
           </div>
 
@@ -105,7 +111,7 @@ export default function Footer({ setCurrentPage }) {
             <ul className="flex flex-col gap-3.5 text-sm text-on-surface-variant/80 font-body-md">
               <li className="flex items-start gap-2.5">
                 <IconMail size={18} className="text-primary mt-0.5 flex-shrink-0" />
-                <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('contact'); }} className="hover:text-primary transition-colors">support@neetband.com</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/contact'); }} className="hover:text-primary transition-colors">support@neetband.com</a>
               </li>
               <li className="flex items-start gap-2.5">
                 <IconPhone size={18} className="text-primary mt-0.5 flex-shrink-0" />
