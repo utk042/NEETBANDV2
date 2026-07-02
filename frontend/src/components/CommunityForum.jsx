@@ -289,7 +289,7 @@ export default function CommunityForum({ user }) {
             <ul className="list-disc pl-5 text-on-surface-variant text-sm space-y-2 mb-6">
               <li>Be respectful, friendly, and constructive to all peers.</li>
               <li>No spam, links to unverified materials, or self-promotion.</li>
-              <li>Keep discussions academic and relevant to learning and NEET preparation.</li>
+              <li>Keep discussions relevant to learning and education.</li>
               <li>Do not share personal contact details or copyrighted study material.</li>
             </ul>
             <div className="flex gap-3 justify-end">
