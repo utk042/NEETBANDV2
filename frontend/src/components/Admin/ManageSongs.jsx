@@ -127,6 +127,7 @@ export default function ManageSongs() {
                   <th className="p-4 font-semibold text-on-surface-variant">Class</th>
                   <th className="p-4 font-semibold text-on-surface-variant">Subject</th>
                   <th className="p-4 font-semibold text-on-surface-variant">Type</th>
+                  <th className="p-4 font-semibold text-on-surface-variant text-center">Plays</th>
                   <th className="p-4 font-semibold text-on-surface-variant text-right">Actions</th>
                 </tr>
               </thead>
@@ -141,6 +142,7 @@ export default function ManageSongs() {
                         {song.isPremium ? 'Premium' : 'Free'}
                       </span>
                     </td>
+                    <td className="p-4 text-center font-mono font-bold text-on-surface">{song.playCount || 0}</td>
                     <td className="p-4 flex items-center justify-end gap-2">
                       <button
                         onClick={() => handleEditClick(song)}
@@ -161,7 +163,7 @@ export default function ManageSongs() {
                 ))}
                 {songs.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-on-surface-variant">No songs found.</td>
+                    <td colSpan="6" className="p-8 text-center text-on-surface-variant">No songs found.</td>
                   </tr>
                 )}
               </tbody>
@@ -172,7 +174,7 @@ export default function ManageSongs() {
 
       {/* Add Song Modal */}
       {isAddSongModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-surface w-full max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
               <div>

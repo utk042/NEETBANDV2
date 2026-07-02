@@ -8,6 +8,7 @@ import AdminForums from './AdminForums';
 import AdminAffiliates from './AdminAffiliates';
 import ManageContactMessages from './ManageContactMessages';
 import ManageNewsScroll from './ManageNewsScroll';
+import SongAnalyticsDashboard from './SongAnalyticsDashboard';
 import api from '../../services/api';
 import { 
   IconMusic, 
@@ -33,10 +34,11 @@ import {
   IconBrandBlogger,
   IconMessageCircle,
   IconAffiliate,
-  IconMail
+  IconMail,
+  IconChartBar
 } from '@tabler/icons-react';
 
-export default function AdminDashboard({ setCurrentPage, user, theme, setTheme }) {
+export default function AdminDashboard({ navigate, user, theme, setTheme }) {
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || 'dashboard';
@@ -79,7 +81,7 @@ export default function AdminDashboard({ setCurrentPage, user, theme, setTheme }
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.removeItem('neetband_lms_user');
       localStorage.removeItem('lms_token');
-      setCurrentPage('home');
+      navigate('/');
     }
   };
 
@@ -98,7 +100,7 @@ export default function AdminDashboard({ setCurrentPage, user, theme, setTheme }
   };
 
   return (
-    <div className="fixed inset-0 w-full bg-background overflow-hidden font-sans text-on-background z-[100] flex transition-colors duration-300">
+    <div className="fixed inset-0 w-full bg-background overflow-hidden font-sans text-on-background z-modal flex transition-colors duration-300">
       
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
@@ -251,6 +253,17 @@ export default function AdminDashboard({ setCurrentPage, user, theme, setTheme }
             }`}
           >
             <IconSettings size={20} stroke={2.5} /> News Scroller
+          </button>
+
+          <button
+            onClick={() => changeTab('song-analytics')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'song-analytics' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconChartBar size={20} stroke={2.5} /> Song Analytics
           </button>
         </nav>
 
@@ -513,6 +526,12 @@ export default function AdminDashboard({ setCurrentPage, user, theme, setTheme }
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <ManageNewsScroll />
               </div>
+            </div>
+          )}
+
+          {activeTab === 'song-analytics' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <SongAnalyticsDashboard />
             </div>
           )}
 
