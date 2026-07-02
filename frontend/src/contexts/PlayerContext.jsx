@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, recordSongRepeat } from '../services/api';
+import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, recordSongRepeat, recordSongShare } from '../services/api';
 
 const PlayerContext = createContext(null);
 
@@ -146,6 +146,7 @@ export function PlayerProvider({ children, user }) {
     if (repeatMode === 'one') {
       audioRef.current.currentTime = 0;
       audioRef.current.play();
+      if (id) recordSongRepeat(id).catch(() => {});
       return;
     }
     handleNext();
@@ -229,7 +230,7 @@ export function PlayerProvider({ children, user }) {
     if (navigator.share) {
       navigator.share({ title: t.title, text: `Listen to ${t.title} on NeetBand!`, url: window.location.href });
     }
-    if (t._id || t.id) recordSongRepeat(t._id || t.id).catch(() => {});
+    if (t._id || t.id) recordSongShare(t._id || t.id).catch(() => {});
   }, [currentTrack]);
 
   // PIP support (premium only)
