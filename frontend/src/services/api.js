@@ -2,7 +2,10 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const getHeaders = () => {
-  const token = localStorage.getItem('user_token');
+  const isLms = typeof window !== 'undefined' && window.location.pathname.startsWith('/lms');
+  const token = isLms
+    ? (localStorage.getItem('lms_token') || localStorage.getItem('user_token'))
+    : (localStorage.getItem('user_token') || localStorage.getItem('lms_token'));
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -243,8 +246,8 @@ export const deleteAdminStudent = async (id) => {
 // --- FILE UPLOADS ---
 export const uploadFile = async (file, type = 'others') => {
   const formData = new FormData();
-  formData.append('file', file);
   formData.append('type', type);
+  formData.append('file', file);
 
   const res = await fetch(`${API_URL}/upload`, {
     method: 'POST',
@@ -439,6 +442,43 @@ export const updateNewsScrollSettings = async (settingsData) => {
     headers: getLmsHeaders(),
     body: JSON.stringify(settingsData),
   });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+// --- SONG ANALYTICS ---
+export const recordSongPlay = async (id) => {
+  await fetch(`${API_URL}/songs/${id}/play`, { method: 'POST' }).catch(() => {});
+};
+
+export const recordSongComplete = async (id) => {
+  await fetch(`${API_URL}/songs/${id}/complete`, { method: 'POST' }).catch(() => {});
+};
+
+export const recordSongShare = async (id) => {
+  await fetch(`${API_URL}/songs/${id}/share`, { method: 'POST' }).catch(() => {});
+};
+
+export const recordSongRepeat = async (id) => {
+  await fetch(`${API_URL}/songs/${id}/repeat`, { method: 'POST' }).catch(() => {});
+};
+
+export const recordSongDropOff = async (id, segment) => {
+  await fetch(`${API_URL}/songs/${id}/dropoff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ segment }),
+  }).catch(() => {});
+};
+
+export const getSongAnalytics = async (id) => {
+  const res = await fetch(`${API_URL}/songs/${id}/analytics`, { headers: getHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getAllSongAnalytics = async () => {
+  const res = await fetch(`${API_URL}/songs/analytics`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
