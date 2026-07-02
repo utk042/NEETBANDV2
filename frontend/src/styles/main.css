@@ -302,14 +302,20 @@ body {
 .editor-toolbar-group {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    border-right: 1px solid rgba(var(--color-outline) / 0.25);
+    padding-right: 8px;
+    margin-right: 4px;
+}
+
+.editor-toolbar-group:last-child {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
 }
 
 .editor-toolbar-divider {
-    width: 1px;
-    height: 1.5rem;
-    background-color: rgba(var(--color-outline) / 0.2);
-    margin: 0 4px;
+    display: none;
 }
 
 .editor-view-switcher {
