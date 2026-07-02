@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled, IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconArrowsShuffle, IconMicrophone2 } from '@tabler/icons-react';
+import {
+  IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
+  IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture
+} from '@tabler/icons-react';
 import defaultCover from '../assets/dna_replication_thumbnail.png';
+import { usePlayer } from '../contexts/PlayerContext';
+import { useUserAuth } from '../contexts/UserAuthContext';
 
-export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlaying, togglePlay, currentTime, onNext, onPrev, onSeek, favoritedTrackIds, onToggleFavorite, isMuted, onToggleMute }) {
+export default function FullPlayerModal({ isOpen, onClose }) {
+  const {
+    currentTrack, isPlaying, currentTime, isMuted, setIsMuted, volume, setVolume,
+    togglePlay, handleNext: onNext, handlePrev: onPrev, handleSeek: onSeek,
+    favoritedTrackIds, toggleFavorite: onToggleFavorite,
+    isShuffled, setIsShuffled, repeatMode, cycleRepeat,
+    requestPip,
+  } = usePlayer();
+  const { user } = useUserAuth();
+
   const [lyrics, setLyrics] = useState([]);
   const [showLyrics, setShowLyrics] = useState(false);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
-
 
   const displayTrack = currentTrack || {
     title: "DNA Replication",
@@ -220,14 +233,26 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
           <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Now Playing</span>
           <span className="text-sm font-semibold text-primary">{displayTrack.chapter || "NeetBand"}</span>
         </div>
-        <button 
-          onClick={() => setShowLyrics(!showLyrics)}
-          className={`p-2 rounded-full transition-colors ${showLyrics ? 'text-primary bg-primary/10' : 'text-on-surface hover:text-primary'} ${!displayTrack.lyricsUrl && 'opacity-50 cursor-not-allowed'}`}
-          disabled={!displayTrack.lyricsUrl}
-          title={displayTrack.lyricsUrl ? "Toggle Lyrics (TTML/LRC/SRT/TXT)" : "No lyrics available"}
-        >
-          <IconMicrophone2 size={28} />
-        </button>
+        <div className="flex items-center gap-2">
+          {user?.isPremium && (
+            <button
+              onClick={requestPip}
+              className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
+              aria-label="Picture in Picture"
+              title="Picture in Picture (Premium)"
+            >
+              <IconPictureInPicture size={28} />
+            </button>
+          )}
+          <button 
+            onClick={() => setShowLyrics(!showLyrics)}
+            className={`p-2 rounded-full transition-colors ${showLyrics ? 'text-primary bg-primary/10' : 'text-on-surface hover:text-primary'} ${!displayTrack.lyricsUrl && 'opacity-50 cursor-not-allowed'}`}
+            disabled={!displayTrack.lyricsUrl}
+            title={displayTrack.lyricsUrl ? "Toggle Lyrics (TTML/LRC/SRT/TXT)" : "No lyrics available"}
+          >
+            <IconMicrophone2 size={28} />
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -240,7 +265,7 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
               src={displayTrack.cover || defaultCover} 
               alt={displayTrack.title} 
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${showLyrics ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
-            onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
+              onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
             
             {/* Lyrics Overlay */}
             <div 
@@ -290,97 +315,111 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
         {/* Controls Container */}
         <div className="w-full md:w-1/2 max-w-xl shrink-0 flex flex-col justify-center">
           <div className="flex justify-between items-end mb-8 md:mb-12">
-          <div className="min-w-0 pr-4">
-            <h2 className="text-3xl font-extrabold text-on-surface truncate mb-1">{displayTrack.title}</h2>
-            <p className="text-lg text-primary/80 truncate">{displayTrack.subject || 'Biology'} • {displayTrack.grade || 'Class 12'}</p>
-          </div>
-          <button 
-            onClick={() => onToggleFavorite?.(displayTrack.id)}
-            className={`p-3 rounded-full transition-colors flex-shrink-0 ${favoritedTrackIds?.includes(displayTrack.id) ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
-          >
-            <IconHeart size={32} className={favoritedTrackIds?.includes(displayTrack.id) ? 'fill-current' : ''} />
-          </button>
-        </div>
-
-        {/* Wavy Progress Bar */}
-        <div className="mb-8">
-          <div 
-            className="w-full h-12 flex items-center justify-between gap-[2px] cursor-pointer group"
-            onClick={handleScrub}
-          >
-            {waveData.map((height, i) => {
-              const isPlayed = (i / waveData.length) * 100 <= progressPercent;
-              // Staggered timing — each bar gets a slightly different phase
-              const dur = `${0.5 + (i % 5) * 0.08}s`;
-              const delay = `${-((i * 0.07) % 0.8)}s`;
-              const staticScale = (height / 100) * 0.9 + 0.1;
-
-              return (
-                <div
-                  key={i}
-                  className={`flex-1 rounded-full transition-colors duration-300 ${
-                    isPlayed
-                      ? 'bg-primary shadow-[0_0_6px_rgba(201,162,39,0.4)]'
-                      : 'bg-surface-container-highest/70 group-hover:bg-surface-container-highest'
-                  } ${
-                    isPlaying
-                      ? 'wave-bar-active'
-                      : 'wave-bar-paused'
-                  }`}
-                  style={{
-                    height: `${height}%`,
-                    '--dur': dur,
-                    '--delay': delay,
-                    '--static-scale': staticScale,
-                  }}
-                />
-              );
-            })}
-          </div>
-          <div className="flex justify-between text-xs font-semibold text-on-surface-variant mt-3">
-            <span>{formatTime(currentSeconds)}</span>
-            <span>{displayTrack.duration || formatTime(totalSeconds)}</span>
-          </div>
-        </div>
-
-        {/* Playback Controls */}
-        <div className="flex items-center justify-between mb-8">
-          <button className="text-on-surface-variant hover:text-primary transition-colors p-2"><IconArrowsShuffle size={28} /></button>
-          
-          <div className="flex items-center gap-4 sm:gap-8">
-            <button onClick={onPrev} className="text-on-surface hover:text-primary transition-colors p-2">
-              <IconPlayerSkipBackFilled size={36} />
-            </button>
-            <button 
-              onClick={togglePlay}
-              className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
-            >
-              {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} className="translate-x-1" />}
-            </button>
-            <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2">
-              <IconPlayerSkipForwardFilled size={36} />
-            </button>
-          </div>
-
-          <button className="text-on-surface-variant hover:text-primary transition-colors p-2"><IconRepeat size={28} /></button>
-        </div>
-
-          {/* Bottom Bar (Volume, etc) */}
-          <div className="flex justify-center items-center gap-4 text-on-surface-variant hidden md:flex mt-4">
-            <button 
-              onClick={onToggleMute}
-              className="hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full p-1"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? (
-                <IconVolumeOff size={24} className="opacity-50" />
-              ) : (
-                <IconVolume size={24} />
-              )}
-            </button>
-            <div className="w-1/3 h-1.5 bg-surface-container-highest rounded-full cursor-pointer" onClick={onToggleMute}>
-              <div className="h-full bg-on-surface-variant rounded-full transition-all duration-300" style={{ width: isMuted ? '0%' : '100%' }}></div>
+            <div className="min-w-0 pr-4">
+              <h2 className="text-3xl font-extrabold text-on-surface truncate mb-1">{displayTrack.title}</h2>
+              <p className="text-lg text-primary/80 truncate">{displayTrack.subject || 'Biology'} • {displayTrack.grade || 'Class 12'}</p>
             </div>
+            <button 
+              onClick={() => onToggleFavorite?.(displayTrack.id || displayTrack._id)}
+              className={`p-3 rounded-full transition-colors flex-shrink-0 ${favoritedTrackIds?.includes(displayTrack.id || displayTrack._id) ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
+            >
+              <IconHeart size={32} className={favoritedTrackIds?.includes(displayTrack.id || displayTrack._id) ? 'fill-current' : ''} />
+            </button>
+          </div>
+
+          {/* Wavy Progress Bar */}
+          <div className="mb-8">
+            <div 
+              className="w-full h-12 flex items-center justify-between gap-[2px] cursor-pointer group"
+              onClick={handleScrub}
+            >
+              {waveData.map((height, i) => {
+                const isPlayed = (i / waveData.length) * 100 <= progressPercent;
+                // Staggered timing — each bar gets a slightly different phase
+                const dur = `${0.5 + (i % 5) * 0.08}s`;
+                const delay = `${-((i * 0.07) % 0.8)}s`;
+                const staticScale = (height / 100) * 0.9 + 0.1;
+
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 rounded-full transition-colors duration-300 ${
+                      isPlayed
+                        ? 'bg-primary shadow-[0_0_6px_rgba(201,162,39,0.4)]'
+                        : 'bg-surface-container-highest/70 group-hover:bg-surface-container-highest'
+                    } ${
+                      isPlaying
+                        ? 'wave-bar-active'
+                        : 'wave-bar-paused'
+                    }`}
+                    style={{
+                      height: `${height}%`,
+                      '--dur': dur,
+                      '--delay': delay,
+                      '--static-scale': staticScale,
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs font-semibold text-on-surface-variant mt-3">
+              <span>{formatTime(currentSeconds)}</span>
+              <span>{displayTrack.duration || formatTime(totalSeconds)}</span>
+            </div>
+          </div>
+
+          {/* Playback Controls */}
+          <div className="flex items-center justify-between mb-8">
+            <button
+              onClick={() => setIsShuffled(!isShuffled)}
+              className={`p-2 rounded-full transition-colors ${isShuffled ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
+              aria-label="Shuffle"
+            >
+              <IconArrowsShuffle size={28} />
+            </button>
+            
+            <div className="flex items-center gap-4 sm:gap-8">
+              <button onClick={onPrev} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Previous Track">
+                <IconPlayerSkipBackFilled size={36} />
+              </button>
+              <button 
+                onClick={togglePlay}
+                className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} className="translate-x-1" />}
+              </button>
+              <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Next Track">
+                <IconPlayerSkipForwardFilled size={36} />
+              </button>
+            </div>
+
+            <button
+              onClick={cycleRepeat}
+              className={`p-2 rounded-full transition-colors ${repeatMode !== 'none' ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
+              aria-label={`Repeat Mode: ${repeatMode}`}
+            >
+              {repeatMode === 'one' ? <IconRepeatOnce size={28} /> : <IconRepeat size={28} />}
+            </button>
+          </div>
+
+          {/* Bottom Bar (Volume Control Slider) */}
+          <div className="flex justify-center items-center gap-3 hidden md:flex mt-4">
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="hover:text-primary text-on-surface-variant transition-colors p-1"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted || volume === 0 ? <IconVolumeOff size={24} className="opacity-50" /> : <IconVolume size={24} />}
+            </button>
+            <input
+              type="range" min={0} max={1} step={0.01}
+              value={isMuted ? 0 : volume}
+              onChange={(e) => { setVolume(parseFloat(e.target.value)); if (parseFloat(e.target.value) > 0) setIsMuted(false); }}
+              className="w-1/3 h-1.5 accent-primary bg-surface-container-highest rounded-full cursor-pointer"
+              aria-label="Volume"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       </div>

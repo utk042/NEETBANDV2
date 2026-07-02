@@ -263,8 +263,8 @@ export default function UserRoutes() {
 
       {!['login', 'checkout'].includes(currentPage) && (
         <>
-          <StickyPlayer currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} currentTime={currentTime} onNext={handleNext} onPrev={handlePrev} onSeek={handleSeek} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onOpenFullPlayer={() => setIsFullPlayerOpen(true)} isMuted={isMuted} onToggleMute={() => setIsMuted(!isMuted)} />
-          <MobilePlayer currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} currentTime={currentTime} onNext={handleNext} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onOpenFullPlayer={() => setIsFullPlayerOpen(true)} />
+          <StickyPlayer onOpenFullPlayer={() => setIsFullPlayerOpen(true)} />
+          <MobilePlayer onOpenFullPlayer={() => setIsFullPlayerOpen(true)} />
         </>
       )}
 
@@ -274,7 +274,7 @@ export default function UserRoutes() {
 
       <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
       
-      <FullPlayerModal isOpen={isFullPlayerOpen} onClose={() => setIsFullPlayerOpen(false)} currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} currentTime={currentTime} onNext={handleNext} onPrev={handlePrev} onSeek={handleSeek} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} isMuted={isMuted} onToggleMute={() => setIsMuted(!isMuted)} />
+      <FullPlayerModal isOpen={isFullPlayerOpen} onClose={() => setIsFullPlayerOpen(false)} />
 
       <GoToTop currentPage={currentPage} />
     </>
