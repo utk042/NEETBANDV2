@@ -158,7 +158,7 @@ const AdminForums = ({ api }) => {
     return (
       <div className="bg-surface border border-outline-variant rounded-2xl p-6 max-w-4xl mx-auto shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-on-surface">{currentPost ? 'Edit Post' : 'Advanced Post Creation'}</h2>
+          <h2 className="text-xl font-bold text-on-surface">{currentPost ? 'Edit Post' : 'Create Post'}</h2>
           <button onClick={() => setIsEditing(false)} className="text-on-surface-variant hover:text-on-surface transition">
             <X size={24} />
           </button>
@@ -248,7 +248,7 @@ const AdminForums = ({ api }) => {
               type="submit"
               className="px-6 py-3 bg-primary text-on-primary font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-primary/20"
             >
-              {currentPost ? 'Update Post' : 'Create Advanced Post'}
+              {currentPost ? 'Update Post' : 'Create Post'}
             </button>
           </div>
         </form>
@@ -284,7 +284,7 @@ const AdminForums = ({ api }) => {
           <tbody>
             {posts.length === 0 ? (
               <tr>
-                <td colSpan="7" className="p-8 text-center text-on-surface-variant">No posts found. Create an advanced post!</td>
+                <td colSpan="7" className="p-8 text-center text-on-surface-variant">No posts found. Create a post!</td>
               </tr>
             ) : (
               posts.map((post) => (
