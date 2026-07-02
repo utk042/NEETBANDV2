@@ -79,3 +79,116 @@ export const deleteSong = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get ad URLs from env
+// @route   GET /api/ads
+// @access  Public
+export const getAds = async (req, res) => {
+  const ads = [
+    process.env.AD_URL_1,
+    process.env.AD_URL_2,
+    process.env.AD_URL_3,
+  ].filter(Boolean);
+  res.json({ ads });
+};
+
+// @desc    Record a play event for a song
+// @route   POST /songs/:id/play
+// @access  Public
+export const recordPlay = async (req, res) => {
+  try {
+    await Song.findByIdAndUpdate(req.params.id, { $inc: { playCount: 1 } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Record a completion event for a song
+// @route   POST /songs/:id/complete
+// @access  Public
+export const recordCompletion = async (req, res) => {
+  try {
+    await Song.findByIdAndUpdate(req.params.id, { $inc: { completionCount: 1 } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Record a share event for a song
+// @route   POST /songs/:id/share
+// @access  Public
+export const recordShare = async (req, res) => {
+  try {
+    await Song.findByIdAndUpdate(req.params.id, { $inc: { shareCount: 1 } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Record a repeat event for a song
+// @route   POST /songs/:id/repeat
+// @access  Public
+export const recordRepeat = async (req, res) => {
+  try {
+    await Song.findByIdAndUpdate(req.params.id, { $inc: { repeatCount: 1 } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Record a drop-off event at a given segment (0-9)
+// @route   POST /songs/:id/dropoff
+// @body    { segment: number (0-9) }
+// @access  Public
+export const recordDropOff = async (req, res) => {
+  try {
+    const segment = parseInt(req.body.segment, 10);
+    if (isNaN(segment) || segment < 0 || segment > 9) {
+      return res.status(400).json({ message: 'segment must be 0-9' });
+    }
+    const update = {};
+    update[`dropOffDistribution.${segment}`] = 1;
+    await Song.findByIdAndUpdate(req.params.id, { $inc: update });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get analytics for a single song
+// @route   GET /songs/:id/analytics
+// @access  Private/Admin
+export const getSongAnalytics = async (req, res) => {
+  try {
+    const song = await Song.findById(req.params.id).select(
+      'title subject class playCount completionCount shareCount repeatCount dropOffDistribution duration'
+    );
+    if (!song) return res.status(404).json({ message: 'Song not found' });
+    const completionRate = song.playCount > 0 ? (song.completionCount / song.playCount * 100).toFixed(1) : 0;
+    res.json({ ...song.toObject(), completionRate });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get analytics for ALL songs (admin overview)
+// @route   GET /songs/analytics
+// @access  Private/Admin
+export const getAllSongAnalytics = async (req, res) => {
+  try {
+    const songs = await Song.find({}).select(
+      'title subject class playCount completionCount shareCount repeatCount dropOffDistribution duration'
+    ).sort({ playCount: -1 });
+    const enriched = songs.map(s => ({
+      ...s.toObject(),
+      completionRate: s.playCount > 0 ? (s.completionCount / s.playCount * 100).toFixed(1) : 0,
+    }));
+    res.json(enriched);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

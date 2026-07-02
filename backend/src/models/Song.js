@@ -31,7 +31,13 @@ const songSchema = new mongoose.Schema({
   isPremium: {
     type: Boolean,
     default: false, // If true, non-premium users will hear ads or can't download
-  }
+  },
+  playCount: { type: Number, default: 0 },
+  completionCount: { type: Number, default: 0 },
+  shareCount: { type: Number, default: 0 },
+  repeatCount: { type: Number, default: 0 },
+  // 10 buckets representing each 10% segment of the song (drop-off distribution)
+  dropOffDistribution: { type: [Number], default: () => [0,0,0,0,0,0,0,0,0,0] },
 }, { timestamps: true });
 
 const Song = mongoose.model('Song', songSchema);

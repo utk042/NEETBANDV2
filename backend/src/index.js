@@ -12,6 +12,7 @@ import forumRoutes from './routes/forumRoutes.js';
 import affiliateRoutes from './routes/affiliateRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import { getAds } from './controllers/songController.js';
 
 dotenv.config();
 
@@ -66,6 +67,9 @@ app.use('/contact', contactRoutes);
 app.use('/upload', uploadRoutes);
 
 console.log("Admin routes mounted to /admin");
+
+// Ad URLs endpoint
+app.get('/ads', getAds);
 
 // Base route
 app.get('/', (req, res) => {
