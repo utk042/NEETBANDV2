@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, BarChart2, Paperclip, MessageSquare, Heart, Eye } from 'lucide-react';
 import BlogEditor from './BlogEditor';
+import { uploadFile } from '../../services/api';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
@@ -48,6 +49,45 @@ const AdminForums = ({ api }) => {
   const [isPoll, setIsPoll] = useState(false);
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [selectedCommentsPost, setSelectedCommentsPost] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsUploading(true);
+    try {
+      const uploadedUrls = [];
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        let fileType = 'other';
+        if (file.type.startsWith('image/')) {
+          fileType = 'image';
+        } else if (file.type === 'application/pdf') {
+          fileType = 'pdf';
+        }
+        
+        const res = await uploadFile(file, fileType);
+        const finalUrl = res.url.startsWith('http') ? res.url : `${backendUrl}${res.url}`;
+        uploadedUrls.push(finalUrl);
+      }
+      
+      const existing = attachments.trim();
+      const newUrlsStr = uploadedUrls.join(', ');
+      if (existing) {
+        setAttachments(`${existing}, ${newUrlsStr}`);
+      } else {
+        setAttachments(newUrlsStr);
+      }
+    } catch (err) {
+      console.error('File upload failed:', err);
+      alert('Upload failed: ' + getErrorMessage(err));
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleOpenCommentsModal = async (post) => {
     try {
@@ -187,10 +227,28 @@ const AdminForums = ({ api }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
-              <Paperclip size={16} />
-              Attachments (Comma separated URLs)
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                <Paperclip size={16} />
+                Attachments (Comma separated URLs)
+              </label>
+              <label className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1">
+                {isUploading ? (
+                  <span className="animate-pulse">Uploading...</span>
+                ) : (
+                  <>
+                    <span>+ Upload Files</span>
+                    <input 
+                      type="file" 
+                      multiple 
+                      className="hidden" 
+                      onChange={handleFileUpload} 
+                      disabled={isUploading}
+                    />
+                  </>
+                )}
+              </label>
+            </div>
             <input
               type="text"
               value={attachments}
