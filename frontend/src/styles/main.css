@@ -295,7 +295,7 @@ body {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 8px 18px;
     padding: 8px 10px;
 }
 
@@ -303,15 +303,6 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
-    border-right: 1px solid rgba(var(--color-outline) / 0.25);
-    padding-right: 8px;
-    margin-right: 4px;
-}
-
-.editor-toolbar-group:last-child {
-    border-right: none;
-    padding-right: 0;
-    margin-right: 0;
 }
 
 .editor-toolbar-divider {
