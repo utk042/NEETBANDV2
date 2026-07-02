@@ -1,4 +1,3 @@
-import { IconArrowLeft } from '@tabler/icons-react';
 
 export default function NotFound({ navigate }) {
   return (
@@ -25,7 +24,6 @@ export default function NotFound({ navigate }) {
           onClick={() => navigate('/')}
           className="flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded-full font-bold text-lg hover:scale-105 hover:shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all duration-300"
         >
-          <IconArrowLeft size={24} />
           Back to Home
         </button>
       </div>
