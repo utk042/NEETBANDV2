@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 
 import { UserAuthProvider, useUserAuth } from './contexts/UserAuthContext';
@@ -8,8 +8,9 @@ import { PlayerProvider } from './contexts/PlayerContext';
 
 import UserRoutes from './routes/UserRoutes';
 import CustomCursor from './components/CustomCursor';
-const LmsRoutes = lazy(() => import('./routes/LmsRoutes'));
-const AffiliateRoutes = lazy(() => import('./routes/AffiliateRoutes'));
+import { lazyWithRetry } from './utils/lazyWithRetry';
+const LmsRoutes = lazyWithRetry(() => import('./routes/LmsRoutes'));
+const AffiliateRoutes = lazyWithRetry(() => import('./routes/AffiliateRoutes'));
 
 function AppContent() {
   const location = useLocation();

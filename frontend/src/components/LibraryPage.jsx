@@ -190,6 +190,20 @@ export default function LibraryPage({
     return ['All', ...Array.from(chapters)];
   }, [tracks, selectedGrade, selectedCatalogSubject]);
 
+  /* ── filtered library tracks (for the track listing below courses) ── */
+  const filteredLibraryTracks = React.useMemo(() => {
+    return tracks.filter(track => {
+      const classMatch = !selectedGrade || track.grade === selectedGrade || track.class === selectedGrade;
+      const subjectMatch = selectedCatalogSubject === 'All' || track.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
+      const chapterMatch = selectedCatalogChapter === 'All' || track.chapter === selectedCatalogChapter;
+      const searchMatch = !catalogSearch.trim() || 
+        track.title.toLowerCase().includes(catalogSearch.trim().toLowerCase()) ||
+        (track.chapter && track.chapter.toLowerCase().includes(catalogSearch.trim().toLowerCase())) ||
+        (track.subject && track.subject.toLowerCase().includes(catalogSearch.trim().toLowerCase()));
+      return classMatch && subjectMatch && chapterMatch && searchMatch;
+    });
+  }, [tracks, selectedGrade, selectedCatalogSubject, selectedCatalogChapter, catalogSearch]);
+
   /* ── catalog search results ── */
   const catalogResults = catalogSearch.trim()
     ? tracks.filter((t) => {
@@ -410,7 +424,7 @@ export default function LibraryPage({
                   Available Courses
                 </h2>
                 <span className="text-xs font-mono text-on-surface-variant">
-                  {lmsCourses.filter(c => (!selectedGrade || c.class === selectedGrade) && (selectedCatalogSubject === 'All' || c.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase())).length} courses
+                  {lmsCourses.filter(c => !selectedGrade || c.class === selectedGrade).length} courses
                 </span>
               </div>
 
@@ -425,7 +439,7 @@ export default function LibraryPage({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {lmsCourses
-                    .filter(c => (!selectedGrade || c.class === selectedGrade) && (selectedCatalogSubject === 'All' || c.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase()))
+                    .filter(c => !selectedGrade || c.class === selectedGrade)
                     .map((course) => {
                       const color = course.coverColor || '#ecc246';
                       const lessonCount = course.lessons?.length || 0;
@@ -516,7 +530,50 @@ export default function LibraryPage({
             </section>
           )}
 
+          {/* ── Study Tracks listing (filtered by Subject & Chapter) ── */}
+          {!catalogSearch.trim() && (
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest font-mono">
+                  Study Tracks
+                </h2>
+                <span className="text-xs font-mono text-on-surface-variant">
+                  {filteredLibraryTracks.length} track{filteredLibraryTracks.length !== 1 ? 's' : ''}
+                </span>
+              </div>
 
+              {filteredLibraryTracks.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {filteredLibraryTracks.map((track, idx) => {
+                    const subCfg = SUBJECTS.find((s) => s.id === track.subject);
+                    return (
+                      <TrackRow
+                        key={track.id}
+                        track={track}
+                        idx={idx}
+                        isCurrent={currentTrack?.id === track.id}
+                        isTrackPlaying={currentTrack?.id === track.id && isPlaying}
+                        isFavorited={favoritedTrackIds.includes(track.id)}
+                        accentText={subCfg?.accentText || 'text-primary'}
+                        onPlay={() => onTrackSelect(track)}
+                        onFavorite={() => onToggleFavorite && onToggleFavorite(track.id)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4">
+                    <IconSearch size={24} className="text-on-surface-variant/40" />
+                  </div>
+                  <p className="text-sm text-on-surface-variant font-semibold">No tracks found</p>
+                  <p className="text-xs text-on-surface-variant/60 mt-1">
+                    {selectedGrade || 'All Classes'} · {selectedCatalogSubject} · {selectedCatalogChapter}
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
 
         </div>
       </div>
