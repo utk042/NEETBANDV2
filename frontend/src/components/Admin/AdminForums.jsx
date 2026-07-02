@@ -190,9 +190,11 @@ const AdminForums = ({ api }) => {
                 <div className="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            
             {isPoll && (
               <div className="space-y-3 pt-3 border-t border-outline-variant">
+                <p className="text-[11px] font-semibold text-primary/85 italic mb-1.5 ml-1">
+                  * Note: The "Post Title" field at the top of the form will serve as the question for this poll.
+                </p>
                 {pollOptions.map((opt, idx) => (
                   <div key={idx} className="flex gap-2">
                     <input
