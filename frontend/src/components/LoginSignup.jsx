@@ -9,7 +9,7 @@ import {
   IconChevronLeft,
   IconMail
 } from '@tabler/icons-react';
-import { supabase, getAuthRedirectUrl } from '../services/supabaseClient';
+import { supabase } from '../services/supabaseClient';
 import { loginWithSupabaseToken } from '../services/api';
 
 export default function LoginSignup({ onLoginSuccess, navigate }) {
@@ -135,7 +135,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
         password: formData.password,
         options: {
           data: { full_name: formData.name },
-          emailRedirectTo: getAuthRedirectUrl()
+          emailRedirectTo: window.location.origin + '/auth/callback'
         }
       });
       if (error) throw error;
@@ -275,7 +275,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
         email: formData.email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: getAuthRedirectUrl()
+          emailRedirectTo: window.location.origin + '/auth/callback'
         }
       });
       if (error) throw error;
@@ -304,7 +304,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
           type: 'signup',
           email: formData.email,
           options: {
-            emailRedirectTo: getAuthRedirectUrl()
+            emailRedirectTo: window.location.origin + '/auth/callback'
           }
         });
         if (error) throw error;
@@ -314,7 +314,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
           email: formData.email,
           options: {
             shouldCreateUser: true,
-            emailRedirectTo: getAuthRedirectUrl()
+            emailRedirectTo: window.location.origin + '/auth/callback'
           }
         });
         if (error) throw error;
@@ -386,7 +386,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: getAuthRedirectUrl()
+        redirectTo: window.location.origin + '/auth/callback'
       });
       if (error) throw error;
       setFeedbackMsg({ type: 'success', text: 'Password reset link sent! Check your inbox.' });
@@ -406,7 +406,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getAuthRedirectUrl()
+          redirectTo: window.location.origin + '/auth/callback'
         }
       });
       if (error) throw error;
