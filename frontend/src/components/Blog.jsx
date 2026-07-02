@@ -12,7 +12,7 @@ export default function Blog({ user }) {
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const blogsPerPage = 10;
+  const blogsPerPage = 9;
 
   useEffect(() => {
     if (!selectedBlog) {
