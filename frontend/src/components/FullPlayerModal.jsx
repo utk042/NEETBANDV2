@@ -170,12 +170,15 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
 
   // Generate deterministic wave data
   const waveData = useMemo(() => {
-    const numBars = 60;
+    const numBars = 70;
     return Array.from({ length: numBars }).map((_, i) => {
-      const phase1 = Math.sin((i / numBars) * Math.PI * 6) * 30;
-      const phase2 = Math.sin((i / numBars) * Math.PI * 12) * 15;
-      const phase3 = Math.cos((i / numBars) * Math.PI * 3) * 20;
-      return Math.min(100, Math.abs(phase1 + phase2 + phase3) + 20); // between 20% and 100%
+      const t = i / numBars;
+      // Composite of 3 sine waves at different frequencies for organic look
+      const a = Math.sin(t * Math.PI * 4) * 30;
+      const b = Math.sin(t * Math.PI * 8 + 1.2) * 20;
+      const c = Math.cos(t * Math.PI * 2 + 0.5) * 15;
+      const raw = Math.abs(a + b + c);
+      return Math.max(15, Math.min(100, raw + 22));
     });
   }, []);
 
@@ -184,20 +187,30 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
   return (
     <div className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar">
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes wavePulse {
-          0% {
-            transform: scaleY(0.75);
-          }
-          100% {
-            transform: scaleY(var(--pulse-scale));
-          }
+        @keyframes waveRise {
+          0%   { transform: scaleY(0.4) translateY(0); }
+          25%  { transform: scaleY(1.0) translateY(0); }
+          50%  { transform: scaleY(0.6) translateY(0); }
+          75%  { transform: scaleY(0.9) translateY(0); }
+          100% { transform: scaleY(0.5) translateY(0); }
+        }
+        @keyframes waveFall {
+          0%   { transform: scaleY(0.9) translateY(0); }
+          50%  { transform: scaleY(0.5) translateY(0); }
+          100% { transform: scaleY(0.8) translateY(0); }
         }
         .wave-bar-active {
-          animation: wavePulse var(--pulse-dur) ease-in-out infinite alternate;
-          animation-delay: var(--pulse-delay);
+          animation: waveRise var(--dur, 0.8s) ease-in-out infinite alternate;
+          animation-delay: var(--delay, 0s);
           transform-origin: center;
         }
-      `}} />
+        .wave-bar-paused {
+          animation: none;
+          transform: scaleY(var(--static-scale, 0.6));
+          transform-origin: center;
+          transition: transform 0.4s ease-out;
+        }
+      ` }} />
       {/* Header */}
       <div className="flex justify-between items-center p-4 md:px-8 shrink-0">
         <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
@@ -297,23 +310,28 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
           >
             {waveData.map((height, i) => {
               const isPlayed = (i / waveData.length) * 100 <= progressPercent;
-              const pulseDur = `${0.65 + (i % 7) * 0.12}s`;
-              const pulseScale = 1.15 + (i % 4) * 0.15;
-              const delay = `${-(i % 10) * 0.1}s`;
+              // Staggered timing — each bar gets a slightly different phase
+              const dur = `${0.5 + (i % 5) * 0.08}s`;
+              const delay = `${-((i * 0.07) % 0.8)}s`;
+              const staticScale = (height / 100) * 0.9 + 0.1;
 
               return (
-                <div 
+                <div
                   key={i}
-                  className={`flex-1 rounded-full transition-all duration-300 ${
-                    isPlayed 
-                      ? 'bg-primary shadow-[0_0_8px_rgba(201,162,39,0.5)]' 
-                      : 'bg-surface-container-highest group-hover:bg-surface-container-highest/80'
-                  } ${isPlaying && isPlayed ? 'wave-bar-active' : ''}`}
-                  style={{ 
+                  className={`flex-1 rounded-full transition-colors duration-300 ${
+                    isPlayed
+                      ? 'bg-primary shadow-[0_0_6px_rgba(201,162,39,0.4)]'
+                      : 'bg-surface-container-highest/70 group-hover:bg-surface-container-highest'
+                  } ${
+                    isPlaying
+                      ? 'wave-bar-active'
+                      : 'wave-bar-paused'
+                  }`}
+                  style={{
                     height: `${height}%`,
-                    '--pulse-dur': pulseDur,
-                    '--pulse-scale': pulseScale,
-                    '--pulse-delay': delay
+                    '--dur': dur,
+                    '--delay': delay,
+                    '--static-scale': staticScale,
                   }}
                 />
               );

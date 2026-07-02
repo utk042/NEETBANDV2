@@ -194,7 +194,7 @@ export default function UserRoutes() {
           <Routes>
             <Route path="/" element={<>
               <Hero currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
-              <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} />
+              <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
               <Features />
               <StatsSection appReady={!isLoading} />
               <Pricing onUpgrade={handleUpgradeClick} user={user} />

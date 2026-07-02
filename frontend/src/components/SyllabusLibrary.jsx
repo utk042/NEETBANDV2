@@ -1,23 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconPlaylist, IconVolume, IconSearch, IconDots, IconShare, IconHeart } from '@tabler/icons-react';
+import { usePlayer } from '../contexts/PlayerContext';
 
-const previewStyles = `
-  @keyframes waveGrow {
-    0%, 100% { transform: scaleY(0.2); }
-    50% { transform: scaleY(1); }
-  }
-  .wave-bar-anim {
-    animation: waveGrow var(--wave-dur, 1.2s) ease-in-out infinite alternate;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .wave-bar-anim {
-      animation: none !important;
-      transform: scaleY(0.6) !important;
-    }
-  }
-`;
 
-export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite }) {
+export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite, onSeek }) {
+  const { isShuffled, setIsShuffled, repeatMode, cycleRepeat } = usePlayer();
   const [searchQuery, setSearchQuery] = useState('');
   
   const displayTrack = currentTrack || tracks[0] || {
@@ -56,9 +43,20 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
   );
 
   return (
-    <section id="syllabus-library" className="py-32 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
-      <style>{previewStyles}</style>
-
+    <>
+      <style>{`
+        @keyframes sylWave {
+          0%   { transform: scaleY(0.35) }
+          50%  { transform: scaleY(1.0)  }
+          100% { transform: scaleY(0.45) }
+        }
+        .syl-wave-active { 
+          animation: sylWave var(--sdur) ease-in-out infinite alternate;
+          animation-delay: var(--sdelay);
+          transform-origin: bottom;
+        }
+      `}</style>
+      <section id="syllabus-library" className="py-32 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
       
 
       
@@ -115,10 +113,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
           
           {/* Integrated Top Player Banner (Primary Color Redesign) */}
           <div className="bg-primary text-on-primary py-5 px-5 md:py-7 md:px-8 relative select-none overflow-hidden border-b border-[var(--border-nav-layout)] transition-colors duration-300">
-            {/* Deep Dynamic Spotlights & Texture */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-white/20 blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/4"></div>
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-black/10 blur-[100px] pointer-events-none translate-y-1/2 -translate-x-1/4"></div>
-            {/* Subtle noise overlay */}
+            {/* Deep Dynamic Spotlights & Texture */}            {/* Subtle noise overlay */}
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
             
             <div className="flex flex-col gap-4 md:gap-6 z-10 relative">
@@ -199,13 +194,13 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                           <div 
                             key={i} 
                             className={`w-[2px] rounded-t-sm flex-shrink-0 transition-colors duration-300 ${
-                              isActive ? 'bg-on-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'bg-on-primary/30'
-                            } ${isPlaying && isActive ? 'wave-bar-anim' : ''}`}
+                              isActive ? 'bg-on-primary' : 'bg-on-primary/30'
+                            } ${isPlaying && isActive ? 'syl-wave-active' : ''}`}
                             style={{ 
                               height: `${h * 0.85}%`,
-                              '--wave-dur': `${waveSpeeds.current[i]}s`,
-                              animationDelay: `${waveDelays.current[i]}s`,
-                              transformOrigin: 'bottom'
+                              transformOrigin: 'bottom',
+                              '--sdur': `${waveSpeeds.current[i]}s`,
+                              '--sdelay': `-${waveDelays.current[i]}s`
                             }}
                           />
                         );
@@ -221,10 +216,34 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 {/* Sub-controls */}
                 <div className="flex items-center justify-between lg:justify-end gap-4 lg:gap-5 text-on-primary/70 w-full lg:w-auto z-10 relative">
                   <div className="flex items-center gap-4 md:gap-5">
-                    <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Replay 10s"><IconRotate2 size={20} aria-hidden="true" /></button>
-                    <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Forward 30s"><IconRotate size={20} aria-hidden="true" /></button>
-                    <button className="text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Shuffle"><IconArrowsShuffle size={20} aria-hidden="true" /></button>
-                    <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Repeat"><IconRepeat size={20} aria-hidden="true" /></button>
+                    <button 
+                      onClick={() => onSeek?.(Math.max(0, currentSeconds - 10))}
+                      className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
+                      aria-label="Replay 10s"
+                    >
+                      <IconRotate2 size={20} aria-hidden="true" />
+                    </button>
+                    <button 
+                      onClick={() => onSeek?.(Math.min(totalSeconds, currentSeconds + 30))}
+                      className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
+                      aria-label="Forward 30s"
+                    >
+                      <IconRotate size={20} aria-hidden="true" />
+                    </button>
+                    <button 
+                      onClick={() => setIsShuffled(!isShuffled)}
+                      className={`${isShuffled ? 'text-on-primary' : 'text-on-primary/50 hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
+                      aria-label="Shuffle"
+                    >
+                      <IconArrowsShuffle size={20} aria-hidden="true" />
+                    </button>
+                    <button 
+                      onClick={cycleRepeat}
+                      className={`${repeatMode !== 'none' ? 'text-on-primary' : 'text-on-primary/50 hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
+                      aria-label={`Repeat (current mode: ${repeatMode})`}
+                    >
+                      <IconRepeat size={20} aria-hidden="true" />
+                    </button>
                     <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Queue"><IconPlaylist size={20} aria-hidden="true" /></button>
                   </div>
                   <div className="hidden lg:block w-px h-4 bg-on-primary/20"></div>
@@ -291,7 +310,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                     {/* Play/Pause hover image overlay */}
                     <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block">
-                      <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40}/>
+                      <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40} loading="lazy"/>
                       <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         {isCurrent && isPlaying ? (
                           <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />
@@ -301,7 +320,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                       </div>
                       {isCurrent && isPlaying && (
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <IconVolume size={20} className="text-primary animate-pulse" aria-hidden="true" />
+                          <IconVolume size={20} className="text-primary" aria-hidden="true" />
                         </div>
                       )}
                     </div>
@@ -312,7 +331,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                         <span className={`font-normal transition-colors duration-300 flex items-center flex-shrink-0 w-6 md:w-auto ${isCurrent ? 'text-primary' : 'text-on-surface-variant/80'}`}>
                           {isCurrent ? (
                              isPlaying ? (
-                                <IconVolume size={18} className="text-primary animate-pulse flex-shrink-0" aria-hidden="true" />
+                                <IconVolume size={18} className="text-primary flex-shrink-0" aria-hidden="true" />
                               ) : (
                                 <IconPlayerPlayFilled size={18} className="text-primary flex-shrink-0 translate-x-[1px]" aria-hidden="true" />
                               )
@@ -362,5 +381,6 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
         </div>
       </div>
     </section>
+    </>
   );
 }
