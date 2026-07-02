@@ -87,7 +87,7 @@ export default function Footer({ navigate }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-10 md:gap-8 border-b border-[var(--border-nav-layout)] pb-12 mb-12">
           
           {/* Brand Info */}
-          <div className="md:col-span-5 flex flex-col items-start gap-4">
+          <div className="md:col-span-4 flex flex-col items-start gap-4">
             <img alt="NeetBand Logo" className="h-12 w-auto object-contain" src={logoImg} width={512} height={236}/>
             <p className="font-body-md text-sm text-on-surface-variant/80 max-w-[300px] leading-relaxed">
               Premium curriculum-aligned study songs designed to boost active recall and reduce screen fatigue. Turn textbooks into sound.
@@ -95,13 +95,22 @@ export default function Footer({ navigate }) {
           </div>
 
           {/* Platform Links */}
-          <div className="md:col-span-3 flex flex-col gap-4">
+          <div className="md:col-span-2 flex flex-col gap-4">
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Platform</h4>
             <nav className="flex flex-col gap-3">
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Syllabus Library</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/student-hub'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Student Hub</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights (Blog)</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">About Us</a>
+            </nav>
+          </div>
+
+          {/* Legal Links */}
+          <div className="md:col-span-2 flex flex-col gap-4">
+            <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Legal</h4>
+            <nav className="flex flex-col gap-3">
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Terms & Conditions</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Privacy Policy</a>
             </nav>
           </div>
 
@@ -137,6 +146,11 @@ export default function Footer({ navigate }) {
             <p className="font-body-md text-xs text-on-surface-variant/70">
               © {new Date().getFullYear()} NeetBand. All rights reserved.
             </p>
+            <span className="hidden sm:inline text-on-surface-variant/30">·</span>
+            <nav className="flex items-center gap-4">
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-xs text-on-surface-variant/60 hover:text-primary transition-colors">Terms</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="font-body-md text-xs text-on-surface-variant/60 hover:text-primary transition-colors">Privacy</a>
+            </nav>
           </div>
 
           {/* Right: Startup Badge & Trust Badges */}

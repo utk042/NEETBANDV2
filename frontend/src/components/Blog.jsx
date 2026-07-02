@@ -161,7 +161,7 @@ export default function Blog({ user }) {
             {selectedBlog.title}
           </h1>
 
-          <div className="prose dark:prose-invert prose-lg max-w-none mb-12 text-on-surface-variant/90 tiptap-editor-content">
+          <div className="prose dark:prose-invert prose-lg max-w-[72ch] mx-auto mb-12 text-on-surface-variant/90 tiptap-editor-content">
             <div dangerouslySetInnerHTML={{ __html: selectedBlog.content }} />
           </div>
 
@@ -275,8 +275,17 @@ export default function Blog({ user }) {
               {currentBlogs.map((article) => (
                 <article 
                   key={article._id} 
-                  className="col-span-1 bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-[var(--shadow-floating-card)] overflow-hidden hover:border-primary/30 transition-all duration-300 group flex flex-col cursor-pointer"
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`Read article: ${article.title}`}
+                  className="col-span-1 bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-[var(--shadow-floating-card)] overflow-hidden hover:border-primary/30 transition-all duration-300 group flex flex-col cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   onClick={() => navigate(`/blog/${article.slug || article._id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/blog/${article.slug || article._id}`);
+                    }
+                  }}
                 >
                   <div className="w-full aspect-[16/10] relative overflow-hidden border-b border-[var(--border-floating-card)] bg-black/20">
                     {article.coverImage ? (

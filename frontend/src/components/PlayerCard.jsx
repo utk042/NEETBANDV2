@@ -36,7 +36,7 @@ export default function PlayerCard() {
         }
       `}</style>
       <div className="glass-panel p-6 rounded-2xl w-[340px] shadow-[var(--shadow-floating-card)] relative transform hover:-translate-y-2 transition-all duration-500 border border-[var(--border-floating-card)] glow-hover bg-surface">
-        <div className="absolute -top-4 -right-4 bg-gradient-to-br from-primary to-primary-container text-on-primary p-3 rounded-full shadow-[0_0_20px_rgba(201,162,39,0.3)] flex items-center justify-center">
+        <div className="absolute -top-4 -right-4 bg-primary text-on-primary p-3 rounded-full shadow-[0_0_20px_rgba(201,162,39,0.3)] flex items-center justify-center">
           <IconActivity size={24} className={isPlaying ? "animate-pulse" : ""} aria-hidden="true" />
         </div>
         
@@ -89,7 +89,7 @@ export default function PlayerCard() {
           </button>
           <button 
             onClick={togglePlay}
-            className="bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-full w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_20px_rgba(201,162,39,0.4)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="bg-primary text-on-primary rounded-full w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_20px_rgba(201,162,39,0.4)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (

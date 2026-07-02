@@ -283,7 +283,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
 
         {/* Add Student Modal */}
         {isAddStudentModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
             <div className="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
                 <div>
@@ -363,7 +363,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
 
         {/* Edit Student Modal */}
         {isEditStudentModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
             <div className="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
                 <div>
@@ -546,7 +546,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
 
       {/* Add Course Modal */}
       {isAddCourseModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
               <div>
@@ -605,7 +605,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
 
       {/* Edit Course Modal */}
       {isEditCourseModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
               <div>

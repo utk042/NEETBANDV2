@@ -1,0 +1,1556 @@
+[
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 118,
+    "snippet": "Undocumented color #755b00 is outside DESIGN.md colors",
+    "ignoreValue": "#755b00"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 118,
+    "snippet": "Undocumented color #ecc246 is outside DESIGN.md colors",
+    "ignoreValue": "#ecc246"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 119,
+    "snippet": "Undocumented color rgba(248, 249, 255, 0.35) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(248, 249, 255, 0.35)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 149,
+    "snippet": "Undocumented color #ffe08e is outside DESIGN.md colors",
+    "ignoreValue": "#ffe08e"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 149,
+    "snippet": "Undocumented color #ecc246 is outside DESIGN.md colors",
+    "ignoreValue": "#ecc246"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\generate_themes.js",
+    "line": 149,
+    "snippet": "Undocumented color rgba(7, 18, 45, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(7, 18, 45, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 7,
+    "snippet": "Undocumented color #755b00 is outside DESIGN.md colors",
+    "ignoreValue": "#755b00"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 7,
+    "snippet": "Undocumented color #ecc246 is outside DESIGN.md colors",
+    "ignoreValue": "#ecc246"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 8,
+    "snippet": "Undocumented color rgba(248, 249, 255, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(248, 249, 255, 0.2)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 86,
+    "snippet": "Undocumented color #ffe08e is outside DESIGN.md colors",
+    "ignoreValue": "#ffe08e"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 86,
+    "snippet": "Undocumented color #ecc246 is outside DESIGN.md colors",
+    "ignoreValue": "#ecc246"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\scripts\\theme_variables.css",
+    "line": 87,
+    "snippet": "Undocumented color rgba(7, 18, 45, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(7, 18, 45, 0.2)"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\AboutUs.jsx",
+    "line": 26,
+    "snippet": "border-l-4",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Admin\\BlogEditor.jsx",
+    "line": 241,
+    "snippet": "borderRadius: 16px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "16px",
+    "importedBy": [
+      "AdminBlogs.jsx",
+      "AdminForums.jsx",
+      "CommunityForum.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Admin\\BlogEditor.jsx",
+    "line": 243,
+    "snippet": "Undocumented color #0a0a0a is outside DESIGN.md colors",
+    "ignoreValue": "#0a0a0a",
+    "importedBy": [
+      "AdminBlogs.jsx",
+      "AdminForums.jsx",
+      "CommunityForum.jsx"
+    ]
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Admin\\ManageNewsScroll.jsx",
+    "line": 121,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "AdminDashboard.jsx"
+    ]
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Admin\\ManageNewsScroll.jsx",
+    "line": 256,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "AdminDashboard.jsx"
+    ]
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Admin\\ManageNewsScroll.jsx",
+    "line": 271,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "AdminDashboard.jsx"
+    ]
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Affiliate\\AffiliateDashboard.jsx",
+    "line": 49,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "AffiliateRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "gray-on-color",
+    "name": "Gray text on colored background",
+    "description": "Gray text looks washed out on colored backgrounds. Use a darker shade of the background color instead, or white/near-white for contrast.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Blog.jsx",
+    "line": 117,
+    "snippet": "text-gray-400 on bg-red-500",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\Checkout.jsx",
+    "line": 84,
+    "snippet": "Undocumented color #ecc246 is outside DESIGN.md colors",
+    "ignoreValue": "#ecc246",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\CoursePlayer.jsx",
+    "line": 818,
+    "snippet": "border-l-2",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\MockTestResult.jsx",
+    "line": 130,
+    "snippet": "Undocumented color #10B981 is outside DESIGN.md colors",
+    "ignoreValue": "#10B981",
+    "importedBy": [
+      "MockTest.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\MockTestResult.jsx",
+    "line": 130,
+    "snippet": "Undocumented color #EF4444 is outside DESIGN.md colors",
+    "ignoreValue": "#EF4444",
+    "importedBy": [
+      "MockTest.jsx"
+    ]
+  },
+  {
+    "antipattern": "gradient-text",
+    "name": "Gradient text",
+    "description": "Gradient text is decorative rather than meaningful — a common AI tell, especially on headings and metrics. Use solid colors for text.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\NotFound.jsx",
+    "line": 16,
+    "snippet": "bg-clip-text + bg-gradient",
+    "importedBy": [
+      "AffiliateRoutes.jsx",
+      "LmsRoutes.jsx",
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "bounce-easing",
+    "name": "Bounce or elastic easing",
+    "description": "Bounce and elastic easing feel dated and tacky. Real objects decelerate smoothly — use exponential easing (ease-out-quart/quint/expo) instead.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\NotFound.jsx",
+    "line": 12,
+    "snippet": "animate-bounce (Tailwind)",
+    "importedBy": [
+      "AffiliateRoutes.jsx",
+      "LmsRoutes.jsx",
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\ProtectedRoute.jsx",
+    "line": 15,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "AffiliateRoutes.jsx",
+      "LmsRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "bounce-easing",
+    "name": "Bounce or elastic easing",
+    "description": "Bounce and elastic easing feel dated and tacky. Real objects decelerate smoothly — use exponential easing (ease-out-quart/quint/expo) instead.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\StatsSection.jsx",
+    "line": 15,
+    "snippet": "cubic-bezier(.22, .68, 0, 1.6)",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\StatsSection.jsx",
+    "line": 109,
+    "snippet": "Undocumented color rgba(5,5,8,0.97) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(5,5,8,0.97)",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\StatsSection.jsx",
+    "line": 109,
+    "snippet": "Undocumented color rgba(5,5,8,0.72) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(5,5,8,0.72)",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\StatsSection.jsx",
+    "line": 109,
+    "snippet": "Undocumented color rgba(5,5,8,0.18) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(5,5,8,0.18)",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\components\\StatsSection.jsx",
+    "line": 116,
+    "snippet": "Undocumented color rgba(5,5,8,0.7) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(5,5,8,0.7)",
+    "importedBy": [
+      "UserRoutes.jsx"
+    ]
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 940,
+    "snippet": "border-left: 3px solid var(--primary)"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1014,
+    "snippet": "border-left: 4px solid var(--primary)"
+  },
+  {
+    "antipattern": "gradient-text",
+    "name": "Gradient text",
+    "description": "Gradient text is decorative rather than meaningful — a common AI tell, especially on headings and metrics. Use solid colors for text.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 998,
+    "snippet": "background-clip: text + gradient"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 66,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 88,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 143,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 165,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 174,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 186,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 188,
+    "snippet": "Undocumented color #d1d5db is outside DESIGN.md colors",
+    "ignoreValue": "#d1d5db"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 198,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 200,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 255,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.2)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 313,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 331,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 334,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 393,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 478,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.9) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.9)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 514,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 519,
+    "snippet": "Undocumented color #0d2b06 is outside DESIGN.md colors",
+    "ignoreValue": "#0d2b06"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 520,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 525,
+    "snippet": "Undocumented color #2b0606 is outside DESIGN.md colors",
+    "ignoreValue": "#2b0606"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 526,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 527,
+    "snippet": "Undocumented color #fc8181 is outside DESIGN.md colors",
+    "ignoreValue": "#fc8181"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 531,
+    "snippet": "Undocumented color #061a2b is outside DESIGN.md colors",
+    "ignoreValue": "#061a2b"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 532,
+    "snippet": "Undocumented color rgba(49, 130, 206, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(49, 130, 206, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 533,
+    "snippet": "Undocumented color #63b3ed is outside DESIGN.md colors",
+    "ignoreValue": "#63b3ed"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 549,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.2)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 553,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.2)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 557,
+    "snippet": "Undocumented color rgba(49, 130, 206, 0.2) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(49, 130, 206, 0.2)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 640,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 726,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 788,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 803,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.1) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.1)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 827,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.1) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.1)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 834,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 854,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 859,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 864,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.15)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 865,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 870,
+    "snippet": "Undocumented color rgba(229, 62, 62, 0.25) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(229, 62, 62, 0.25)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 921,
+    "snippet": "Undocumented color #555 is outside DESIGN.md colors",
+    "ignoreValue": "#555"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 943,
+    "snippet": "Undocumented color #b0b0b0 is outside DESIGN.md colors",
+    "ignoreValue": "#b0b0b0"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 966,
+    "snippet": "Undocumented color #eee is outside DESIGN.md colors",
+    "ignoreValue": "#eee"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 997,
+    "snippet": "Undocumented color #a0a0a0 is outside DESIGN.md colors",
+    "ignoreValue": "#a0a0a0"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1009,
+    "snippet": "Undocumented color #b0b0b0 is outside DESIGN.md colors",
+    "ignoreValue": "#b0b0b0"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1017,
+    "snippet": "border-radius: 20px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "20px"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1028,
+    "snippet": "Undocumented color #aaa is outside DESIGN.md colors",
+    "ignoreValue": "#aaa"
+  },
+  {
+    "antipattern": "design-system-font",
+    "name": "Font outside DESIGN.md",
+    "description": "A font is used that is not declared in DESIGN.md typography. Use the documented type system or update DESIGN.md if this is an intentional brand addition.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1041,
+    "snippet": "Google Fonts: Fira Code is not declared in DESIGN.md typography",
+    "ignoreValue": "Fira Code"
+  },
+  {
+    "antipattern": "design-system-font",
+    "name": "Font outside DESIGN.md",
+    "description": "A font is used that is not declared in DESIGN.md typography. Use the documented type system or update DESIGN.md if this is an intentional brand addition.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1041,
+    "snippet": "Google Fonts: Fira Sans is not declared in DESIGN.md typography",
+    "ignoreValue": "Fira Sans"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1093,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.4)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1104,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.6) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.6)"
+  },
+  {
+    "antipattern": "design-system-font",
+    "name": "Font outside DESIGN.md",
+    "description": "A font is used that is not declared in DESIGN.md typography. Use the documented type system or update DESIGN.md if this is an intentional brand addition.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1127,
+    "snippet": "font-family: Fira Code is not declared in DESIGN.md typography",
+    "ignoreValue": "Fira Code"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1134,
+    "snippet": "Undocumented color #666 is outside DESIGN.md colors",
+    "ignoreValue": "#666"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1171,
+    "snippet": "Undocumented color #888 is outside DESIGN.md colors",
+    "ignoreValue": "#888"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1183,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.1) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.1)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1188,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1194,
+    "snippet": "Undocumented color #555 is outside DESIGN.md colors",
+    "ignoreValue": "#555"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1225,
+    "snippet": "Undocumented color #333 is outside DESIGN.md colors",
+    "ignoreValue": "#333"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1227,
+    "snippet": "border-radius: 34px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "34px"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1304,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1326,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1335,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000"
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1347,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1349,
+    "snippet": "Undocumented color #d1d5db is outside DESIGN.md colors",
+    "ignoreValue": "#d1d5db"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1359,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1361,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1374,
+    "snippet": "Undocumented color #0d0d0d is outside DESIGN.md colors",
+    "ignoreValue": "#0d0d0d"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\index.css",
+    "line": 1379,
+    "snippet": "Undocumented color #1e1e1e is outside DESIGN.md colors",
+    "ignoreValue": "#1e1e1e"
+  },
+  {
+    "antipattern": "border-accent-on-rounded",
+    "name": "Border accent on rounded element",
+    "description": "Thick accent border on a rounded card — the border clashes with the rounded corners. Remove the border or the border-radius.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\routes\\UserRoutes.jsx",
+    "line": 297,
+    "snippet": "border-b-2",
+    "importedBy": [
+      "App.jsx"
+    ]
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 106,
+    "snippet": "border-left: 4px solid var(--primary)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 187,
+    "snippet": "border-left: 4px solid var(--primary)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 382,
+    "snippet": "border-left: 4px solid var(--primary)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "gradient-text",
+    "name": "Gradient text",
+    "description": "Gradient text is decorative rather than meaningful — a common AI tell, especially on headings and metrics. Use solid colors for text.",
+    "severity": "warning",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 90,
+    "snippet": "background-clip: text + gradient",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 58,
+    "snippet": "Undocumented color #eee is outside DESIGN.md colors",
+    "ignoreValue": "#eee",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 89,
+    "snippet": "Undocumented color #a0a0a0 is outside DESIGN.md colors",
+    "ignoreValue": "#a0a0a0",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 101,
+    "snippet": "Undocumented color #b0b0b0 is outside DESIGN.md colors",
+    "ignoreValue": "#b0b0b0",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 109,
+    "snippet": "border-radius: 20px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "20px",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 120,
+    "snippet": "Undocumented color #aaa is outside DESIGN.md colors",
+    "ignoreValue": "#aaa",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 190,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 208,
+    "snippet": "Undocumented color #0d0d0d is outside DESIGN.md colors",
+    "ignoreValue": "#0d0d0d",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 213,
+    "snippet": "Undocumented color #1e1e1e is outside DESIGN.md colors",
+    "ignoreValue": "#1e1e1e",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 223,
+    "snippet": "Undocumented color #0a0a0a is outside DESIGN.md colors",
+    "ignoreValue": "#0a0a0a",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 250,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.4)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 261,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.6) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.6)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 320,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 342,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 351,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 352,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 363,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 365,
+    "snippet": "Undocumented color #d1d5db is outside DESIGN.md colors",
+    "ignoreValue": "#d1d5db",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 375,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 377,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 385,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 403,
+    "snippet": "Undocumented color #0d0d0d is outside DESIGN.md colors",
+    "ignoreValue": "#0d0d0d",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 408,
+    "snippet": "Undocumented color #1e1e1e is outside DESIGN.md colors",
+    "ignoreValue": "#1e1e1e",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 418,
+    "snippet": "Undocumented color #0a0a0a is outside DESIGN.md colors",
+    "ignoreValue": "#0a0a0a",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 445,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.4) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.4)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 456,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.6) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.6)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 515,
+    "snippet": "Undocumented color rgba(0, 0, 0, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(0, 0, 0, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 537,
+    "snippet": "Undocumented color #9ca3af is outside DESIGN.md colors",
+    "ignoreValue": "#9ca3af",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 546,
+    "snippet": "Undocumented color #000 is outside DESIGN.md colors",
+    "ignoreValue": "#000",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 547,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-radius",
+    "name": "Radius outside DESIGN.md",
+    "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 558,
+    "snippet": "border-radius: 6px is outside the DESIGN.md rounded scale",
+    "ignoreValue": "6px",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 560,
+    "snippet": "Undocumented color #d1d5db is outside DESIGN.md colors",
+    "ignoreValue": "#d1d5db",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 570,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.15) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.15)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "file": "C:\\Users\\UTKARSH\\Downloads\\NEETBANBV2\\frontend\\src\\styles\\main.css",
+    "line": 572,
+    "snippet": "Undocumented color rgba(96, 166, 38, 0.3) is outside DESIGN.md colors",
+    "ignoreValue": "rgba(96, 166, 38, 0.3)",
+    "importedBy": [
+      "main.jsx"
+    ]
+  }
+]

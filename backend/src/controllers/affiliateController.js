@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 // Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-    expiresIn: '30d',
+    expiresIn: '7d',
   });
 };
 
@@ -22,12 +22,20 @@ export const authAffiliate = async (req, res) => {
         return res.status(401).json({ message: 'Affiliate account is inactive' });
       }
 
+      const token = generateToken(affiliate._id);
+      if (!affiliate.activeTokens) affiliate.activeTokens = [];
+      affiliate.activeTokens.push(token);
+      if (affiliate.activeTokens.length > 2) {
+        affiliate.activeTokens = affiliate.activeTokens.slice(-2);
+      }
+      await affiliate.save();
+
       res.json({
         _id: affiliate._id,
         name: affiliate.name,
         email: affiliate.email,
         promoCode: affiliate.promoCode,
-        token: generateToken(affiliate._id),
+        token,
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });

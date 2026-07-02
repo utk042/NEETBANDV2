@@ -256,6 +256,7 @@ const BlogEditor = ({ content, setContent }) => {
                             <MenuButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo"><Undo size={18}/></MenuButton>
                             <MenuButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo"><Redo size={18}/></MenuButton>
                         </div>
+                        <div className="editor-toolbar-divider" />
 
                         {/* Text Formatting Group */}
                         <div className="editor-toolbar-group">
@@ -264,6 +265,7 @@ const BlogEditor = ({ content, setContent }) => {
                             <MenuButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Underline"><UnderlineIcon size={18}/></MenuButton>
                             <MenuButton onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Clear Formatting"><Eraser size={18}/></MenuButton>
                         </div>
+                        <div className="editor-toolbar-divider" />
 
                         {/* Headings Group */}
                         <div className="editor-toolbar-group">
@@ -271,6 +273,7 @@ const BlogEditor = ({ content, setContent }) => {
                             <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="H2"><Heading2 size={18}/></MenuButton>
                             <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title="H3"><Heading3 size={18}/></MenuButton>
                         </div>
+                        <div className="editor-toolbar-divider" />
 
                         {/* Lists Group */}
                         <div className="editor-toolbar-group">
@@ -278,6 +281,7 @@ const BlogEditor = ({ content, setContent }) => {
                             <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Ordered List"><ListOrdered size={18}/></MenuButton>
                             <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Quote"><Quote size={18}/></MenuButton>
                         </div>
+                        <div className="editor-toolbar-divider" />
 
                         {/* Alignment Group */}
                         <div className="editor-toolbar-group">
@@ -285,6 +289,7 @@ const BlogEditor = ({ content, setContent }) => {
                             <MenuButton onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} title="Align Center"><AlignCenter size={18}/></MenuButton>
                             <MenuButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Align Right"><AlignRight size={18}/></MenuButton>
                         </div>
+                        <div className="editor-toolbar-divider" />
 
                         {/* Media Group */}
                         <div className="editor-toolbar-group">

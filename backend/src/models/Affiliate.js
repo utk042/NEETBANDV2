@@ -60,7 +60,11 @@ const affiliateSchema = new mongoose.Schema({
       },
       notes: String,
     }
-  ]
+  ],
+  activeTokens: {
+    type: [String],
+    default: []
+  }
 }, { timestamps: true });
 
 // Password hash middleware

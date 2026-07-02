@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import Pricing from './Pricing';
 import { createPaymentOrder, verifyPayment, verifyPromo } from '../services/api';
 
-export default function PricingPage({ user, onCheckoutSuccess, setCurrentPage }) {
+export default function PricingPage({ user, onCheckoutSuccess, navigate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
 
   const handlePurchase = async () => {
     if (!user || !user.isLoggedIn) {
-      setCurrentPage('login');
+      navigate('/login');
       return;
     }
-    setCurrentPage('checkout');
+    navigate('/checkout');
   };
 
   return (

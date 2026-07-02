@@ -102,17 +102,9 @@ const previewStyles = `
 `;
 
 export default function Features() {
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
-  };
-
   return (
     <section className="py-32 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
-      <style>{previewStyles}</style>
+      
 
 
       
@@ -128,21 +120,18 @@ export default function Features() {
           <div data-gsap="feature-card" data-gsap-hover="card" className="feat-card">
             <div
               data-gsap="card-inner"
-              onMouseMove={handleMouseMove}
               className="relative bg-surface-container-low p-10 rounded-2xl border border-outline/20 hover:border-outline/40 transition-colors duration-300 flex flex-col items-start gap-5 shadow-sm h-full overflow-hidden group"
             >
               {/* Hover Glow Effect */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-                style={{
-                  background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.15), transparent 80%)'
-                }}
+                data-gsap="card-glow"
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 z-0"
               />
               <div className="relative z-10 w-14 h-14 rounded-xl bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center shadow-inner">
                 <IconPlaylist size={32} className="text-primary" />
               </div>
               <h3 className="relative z-10 font-headline-md text-2xl text-on-surface">2000+ Songs</h3>
-              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed">Comprehensive coverage of Physics, Chemistry, Biology, and Math.</p>
+              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed flex-1">Comprehensive coverage of Physics, Chemistry, Biology, and Math.</p>
               {/* Equalizer preview */}
               <div className="relative z-10 w-full mt-4 h-32 bg-surface-container/50 rounded-xl border border-[var(--border-floating-card)] px-4 flex items-end justify-center gap-1 shadow-inner overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none"></div>
@@ -168,21 +157,18 @@ export default function Features() {
           <div data-gsap="feature-card" data-gsap-hover="card" className="feat-card">
             <div
               data-gsap="card-inner"
-              onMouseMove={handleMouseMove}
               className="relative bg-surface-container-low p-10 rounded-2xl border border-outline/20 hover:border-outline/40 transition-colors duration-300 flex flex-col items-start gap-5 shadow-sm h-full overflow-hidden group"
             >
               {/* Hover Glow Effect */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-                style={{
-                  background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.15), transparent 80%)'
-                }}
+                data-gsap="card-glow"
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 z-0"
               />
               <div className="relative z-10 w-14 h-14 rounded-xl bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center shadow-inner">
                 <IconAlignLeft size={32} className="text-primary" />
               </div>
               <h3 className="relative z-10 font-headline-md text-2xl text-on-surface">Lyrics Sync</h3>
-              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed">Follow along in real-time. Highlights key terms and formulas as they play.</p>
+              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed flex-1">Follow along in real-time. Highlights key terms and formulas as they play.</p>
               {/* Lyrics preview */}
               <div className="relative z-10 w-full mt-4 h-32 bg-surface-container/50 rounded-xl border border-[var(--border-floating-card)] p-5 flex flex-col justify-center gap-3 shadow-inner overflow-hidden">
                 <div className="lyric-dim h-2.5 bg-outline/25 rounded-full" style={{ width: '60%' }}></div>
@@ -197,21 +183,18 @@ export default function Features() {
           <div data-gsap="feature-card" data-gsap-hover="card" className="feat-card">
             <div
               data-gsap="card-inner"
-              onMouseMove={handleMouseMove}
               className="relative bg-surface-container-low p-10 rounded-2xl border border-outline/20 hover:border-outline/40 transition-colors duration-300 flex flex-col items-start gap-5 shadow-sm h-full overflow-hidden group"
             >
               {/* Hover Glow Effect */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-                style={{
-                  background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.15), transparent 80%)'
-                }}
+                data-gsap="card-glow"
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 z-0"
               />
               <div className="relative z-10 w-14 h-14 rounded-xl bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center shadow-inner">
                 <IconDownload size={32} className="text-primary" />
               </div>
               <h3 className="relative z-10 font-headline-md text-2xl text-on-surface">Offline Downloads</h3>
-              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed">Save tracks to your device. Study anywhere, without distractions or data.</p>
+              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed flex-1">Save tracks to your device. Study anywhere, without distractions or data.</p>
               {/* Download preview */}
               <div className="relative z-10 w-full mt-4 h-32 bg-surface-container/50 rounded-xl border border-[var(--border-floating-card)] p-4 flex flex-col gap-3 shadow-inner overflow-hidden">
                 {/* File row 1 — downloaded */}
@@ -256,21 +239,18 @@ export default function Features() {
           <div data-gsap="feature-card" data-gsap-hover="card" className="feat-card">
             <div
               data-gsap="card-inner"
-              onMouseMove={handleMouseMove}
               className="relative bg-gradient-to-br from-surface-container-low to-surface p-10 rounded-2xl border border-[var(--border-floating-card)] hover:border-primary/30 transition-[border-color] duration-300 flex flex-col items-start gap-5 md:col-span-2 lg:col-span-1 shadow-sm h-full overflow-hidden group"
             >
               {/* Hover Glow Effect */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-                style={{
-                  background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.15), transparent 80%)'
-                }}
+                data-gsap="card-glow"
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 z-0"
               />
               <div className="relative z-10 w-14 h-14 rounded-xl bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center shadow-inner">
                 <IconSchool size={32} className="text-primary" />
               </div>
               <h3 className="relative z-10 font-headline-md text-2xl text-on-surface">CBSE 3-12 Aligned</h3>
-              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed">Strictly adheres to the latest NCERT syllabus and board exam patterns.</p>
+              <p className="relative z-10 font-body-md text-base text-on-surface-variant leading-relaxed flex-1">Strictly adheres to the latest NCERT syllabus and board exam patterns.</p>
               {/* Bar chart preview */}
               <div className="relative z-10 w-full mt-4 h-32 bg-surface-container/50 rounded-xl border border-[var(--border-floating-card)] p-4 flex gap-3 shadow-inner items-end overflow-hidden">
                 {[
@@ -295,15 +275,12 @@ export default function Features() {
           <div data-gsap="feature-card" data-gsap-hover="card" className="feat-card lg:col-span-2">
             <div
               data-gsap="card-inner"
-              onMouseMove={handleMouseMove}
               className="relative bg-surface-container-low p-10 rounded-2xl border border-outline/20 hover:border-outline/40 transition-colors duration-300 flex flex-col justify-center overflow-hidden shadow-sm h-full group"
             >
               {/* Hover Glow Effect */}
               <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-                style={{
-                  background: 'radial-gradient(350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.15), transparent 80%)'
-                }}
+                data-gsap="card-glow"
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 z-0"
               />
               <div className="relative z-10 w-full flex flex-col md:flex-row justify-between items-center gap-10">
                 <div className="flex-1">

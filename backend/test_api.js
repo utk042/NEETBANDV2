@@ -16,7 +16,7 @@ async function test() {
     }
     
     console.log("Found user:", user._id);
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     
     const res = await fetch("http://localhost:5000/api/payments/order", {
       method: 'POST',

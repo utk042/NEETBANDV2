@@ -53,6 +53,60 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
     };
   }, [mobileMenuOpen]);
 
+  // Handle mobile menu focus trap and restoration
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousActiveElement = document.activeElement;
+    const container = document.getElementById('mobile-menu-overlay');
+    if (!container) return;
+
+    let focusableElements = [];
+    let firstElement = null;
+    let lastElement = null;
+
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Tab') return;
+      if (focusableElements.length === 0) return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      focusableElements = Array.from(
+        container.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusableElements.length > 0) {
+        firstElement = focusableElements[0];
+        lastElement = focusableElements[focusableElements.length - 1];
+        firstElement.focus();
+        container.addEventListener('keydown', handleKeyDown);
+      }
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+      if (container) {
+        container.removeEventListener('keydown', handleKeyDown);
+      }
+      if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
+        previousActiveElement.focus();
+      }
+    };
+  }, [mobileMenuOpen]);
+
   const handleNav = (e, page) => {
     e.preventDefault();
     navigate(page === 'home' ? '/' : `/${page}`);
@@ -160,6 +214,10 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
 
       {/* Mobile Menu Full Page Overlay */}
       <div 
+        id="mobile-menu-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile Navigation Menu"
         className={`md:hidden fixed inset-0 bg-surface z-header-mobile flex flex-col justify-center items-center gap-8 transition-opacity duration-300 ease-in-out ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container to-surface opacity-95 pointer-events-none"></div> 

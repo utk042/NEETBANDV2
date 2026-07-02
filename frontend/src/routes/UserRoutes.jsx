@@ -22,6 +22,8 @@ const ContactUs = React.lazy(() => import('../components/ContactUs'));
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import useScrollAnimations from '../hooks/useScrollAnimations';
 const LoginSignup = React.lazy(() => import('../components/LoginSignup'));
+const AuthCallback = React.lazy(() => import('../components/AuthCallback'));
+const ResetPassword = React.lazy(() => import('../components/ResetPassword'));
 import SyllabusLibrary from '../components/SyllabusLibrary';
 const LibraryPage = React.lazy(() => import('../components/LibraryPage'));
 const SongLibrary = React.lazy(() => import('../components/SongLibrary'));
@@ -31,6 +33,8 @@ const CommunityForum = React.lazy(() => import('../components/CommunityForum'));
 const CoursePlayer = React.lazy(() => import('../components/CoursePlayer'));
 const Checkout = React.lazy(() => import('../components/Checkout'));
 import NotFound from '../components/NotFound';
+import TermsAndConditions from '../components/TermsAndConditions';
+import DataPolicy from '../components/DataPolicy';
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -204,7 +208,7 @@ export default function UserRoutes() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Dashboard" loginRoute="/login">
-                <Dashboard tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} />
+                <Dashboard navigate={navigate} onLogout={logout} tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} />
               </ProtectedRoute>
             } />
             
@@ -232,6 +236,8 @@ export default function UserRoutes() {
             <Route path="/blog/:slug" element={<Blog user={user} />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<DataPolicy />} />
 
             <Route path="/login" element={<LoginSignup onLoginSuccess={(sessionUser) => {
                 login(sessionUser);
@@ -242,6 +248,9 @@ export default function UserRoutes() {
                   navigate('/dashboard');
                 }
               }} navigate={navigate} />} />
+
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
 
             <Route path="/checkout" element={<Checkout user={user} navigate={navigate} onCheckoutSuccess={(updatedUser) => {
                 login(updatedUser);
@@ -254,7 +263,7 @@ export default function UserRoutes() {
         </React.Suspense>
       </main>
 
-      {['home', 'blog', 'about', 'contact'].includes(currentPage) && (
+      {['home', 'blog', 'about', 'contact', 'terms', 'privacy'].includes(currentPage) && (
         <div className={currentPage !== 'home' ? 'hidden md:block' : ''}>
           <Footer navigate={navigate} />
         </div>

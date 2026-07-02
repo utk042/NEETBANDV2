@@ -55,7 +55,8 @@ export default {
         "on-tertiary-fixed": "rgb(var(--color-on-tertiary-fixed) / <alpha-value>)",
         "on-secondary-container": "rgb(var(--color-on-secondary-container) / <alpha-value>)",
         "primary-container": "rgb(var(--color-primary-container) / <alpha-value>)",
-        "tertiary-container": "rgb(var(--color-tertiary-container) / <alpha-value>)"
+        "tertiary-container": "rgb(var(--color-tertiary-container) / <alpha-value>)",
+        "surface-variant-hover": "rgb(var(--color-surface-variant-hover) / <alpha-value>)"
       },
       borderRadius: {
         "DEFAULT": "0.25rem",
@@ -101,6 +102,21 @@ export default {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(-100%)' },
         }
+      },
+      zIndex: {
+        'cursor': 'var(--z-index-cursor)',
+        'loading': 'var(--z-index-loading)',
+        'modal-highest': 'var(--z-index-modal-highest)',
+        'modal-high': 'var(--z-index-modal-high)',
+        'modal': 'var(--z-index-modal)',
+        'fab': 'var(--z-index-fab)',
+        'toast': 'var(--z-index-toast)',
+        'nav-mobile': 'var(--z-index-nav-mobile)',
+        'header': 'var(--z-index-header)',
+        'header-news': 'var(--z-index-header-news)',
+        'header-mobile': 'var(--z-index-header-mobile)',
+        'player-mobile': 'var(--z-index-player-mobile)',
+        'player-sticky': 'var(--z-index-player-sticky)',
       }
     },
   },

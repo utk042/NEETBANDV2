@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-01T21:40:00Z",
+  "title": "Design System: NeetBand",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary Accent",
+        "canonical": "#c9a227",
+        "tonalRamp": ["#362b0a", "#5a4812", "#7e6519", "#a28220", "#c9a227", "#d4b552", "#dfc77d", "#eadaa8"]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Deep Background",
+        "canonical": "#012f9c",
+        "tonalRamp": ["#000c2a", "#001854", "#00247e", "#012f9c", "#3459b0", "#6783c4", "#9aadd8", "#cdd6eb"]
+      }
+    },
+    "typographyMeta": {},
+    "shadows": [
+      {
+        "name": "ambient-glow",
+        "value": "0 4px 12px rgba(201, 162, 39, 0.3)",
+        "purpose": "Used on active primary elements to create a soft, welcoming lift."
+      },
+      {
+        "name": "floating-card",
+        "value": "0 20px 50px rgba(0, 0, 0, 0.5)",
+        "purpose": "Deep, diffuse shadow for modal surfaces or prominent layered content."
+      }
+    ],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Used sparingly for primary actions, active states, and critical highlights.",
+      "html": "<button class=\"ds-btn-primary\">GET STARTED</button>",
+      "css": ".ds-btn-primary { background: #c9a227; color: #ffffff; padding: 16px 48px; font-weight: 700; border: none; border-radius: 0.5rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; font-family: 'Outfit', sans-serif; } .ds-btn-primary:hover { box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3); transform: scale(1.02); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Focus Sanctuary",
+    "overview": "This system is engaging, calm, and frictionless. Designed to protect eye health and facilitate auditory learning, the visual language is soft, rounded, and welcoming rather than clinical or dense. It embraces a focused aesthetic that removes visual noise so the student can concentrate on the audio. We explicitly reject dense, text-heavy, traditional e-learning patterns that cause eye strain or feel tedious.",
+    "keyCharacteristics": [
+      "Audio-first engagement",
+      "Uncluttered, spacious layouts",
+      "Soft geometry and welcoming components"
+    ],
+    "rules": [
+      {
+        "name": "The Contrast Comfort Rule",
+        "body": "The primary accent is vibrant but should be used selectively against the deep background to avoid overwhelming the eye.",
+        "section": "colors"
+      },
+      {
+        "name": "The Legibility First Rule",
+        "body": "Text must always prioritize contrast and spacing over stylistic density to minimize eye strain.",
+        "section": "typography"
+      },
+      {
+        "name": "The Soft Lift Rule",
+        "body": "Shadows should feel like a diffuse glow or soft ambient occlusion, never sharp or harsh borders.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the deep background (#012f9c) to minimize eye strain.",
+      "Do use the primary gold (#c9a227) selectively for key interactive elements.",
+      "Do ensure all typography has sufficient contrast for effortless reading."
+    ],
+    "donts": [
+      "Don't use dense, text-heavy, traditional e-learning patterns that cause eye strain or feel tedious.",
+      "Don't introduce harsh, sharp drop-shadows; keep depth soft and ambient.",
+      "Don't clutter the interface with unnecessary visual decorations that compete with the audio-first experience."
+    ]
+  }
+}

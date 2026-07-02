@@ -13,7 +13,7 @@ export default function AboutUs() {
       <div className="max-w-4xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <img src={logoImg} alt="NeetBand Logo" className="h-16 md:h-20 mx-auto mb-8" />
+          <img src={logoImg} alt="NeetBand Logo" className="h-16 md:h-20 mx-auto mb-8" loading="lazy" />
           <h1 className="font-headline-lg font-extrabold text-4xl md:text-6xl text-on-surface mb-6 tracking-tight text-balance">
             Turning Textbooks into <span className="text-primary">Symphonies.</span>
           </h1>
@@ -23,7 +23,7 @@ export default function AboutUs() {
         </div>
 
         {/* DPIIT Recognition Banner */}
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-l-4 border-primary p-6 rounded-r-2xl mb-20 flex items-center gap-6">
+        <div className="bg-primary/8 border border-primary/25 p-6 rounded-2xl mb-20 flex items-center gap-6">
           <div className="w-16 h-16 rounded-full bg-surface shadow-sm border border-primary/20 flex items-center justify-center flex-shrink-0">
             <span className="text-2xl font-bold text-primary">₹</span>
           </div>
@@ -95,7 +95,7 @@ export default function AboutUs() {
             {/* Team Member 1 */}
             <div className="flex flex-col items-center group">
               <div className="w-32 h-32 rounded-full bg-surface-container border-2 border-[var(--border-floating-card)] mb-4 overflow-hidden shadow-md relative">
-                <img src={memberAarofil} alt="Dr. Aarofil Shaikh" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={memberAarofil} alt="Dr. Aarofil Shaikh" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
               </div>
               <h4 className="font-bold text-on-surface text-lg">Dr. Aarofil Shaikh</h4>
               <p className="text-primary font-label-md text-sm mb-2">Founder & Medical Advisor</p>
@@ -105,7 +105,7 @@ export default function AboutUs() {
             {/* Team Member 2 */}
             <div className="flex flex-col items-center group">
               <div className="w-32 h-32 rounded-full bg-surface-container border-2 border-[var(--border-floating-card)] mb-4 overflow-hidden shadow-md relative">
-                <img src={memberSarah} alt="Sarah Khan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={memberSarah} alt="Sarah Khan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
               </div>
               <h4 className="font-bold text-on-surface text-lg">Sarah Khan</h4>
               <p className="text-primary font-label-md text-sm mb-2">Lead Curriculum Designer</p>
@@ -115,7 +115,7 @@ export default function AboutUs() {
             {/* Team Member 3 */}
             <div className="flex flex-col items-center group">
               <div className="w-32 h-32 rounded-full bg-surface-container border-2 border-[var(--border-floating-card)] mb-4 overflow-hidden shadow-md relative">
-                <img src={memberVikram} alt="Vikram Aditya" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={memberVikram} alt="Vikram Aditya" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
               </div>
               <h4 className="font-bold text-on-surface text-lg">Vikram Aditya</h4>
               <p className="text-primary font-label-md text-sm mb-2">Head of Audio Production</p>

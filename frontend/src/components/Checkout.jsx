@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IconChevronLeft, IconTag, IconCreditCard } from '@tabler/icons-react';
 import { createPaymentOrder, verifyPayment } from '../services/api';
 
-export default function Checkout({ user, setCurrentPage, onCheckoutSuccess }) {
+export default function Checkout({ user, navigate, onCheckoutSuccess }) {
   const [promoCode, setPromoCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -10,9 +10,9 @@ export default function Checkout({ user, setCurrentPage, onCheckoutSuccess }) {
   // Require login
   useEffect(() => {
     if (!user || !user.isLoggedIn) {
-      setCurrentPage('login');
+      navigate('/login');
     }
-  }, [user, setCurrentPage]);
+  }, [user, navigate]);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -96,7 +96,7 @@ export default function Checkout({ user, setCurrentPage, onCheckoutSuccess }) {
   };
 
   const handleBack = () => {
-    setCurrentPage('home');
+    navigate('/');
   };
 
   return (

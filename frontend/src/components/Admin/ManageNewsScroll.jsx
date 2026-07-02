@@ -118,7 +118,7 @@ export default function ManageNewsScroll() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/20 border-t-primary"></div>
       </div>
     );
   }
@@ -253,7 +253,7 @@ export default function ManageNewsScroll() {
             className="flex-1 flex items-center justify-center gap-2 font-bold px-6 py-3.5 bg-primary text-on-primary rounded-xl hover:bg-primary-fixed hover:text-on-primary-fixed shadow-md shadow-primary/10 transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-on-primary"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-on-primary/20 border-t-on-primary"></div>
             ) : (
               <>
                 <IconDeviceFloppy size={20} /> Save Settings
@@ -268,7 +268,7 @@ export default function ManageNewsScroll() {
             className="flex-1 flex items-center justify-center gap-2 font-bold px-6 py-3.5 border border-outline/35 text-on-surface hover:bg-surface-variant/50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {resetting ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-on-surface"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-on-surface/20 border-t-on-surface"></div>
             ) : (
               <>
                 <IconRefresh size={20} /> Reset Visibility for All

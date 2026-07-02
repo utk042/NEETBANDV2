@@ -12,7 +12,7 @@ if (typeof document !== 'undefined' && !document.getElementById(KEYFRAME_ID)) {
       55%  { transform: scale(1.07); }
       100% { transform: scale(1); }
     }
-    .stat-pop { animation: statPop 0.38s cubic-bezier(.22,.68,0,1.6) forwards; }
+    .stat-pop { animation: statPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
   `;
   document.head.appendChild(s);
 }
@@ -106,14 +106,14 @@ export default function StatsSection({ appReady = false }) {
         aria-hidden="true"
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(to top, rgba(5,5,8,0.97) 0%, rgba(5,5,8,0.72) 45%, rgba(5,5,8,0.18) 80%, rgba(5,5,8,0.05) 100%)',
+          background: 'linear-gradient(to top, rgba(7, 18, 45, 0.97) 0%, rgba(7, 18, 45, 0.72) 45%, rgba(7, 18, 45, 0.18) 80%, rgba(7, 18, 45, 0.05) 100%)',
         }}
       />
       {/* Left edge fade — bleeds into background on wide screens */}
       <div
         aria-hidden="true"
         className="absolute inset-y-0 left-0 w-1/3 hidden lg:block"
-        style={{ background: 'linear-gradient(to right, rgba(5,5,8,0.7), transparent)' }}
+        style={{ background: 'linear-gradient(to right, rgba(7, 18, 45, 0.7), transparent)' }}
       />
 
       {/* ── Content: anchored to bottom-left ── */}

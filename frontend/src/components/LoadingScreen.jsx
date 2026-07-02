@@ -7,6 +7,12 @@ export default function LoadingScreen({ onComplete }) {
   const logoRef = useRef(null);
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      onComplete();
+      return;
+    }
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
@@ -50,7 +56,7 @@ export default function LoadingScreen({ onComplete }) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-xl"
+      className="fixed inset-0 z-loading flex flex-col items-center justify-center bg-background/80 backdrop-blur-xl"
       aria-live="polite"
       aria-busy="true"
     >

@@ -1,8 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import mongoose from 'mongoose';
 import Blog from '../models/Blog.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { protect, authorize, optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -28,13 +29,25 @@ router.get('/admin', protect, authorize('admin', 'owner'), async (req, res) => {
   }
 });
 
-// Get single blog
-router.get('/:id', async (req, res) => {
+// Get single blog (by ID or Slug)
+router.get('/:idOrSlug', async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).populate('author', 'name email').populate('comments.user', 'name');
+    let blog;
+    
+    // Check if the param is a valid MongoDB ObjectId
+    if (mongoose.Types.ObjectId.isValid(req.params.idOrSlug)) {
+      blog = await Blog.findById(req.params.idOrSlug).populate('author', 'name email').populate('comments.user', 'name');
+    }
+    
+    // Fallback to checking by slug if not found or not an ObjectId
+    if (!blog) {
+      blog = await Blog.findOne({ slug: req.params.idOrSlug }).populate('author', 'name email').populate('comments.user', 'name');
+    }
+
     if (!blog) {
       return res.status(404).json({ message: 'Blog not found' });
     }
+    
     // Update views count
     blog.views = (blog.views || 0) + 1;
     await blog.save();
@@ -163,6 +176,22 @@ router.post('/:id/comments', protect, async (req, res) => {
     res.status(201).json(updatedBlog.comments);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete comment (Admin/Owner)
+router.delete('/:id/comments/:commentId', protect, authorize('admin', 'owner'), async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: 'Blog not found' });
+
+    blog.comments.pull(req.params.commentId);
+    await blog.save();
+
+    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name');
+    res.json(updatedBlog.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

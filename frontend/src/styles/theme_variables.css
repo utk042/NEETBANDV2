@@ -1,6 +1,7 @@
 /* CSS Variable Theme System */
 :root {
   /* Light mode variables (default) */
+  --primary: rgb(var(--color-primary));
   --bg-opacity-hero: 0.95;
   --bg-blend-hero: normal;
   --glass-panel-bg: rgba(255, 255, 255, 0.6);
@@ -77,10 +78,33 @@
   --color-on-secondary-container: 94 100 115; /* #5e6473 */
   --color-primary-container: 201 162 39; /* #c9a227 */
   --color-tertiary-container: 163 167 169; /* #a3a7a9 */
+  --color-surface-variant-hover: 194 214 245; /* #c2d6f5 */
+
+  /* Rounded Scale from DESIGN.md */
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.5rem;
+  --rounded-lg: 0.75rem;
+  --rounded-full: 9999px;
+
+  /* Semantic z-index scale */
+  --z-index-cursor: 9999;
+  --z-index-loading: 9990;
+  --z-index-modal-highest: 300;
+  --z-index-modal-high: 200;
+  --z-index-modal: 100;
+  --z-index-fab: 90;
+  --z-index-toast: 80;
+  --z-index-nav-mobile: 70;
+  --z-index-header: 60;
+  --z-index-header-news: 59;
+  --z-index-header-mobile: 58;
+  --z-index-player-mobile: 50;
+  --z-index-player-sticky: 45;
 }
 
 .dark {
   /* Dark mode variables */
+  --primary: rgb(var(--color-primary));
   --bg-opacity-hero: 0.75;
   --bg-blend-hero: normal;
   --glass-panel-bg: rgba(7, 18, 45, 0.4);
@@ -157,4 +181,5 @@
   --color-on-secondary-container: 164 181 255; /* #a4b5ff */
   --color-primary-container: 201 162 39; /* #c9a227 */
   --color-tertiary-container: 146 163 237; /* #92a3ed */
+  --color-surface-variant-hover: 54 66 98; /* #364262 */
 }

@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { getAffiliateDashboard } from '../../services/api';
 
-export default function AffiliateDashboard({ user, setCurrentPage }) {
+export default function AffiliateDashboard({ user, navigate }) {
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,15 +30,15 @@ export default function AffiliateDashboard({ user, setCurrentPage }) {
     if (user && user.isLoggedIn) {
       fetchData();
     } else {
-      setCurrentPage('affiliate-login');
+      navigate('/affiliate-login');
     }
-  }, [user, setCurrentPage]);
+  }, [user, navigate]);
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.removeItem('neetband_affiliate_user');
       localStorage.removeItem('affiliate_token');
-      setCurrentPage('home');
+      navigate('/');
       window.location.reload(); // Quick way to clear state
     }
   };
@@ -46,7 +46,7 @@ export default function AffiliateDashboard({ user, setCurrentPage }) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default function AffiliateDashboard({ user, setCurrentPage }) {
       <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-[var(--border-floating-card)] px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setCurrentPage('home')}
+            onClick={() => navigate('/')}
             className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
           >
             <IconChevronLeft size={24} />

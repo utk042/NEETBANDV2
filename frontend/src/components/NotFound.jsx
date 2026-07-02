@@ -1,5 +1,8 @@
 
-export default function NotFound({ navigate }) {
+import { useNavigate } from 'react-router-dom';
+
+export default function NotFound() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background text-on-background px-4 relative overflow-hidden">
       

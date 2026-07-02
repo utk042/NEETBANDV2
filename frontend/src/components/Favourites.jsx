@@ -50,7 +50,7 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                   >
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                       <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block">
-                        <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40}/>
+                        <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40} loading="lazy"/>
                         <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           {isCurrent && isPlaying ? (
                             <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />

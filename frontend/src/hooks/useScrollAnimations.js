@@ -73,7 +73,8 @@ function attachRowHover(el) {
 ───────────────────────────────────────────────────────────────────────────── */
 export default function useScrollAnimations(enabled) {
   useEffect(() => {
-    if (!enabled) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!enabled || prefersReducedMotion) return;
 
     const cleanups = [];
     let raf1, raf2;

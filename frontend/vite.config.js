@@ -10,6 +10,7 @@ export default defineConfig({
       includeAssets: ['icons/*.png', 'screenshots/*.png'],
       manifest: false, // we use our own /public/manifest.json
       workbox: {
+        maximumFileSizeToCacheInBytes: 5000000,
         // Cache strategies
         runtimeCaching: [
           {
@@ -54,8 +55,6 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the app shell
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         // Skip waiting so updates apply immediately
         skipWaiting: true,
         clientsClaim: true,

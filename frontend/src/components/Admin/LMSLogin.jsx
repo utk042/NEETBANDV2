@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { login } from '../../services/api';
 
-export default function LMSLogin({ onLoginSuccess, setCurrentPage }) {
+export default function LMSLogin({ onLoginSuccess, navigate }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   
@@ -103,7 +103,7 @@ export default function LMSLogin({ onLoginSuccess, setCurrentPage }) {
       <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20">
         <button 
           type="button"
-          onClick={() => setCurrentPage('home')}
+          onClick={() => navigate('/')}
           className="group flex items-center justify-center w-10 h-10 border border-[var(--border-floating-card)] hover:border-primary/30 rounded-full bg-surface-container/50 hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 shadow-sm hover:shadow active:scale-[0.95]"
           aria-label="Back to Home"
         >

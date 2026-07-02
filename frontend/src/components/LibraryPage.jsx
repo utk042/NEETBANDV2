@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   IconSearch, IconBook2, IconPlayerPlayFilled,
   IconPlayerPauseFilled, IconHeart, IconArrowRight,
-  IconArrowLeft, IconRefresh, IconDna, IconAtom, IconFlask, IconCrown
+  IconArrowLeft, IconRefresh, IconDna, IconAtom, IconFlask, IconCrown, IconChevronDown
 } from '@tabler/icons-react';
 
 const EQ_STYLES = `
@@ -51,6 +51,12 @@ const SUBJECTS = [
 
 const CLASSES = ['All', 'Class 11', 'Class 12', 'Class 10', 'Dropper'];
 
+const getSubjectIcon = (subjectName) => {
+  const sub = SUBJECTS.find(s => s.id.toLowerCase() === (subjectName || '').toLowerCase());
+  return sub ? sub.Icon : IconBook2;
+};
+
+
 function EqBars() {
   return (
     <div className="flex items-end h-4 w-5 gap-[2px] shrink-0">
@@ -92,7 +98,7 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
 
       {/* Thumbnail */}
       <div className="w-10 h-10 rounded-xl overflow-hidden border border-outline/10 shrink-0 relative">
-        <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" />
+        <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" loading="lazy" />
         {isCurrent && (
           <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
             {isTrackPlaying
@@ -157,16 +163,45 @@ export default function LibraryPage({
   const [catalogSearch, setCatalogSearch] = useState('');
   const [subjectSearch, setSubjectSearch] = useState('');
 
+  // Catalog dropdown filter state
+  const [selectedCatalogSubject, setSelectedCatalogSubject] = useState('All');
+  const [selectedCatalogChapter, setSelectedCatalogChapter] = useState('All');
+  const [openCatalogDropdown, setOpenCatalogDropdown] = useState(null);
+  const catalogDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(e.target)) {
+        setOpenCatalogDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const catalogChaptersList = React.useMemo(() => {
+    const chapters = new Set();
+    tracks.forEach(track => {
+      if (!track.chapter) return;
+      const classMatch = !selectedGrade || track.grade === selectedGrade || track.class === selectedGrade;
+      const subjectMatch = selectedCatalogSubject === 'All' || track.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
+      if (classMatch && subjectMatch) chapters.add(track.chapter);
+    });
+    return ['All', ...Array.from(chapters)];
+  }, [tracks, selectedGrade, selectedCatalogSubject]);
+
   /* ── catalog search results ── */
   const catalogResults = catalogSearch.trim()
     ? tracks.filter((t) => {
         const gradeMatch = !selectedGrade || t.grade === selectedGrade || t.classLevel === selectedGrade;
+        const subjectMatch = selectedCatalogSubject === 'All' || t.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
+        const chapterMatch = selectedCatalogChapter === 'All' || t.chapter === selectedCatalogChapter;
         const q = catalogSearch.trim().toLowerCase();
         const textMatch =
           t.title.toLowerCase().includes(q) ||
           (t.chapter && t.chapter.toLowerCase().includes(q)) ||
           (t.subject && t.subject.toLowerCase().includes(q));
-        return gradeMatch && textMatch;
+        return gradeMatch && subjectMatch && chapterMatch && textMatch;
       })
     : [];
 
@@ -218,7 +253,7 @@ export default function LibraryPage({
                 return (
                   <button
                     key={cls}
-                    onClick={() => setSelectedGrade(cls === 'All' ? null : cls)}
+                    onClick={() => { setSelectedGrade(cls === 'All' ? null : cls); setSelectedCatalogSubject('All'); setSelectedCatalogChapter('All'); }}
                     className={`shrink-0 px-5 py-2 rounded-full font-mono text-xs font-semibold border transition-all duration-200 ${
                       active
                         ? 'bg-primary text-on-primary border-primary shadow-sm'
@@ -232,6 +267,77 @@ export default function LibraryPage({
                 );
               })}
             </nav>
+
+            {/* Subject & Chapter dropdown filters */}
+            <div ref={catalogDropdownRef} className="flex flex-wrap gap-3 relative z-30">
+              {/* Subject Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenCatalogDropdown(openCatalogDropdown === 'subject' ? null : 'subject')}
+                  aria-haspopup="listbox"
+                  aria-expanded={openCatalogDropdown === 'subject'}
+                  aria-label="Select Subject"
+                  className={`px-5 py-2.5 rounded-full border font-mono text-xs font-semibold flex items-center gap-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedCatalogSubject !== 'All' ? 'border-primary/50 text-primary bg-primary/10' : 'border-outline/10 text-on-surface-variant bg-surface-container hover:border-primary/30 hover:text-on-surface'}`}
+                >
+                  {selectedCatalogSubject === 'All' ? 'All Subjects' : selectedCatalogSubject}
+                  <IconChevronDown size={14} className={`transition-transform duration-200 ${openCatalogDropdown === 'subject' ? 'rotate-180' : ''}`} />
+                </button>
+                {openCatalogDropdown === 'subject' && (
+                  <ul
+                    role="listbox"
+                    className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
+                  >
+                    {['All', 'Biology', 'Physics', 'Chemistry'].map((sub) => (
+                      <li
+                        key={sub}
+                        role="option"
+                        aria-selected={selectedCatalogSubject === sub}
+                        tabIndex={0}
+                        onClick={() => { setSelectedCatalogSubject(sub); setSelectedCatalogChapter('All'); setOpenCatalogDropdown(null); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedCatalogSubject(sub); setSelectedCatalogChapter('All'); setOpenCatalogDropdown(null); } }}
+                        className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedCatalogSubject === sub ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      >
+                        {sub}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Chapter Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenCatalogDropdown(openCatalogDropdown === 'chapter' ? null : 'chapter')}
+                  aria-haspopup="listbox"
+                  aria-expanded={openCatalogDropdown === 'chapter'}
+                  aria-label="Select Chapter"
+                  className={`px-5 py-2.5 rounded-full border font-mono text-xs font-semibold flex items-center gap-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedCatalogChapter !== 'All' ? 'border-primary/50 text-primary bg-primary/10' : 'border-outline/10 text-on-surface-variant bg-surface-container hover:border-primary/30 hover:text-on-surface'}`}
+                >
+                  {selectedCatalogChapter === 'All' ? 'All Chapters' : selectedCatalogChapter}
+                  <IconChevronDown size={14} className={`transition-transform duration-200 ${openCatalogDropdown === 'chapter' ? 'rotate-180' : ''}`} />
+                </button>
+                {openCatalogDropdown === 'chapter' && (
+                  <ul
+                    role="listbox"
+                    className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                  >
+                    {catalogChaptersList.map((chap) => (
+                      <li
+                        key={chap}
+                        role="option"
+                        aria-selected={selectedCatalogChapter === chap}
+                        tabIndex={0}
+                        onClick={() => { setSelectedCatalogChapter(chap); setOpenCatalogDropdown(null); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedCatalogChapter(chap); setOpenCatalogDropdown(null); } }}
+                        className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedCatalogChapter === chap ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      >
+                        {chap}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
 
             {/* Catalog search bar */}
             <div className="relative">
@@ -304,7 +410,7 @@ export default function LibraryPage({
                   Available Courses
                 </h2>
                 <span className="text-xs font-mono text-on-surface-variant">
-                  {lmsCourses.filter(c => !selectedGrade || c.class === selectedGrade).length} courses
+                  {lmsCourses.filter(c => (!selectedGrade || c.class === selectedGrade) && (selectedCatalogSubject === 'All' || c.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase())).length} courses
                 </span>
               </div>
 
@@ -319,11 +425,12 @@ export default function LibraryPage({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {lmsCourses
-                    .filter(c => !selectedGrade || c.class === selectedGrade)
+                    .filter(c => (!selectedGrade || c.class === selectedGrade) && (selectedCatalogSubject === 'All' || c.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase()))
                     .map((course) => {
                       const color = course.coverColor || '#ecc246';
                       const lessonCount = course.lessons?.length || 0;
                       const totalItemsCount = course.lessons?.reduce((acc, l) => acc + (l.items?.length || 0), 0) || 0;
+                      const SubjectIcon = getSubjectIcon(course.subject);
                       return (
                         <div
                           key={course._id}
@@ -331,71 +438,73 @@ export default function LibraryPage({
                           tabIndex={0}
                           onClick={() => onCourseSelect && onCourseSelect(course)}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onCourseSelect && onCourseSelect(course); }}
-                          className="group relative overflow-hidden rounded-2xl border border-outline/10 hover:border-primary/30 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 active:scale-[0.98] flex flex-col"
-                          style={{ background: `linear-gradient(135deg, ${color}18 0%, ${color}06 100%)` }}
+                          className="group relative p-1.5 rounded-[2rem] bg-surface-container-lowest/40 border border-outline/5 hover:border-outline/20 transition-all duration-500 cursor-pointer hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 active:scale-[0.98] flex flex-col"
                         >
-                          {/* Thumbnail or Color Accent Bar */}
-                           {course.thumbnail ? (
-                             <div className="h-32 w-full overflow-hidden relative border-b border-outline/5 shrink-0">
-                               <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-                             </div>
-                           ) : (
-                             <div className="h-1.5 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
-                           )}
+                          <div
+                            className="flex flex-col flex-1 p-6 rounded-[calc(2rem-0.375rem)] border border-outline/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] group-hover:border-primary/20 transition-all duration-500 overflow-hidden relative z-10"
+                            style={{
+                              background: 'linear-gradient(180deg, rgb(var(--color-surface-container-low) / 0.4) 0%, rgb(var(--color-surface-container-lowest) / 0.8) 100%)'
+                            }}
+                          >
+                            {/* Thumbnail */}
+                            {course.thumbnail && (
+                              <div className="h-32 -mx-6 -mt-6 mb-5 overflow-hidden relative border-b border-outline/5 shrink-0">
+                                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent" />
+                              </div>
+                            )}
 
-                           {/* Decorative orb */}
-                           <div
-                             className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-20 pointer-events-none"
-                             style={{ background: color }}
-                           />
-
-                           <div className="p-5 flex flex-col flex-1 relative z-10">
-                             {/* Icon + badge row */}
-                             <div className="flex items-center justify-between mb-4">
-                               <div
-                                 className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                 style={{ background: color + '30' }}
-                               >
-                                 <IconBook2 size={20} stroke={1.5} style={{ color }} />
-                               </div>
-                               <div className="flex items-center gap-1.5">
-                                 {course.isPremium && (
-                                   <span className="flex items-center gap-0.5 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                     <IconCrown size={10} className="fill-current" /> Premium
-                                   </span>
-                                 )}
-                                 {course.isPublished ? (
-                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">Live</span>
-                                 ) : (
-                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-variant/60 text-on-surface-variant border border-outline/20">Draft</span>
-                                 )}
-                               </div>
-                             </div>
+                            {/* Icon + badge row */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 border border-outline/10 text-on-surface-variant group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all duration-500"
+                              >
+                                <SubjectIcon size={20} stroke={1.5} />
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {course.isPremium && (
+                                  <span className="flex items-center gap-0.5 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    <IconCrown size={10} className="fill-current" /> Premium
+                                  </span>
+                                )}
+                                {course.isPublished ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Live</span>
+                                ) : (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-variant/60 text-on-surface-variant border border-outline/20">Draft</span>
+                                )}
+                              </div>
+                            </div>
 
                             {/* Meta */}
-                            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color }}>
+                            <p
+                              className="text-[10.5px] font-semibold uppercase tracking-[0.18em] mb-1.5 transition-colors duration-300"
+                              style={{ color: `${color}cc` }}
+                            >
                               {course.subject}
                             </p>
-                            <h3 className="text-base font-bold text-on-surface leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                            <h3 className="text-base font-bold text-on-surface leading-snug mb-1 group-hover:text-primary transition-colors duration-300 line-clamp-2">
                               {course.title}
                             </h3>
-                            <p className="text-xs text-on-surface-variant mb-3">{course.class}</p>
+                            <p className="text-xs text-on-surface-variant/80 mb-4">{course.class}</p>
 
                             {course.summary && (
-                              <p className="text-xs text-on-surface-variant/70 leading-relaxed line-clamp-2 mb-3">{course.summary}</p>
+                              <p className="text-xs text-on-surface-variant/60 leading-relaxed line-clamp-2 mb-4">{course.summary}</p>
                             )}
 
                             {/* Footer */}
-                            <div className="mt-auto pt-3 border-t border-outline/10 flex items-center justify-between">
-                              <span className="text-xs text-on-surface-variant flex items-center gap-1.5">
-                                <IconBook2 size={12} /> {lessonCount} lesson{lessonCount !== 1 ? 's' : ''} · {totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}
-                              </span>
+                            <div className="mt-auto pt-4 border-t border-outline/5 flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs text-on-surface-variant/80 font-medium">
+                                <IconBook2 size={14} stroke={1.5} className="text-on-surface-variant/60" />
+                                <span>{lessonCount} lesson{lessonCount !== 1 ? 's' : ''}</span>
+                                <span className="text-outline/30">•</span>
+                                <span>{totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}</span>
+                              </div>
                               <div
-                                className="flex items-center gap-1 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="flex items-center gap-1 text-xs font-bold translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300"
                                 style={{ color }}
                               >
-                                Open <IconArrowRight size={13} />
+                                <span>Open</span>
+                                <IconArrowRight size={14} stroke={2} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                               </div>
                             </div>
                           </div>

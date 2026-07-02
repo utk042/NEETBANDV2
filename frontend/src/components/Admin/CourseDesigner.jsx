@@ -7,6 +7,9 @@ import {
   IconSparkles, IconBulb, IconPlayerPlay, IconDeviceLaptop,
   IconMessageQuestion, IconCircleCheck, IconCircle, IconGripVertical,
   IconLoader2,
+  IconDna,
+  IconAtom,
+  IconFlask,
 } from '@tabler/icons-react';
 import {
   updateCourse,
@@ -36,6 +39,17 @@ const COVER_COLORS = [
   '#a0522d', // sienna (warm accent)
   '#755b00', // primary light-mode
 ];
+
+const SUBJECTS = [
+  { id: 'Biology', Icon: IconDna },
+  { id: 'Physics', Icon: IconAtom },
+  { id: 'Chemistry', Icon: IconFlask },
+];
+
+const getSubjectIcon = (subjectName) => {
+  const sub = SUBJECTS.find(s => s.id.toLowerCase() === (subjectName || '').toLowerCase());
+  return sub ? sub.Icon : IconBook2;
+};
 
 // ── Helper: generate a temp ID ──────────────────────────────
 const tempId = () => `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -811,6 +825,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'settings'
+  const SubjectIcon = getSubjectIcon(meta.subject);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -983,7 +998,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   }).filter(t => t.count > 0);
 
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col bg-[#0f1117] animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-modal-highest flex flex-col bg-[#0f1117] animate-in fade-in duration-200">
       {/* ─── Top Bar ─── */}
       <header className="shrink-0 flex items-center justify-between px-5 md:px-8 h-16 border-b border-white/[0.07] bg-[#0f1117]/95 backdrop-blur">
         <div className="flex items-center gap-3">
@@ -1036,22 +1051,24 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
 
         {/* ─── Left: Sidebar stats + tabs ─── */}
         <aside className="hidden lg:flex lg:w-72 xl:w-80 shrink-0 flex-col border-r border-white/[0.07] overflow-y-auto">
-          {/* Course card preview */}
-          <div
-            className="m-5 p-5 rounded-2xl flex flex-col gap-3 relative overflow-hidden"
-            style={{ background: `linear-gradient(135deg, ${meta.coverColor}22, ${meta.coverColor}08)`, borderColor: `${meta.coverColor}30`, borderWidth: 1 }}
-          >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: meta.coverColor + '33' }}>
-              <IconBook2 size={20} stroke={1.5} style={{ color: meta.coverColor }} />
-            </div>
-            <div>
-              <p className="font-bold text-on-surface leading-tight">{meta.title || 'Untitled Course'}</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">{meta.class} · {meta.subject}</p>
-            </div>
+          {/* Course preview card */}
+          <div className="m-5 p-1 rounded-2xl bg-surface-container-lowest/40 border border-outline/5">
             <div
-              className="absolute top-0 right-0 w-20 h-20 rounded-bl-[100px] opacity-20"
-              style={{ background: meta.coverColor }}
-            />
+              className="flex items-center gap-3.5 p-4 rounded-[calc(1rem-0.125rem)] border border-outline/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
+              style={{
+                background: 'linear-gradient(180deg, rgb(var(--color-surface-container-low) / 0.4) 0%, rgb(var(--color-surface-container-lowest) / 0.8) 100%)'
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 border border-outline/10 text-on-surface-variant transition-all duration-300"
+              >
+                <SubjectIcon size={20} stroke={1.5} style={{ color: meta.coverColor }} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-on-surface text-sm leading-tight truncate">{meta.title || 'Untitled Course'}</p>
+                <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">{meta.class || 'Class'} · {meta.subject || 'Subject'}</p>
+              </div>
+            </div>
           </div>
 
           {/* Stats */}

@@ -1,13 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Code, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Image as ImageIcon, Plus, Edit2, Trash2 } from "lucide-react";
+import { Search, Code, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Image as ImageIcon, Plus, Edit2, Trash2, X } from "lucide-react";
 import api, { uploadFile } from '../../services/api';
 import BlogEditor from './BlogEditor';
 import SlugInput from './SlugInput';
+
+const getErrorMessage = (error) => {
+  if (!error) return "Unknown error occurred";
+  try {
+    const parsed = JSON.parse(error.message);
+    if (parsed && parsed.message) {
+      return parsed.message;
+    }
+  } catch (e) {
+    // Not a JSON string
+  }
+  return error.message || String(error);
+};
 
 export default function AdminBlogs() {
   const [activeView, setActiveView] = useState('list'); // 'list', 'add', 'edit'
   const [blogs, setBlogs] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [selectedCommentsBlog, setSelectedCommentsBlog] = useState(null);
+
+  const handleOpenCommentsModal = (blog) => {
+    setSelectedCommentsBlog(blog);
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      const res = await api.delete(`/blogs/${selectedCommentsBlog._id}/comments/${commentId}`);
+      const updatedBlog = { ...selectedCommentsBlog, comments: res.data };
+      setSelectedCommentsBlog(updatedBlog);
+      setBlogs(blogs.map(b => b._id === selectedCommentsBlog._id ? updatedBlog : b));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete comment: " + getErrorMessage(err));
+    }
+  };
 
   // Form State
   const [title, setTitle] = useState("");
@@ -31,6 +62,7 @@ export default function AdminBlogs() {
       setBlogs(res.data);
     } catch (err) {
       console.error(err);
+      alert("Failed to fetch blogs: " + getErrorMessage(err));
     }
   }, []);
 
@@ -84,7 +116,7 @@ export default function AdminBlogs() {
       setCoverImage(data.coverImage || "");
     } catch (err) {
       console.error(err);
-      alert("Failed to load blog data");
+      alert("Failed to load blog data: " + getErrorMessage(err));
       setActiveView('list');
     }
   };
@@ -96,7 +128,7 @@ export default function AdminBlogs() {
       fetchBlogs();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete blog");
+      alert("Failed to delete blog: " + getErrorMessage(err));
     }
   };
 
@@ -127,7 +159,7 @@ export default function AdminBlogs() {
       setActiveView('list');
     } catch (error) {
       console.error(error);
-      alert("Server error. Please try again.");
+      alert("Server error: " + getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -154,15 +186,16 @@ export default function AdminBlogs() {
                 <th className="p-4 font-semibold text-on-surface-variant">Slug</th>
                 <th className="p-4 font-semibold text-on-surface-variant">Author</th>
                 <th className="p-4 font-semibold text-on-surface-variant">Status</th>
-                <th className="p-4 font-semibold text-on-surface-variant">Views</th>
-                <th className="p-4 font-semibold text-on-surface-variant">Images</th>
+                <th className="p-4 font-semibold text-on-surface-variant text-center">Views</th>
+                <th className="p-4 font-semibold text-on-surface-variant text-center">Likes</th>
+                <th className="p-4 font-semibold text-on-surface-variant text-center">Comments</th>
                 <th className="p-4 font-semibold text-on-surface-variant text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {blogs.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-12 text-center text-on-surface-variant font-medium text-lg">No blogs yet. Create your first blog post.</td>
+                  <td colSpan="8" className="p-12 text-center text-on-surface-variant font-medium text-lg">No blogs yet. Create your first blog post.</td>
                 </tr>
               ) : (
                 blogs.map((blog) => (
@@ -175,17 +208,16 @@ export default function AdminBlogs() {
                         {blog.isPublished === false ? 'Draft' : 'Published'}
                       </span>
                     </td>
-                    <td className="p-4 font-bold text-primary">{blog.views || 0}</td>
-                    <td className="p-4 text-on-surface-variant">
-                      <div className="flex gap-1 flex-wrap">
-                        {blog.coverImage && (
-                          <img
-                            src={blog.coverImage}
-                            alt=""
-                            className="w-8 h-8 object-cover rounded border border-outline-variant/30"
-                          />
-                        )}
-                      </div>
+                    <td className="p-4 font-bold text-center text-primary">{blog.views || 0}</td>
+                    <td className="p-4 font-bold text-center text-red-500">{blog.likes?.length || 0}</td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => handleOpenCommentsModal(blog)}
+                        className="font-bold text-blue-500 hover:text-blue-700 hover:underline bg-surface-container/40 px-3 py-1 rounded-lg transition-colors border border-outline-variant/10"
+                        title="Manage Comments"
+                      >
+                        {blog.comments?.length || 0}
+                      </button>
                     </td>
                     <td className="p-4 flex items-center justify-end gap-2">
                       <button
@@ -209,6 +241,71 @@ export default function AdminBlogs() {
             </tbody>
           </table>
         </div>
+
+        {/* Comments Moderation Modal */}
+        {selectedCommentsBlog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+            <div className="bg-surface-container-lowest border border-outline-variant/30 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
+              <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
+                <div>
+                  <h3 className="text-xl font-bold text-on-surface">Manage Comments</h3>
+                  <p className="text-xs text-on-surface-variant opacity-80 mt-1 truncate max-w-md">Blog: {selectedCommentsBlog.title}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedCommentsBlog(null)}
+                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                {selectedCommentsBlog.comments?.length === 0 ? (
+                  <div className="text-center py-12 text-on-surface-variant opacity-60">
+                    No comments on this blog post.
+                  </div>
+                ) : (
+                  selectedCommentsBlog.comments.map(comment => (
+                    <div key={comment._id} className="flex justify-between items-start gap-4 p-4 rounded-xl bg-surface-container-low border border-outline-variant/10">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-semibold text-sm text-on-surface truncate">
+                            {comment.user?.name || comment.guestName || "Anonymous"}
+                          </span>
+                          {!comment.user && (
+                            <span className="text-[10px] bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant font-bold border border-outline-variant/20">
+                              Guest
+                            </span>
+                          )}
+                          <span className="text-xs text-on-surface-variant/60">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-on-surface-variant break-words leading-relaxed">{comment.content}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteComment(comment._id)}
+                        className="p-2 text-on-surface-variant hover:text-error transition-colors bg-surface-container rounded-lg hover:bg-error/10 flex-shrink-0"
+                        title="Delete Comment"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className="p-6 border-t border-outline-variant/20 bg-surface-container-low flex justify-end">
+                <button 
+                  onClick={() => setSelectedCommentsBlog(null)}
+                  className="px-6 py-2 bg-surface-container border border-outline-variant/50 text-on-surface font-semibold rounded-xl hover:bg-surface-container-high transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -276,7 +373,7 @@ export default function AdminBlogs() {
                     const fullUrl = `${backendUrl}${res.url}`;
                     setCoverImage(fullUrl);
                   } catch (err) {
-                    alert("Failed to upload file: " + err.message);
+                    alert("Failed to upload file: " + getErrorMessage(err));
                   }
                 }} />
               </label>

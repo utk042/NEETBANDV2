@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
   IconChevronDown,
   IconChevronUp,
@@ -19,6 +23,9 @@ import {
   IconLoader2,
   IconBookmark,
   IconSend,
+  IconDna,
+  IconAtom,
+  IconFlask,
 } from '@tabler/icons-react';
 import { getLessonContent, getLessonQuiz, getLessonQa } from '../services/api';
 
@@ -30,70 +37,16 @@ const TYPE_META = {
   qa:    { label: 'Q&A',     Icon: IconMessageQuestion, color: 'text-violet-400',  bg: 'bg-violet-500/10 border-violet-500/20' },
 };
 
-function parseMarkdownAndHtml(text) {
-  if (!text) return '';
-  
-  let html = text;
+const SUBJECTS = [
+  { id: 'Biology', Icon: IconDna },
+  { id: 'Physics', Icon: IconAtom },
+  { id: 'Chemistry', Icon: IconFlask },
+];
 
-  // Note headings (Note 1, Note 2, etc.) at the start of a line
-  html = html.replace(/^Note\s+(\d+)$/gim, '<h2 class="text-lg font-black text-primary border-b border-outline/10 pb-1 mt-8 mb-3 flex items-center gap-2">Note $1</h2>');
-
-  // Header 3
-  html = html.replace(/^### (.*?)$/gm, '<h3 class="text-base font-bold text-on-surface mt-4 mb-2">$1</h3>');
-  // Header 2
-  html = html.replace(/^## (.*?)$/gm, '<h2 class="text-lg font-bold text-on-surface mt-5 mb-2.5">$1</h2>');
-  // Header 1
-  html = html.replace(/^# (.*?)$/gm, '<h1 class="text-xl font-black text-on-surface mt-6 mb-3 border-b border-outline/10 pb-1">$1</h1>');
-
-  // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-extrabold text-on-surface">$1</strong>');
-  // Italic
-  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
-  html = html.replace(/_(.*?)_/g, '<em class="italic">$1</em>');
-
-  // Inline Code
-  html = html.replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 rounded bg-surface-container font-mono text-xs text-amber-400">$1</code>');
-
-  // Bullet Lists
-  html = html.replace(/^\s*[\*\-]\s+(.*?)$/gm, '<li class="ml-4 list-disc pl-1 mb-1 text-on-surface-variant">$1</li>');
-
-  // Newlines & Paragraphs
-  const lines = html.split('\n');
-  let insideList = false;
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('<li')) {
-      if (!insideList) {
-        insideList = true;
-        return '<ul class="space-y-1 my-2">' + line;
-      }
-      return line;
-    } else {
-      let lineOut = line;
-      if (insideList) {
-        insideList = false;
-        lineOut = '</ul>' + line;
-      }
-      
-      // If line started with space/tab, render as a clean left-bordered quote/bullet block
-      if (line.startsWith(' ') || line.startsWith('\t')) {
-        return `<p class="pl-4 mb-2 border-l border-primary/20 text-on-surface-variant/90 text-sm leading-relaxed">${trimmed}</p>`;
-      }
-      
-      if (trimmed.startsWith('<h') || trimmed.startsWith('<div') || trimmed.startsWith('<ul') || trimmed.startsWith('<ol') || trimmed.startsWith('<li') || trimmed.startsWith('<pre')) {
-        return lineOut;
-      }
-      return trimmed ? `<p class="mb-3 leading-relaxed text-sm">${trimmed}</p>` : '<div class="h-2"></div>';
-    }
-  });
-  
-  let finalHtml = processedLines.join('\n');
-  if (insideList) {
-    finalHtml += '</ul>';
-  }
-
-  return finalHtml;
-}
+const getSubjectIcon = (subjectName) => {
+  const sub = SUBJECTS.find(s => s.id.toLowerCase() === (subjectName || '').toLowerCase());
+  return sub ? sub.Icon : IconBook2;
+};
 
 function MathMarkdownContent({ content }) {
   const containerRef = React.useRef(null);
@@ -116,14 +69,36 @@ function MathMarkdownContent({ content }) {
     }
   }, [content]);
 
-  const html = React.useMemo(() => parseMarkdownAndHtml(content), [content]);
-
   return (
-    <div
-      ref={containerRef}
-      className="prose max-w-none text-on-surface-variant text-sm leading-relaxed space-y-4"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div ref={containerRef} className="prose max-w-none text-on-surface-variant text-sm leading-relaxed space-y-4 markdown-body">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]} 
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          h1: ({node, ...props}) => <h1 className="text-xl font-black text-on-surface mt-6 mb-3 border-b border-outline/10 pb-1" {...props} />,
+          h2: ({node, ...props}) => {
+            const children = props.children;
+            const isNote = Array.isArray(children) ? children[0]?.startsWith?.('Note') : (typeof children === 'string' && children.startsWith('Note'));
+            if (isNote) {
+               return <h2 className="text-lg font-black text-primary border-b border-outline/10 pb-1 mt-8 mb-3 flex items-center gap-2" {...props} />;
+            }
+            return <h2 className="text-lg font-bold text-on-surface mt-5 mb-2.5" {...props} />;
+          },
+          h3: ({node, ...props}) => <h3 className="text-base font-bold text-on-surface mt-4 mb-2" {...props} />,
+          strong: ({node, ...props}) => <strong className="font-extrabold text-on-surface" {...props} />,
+          em: ({node, ...props}) => <em className="italic" {...props} />,
+          code: ({node, inline, ...props}) => <code className="px-1.5 py-0.5 rounded bg-surface-container font-mono text-xs text-amber-400" {...props} />,
+          pre: ({node, ...props}) => <pre className="p-4 rounded-xl bg-surface-container overflow-x-auto text-xs my-3 border border-outline/10" {...props} />,
+          ul: ({node, ...props}) => <ul className="space-y-1 my-2 list-none" {...props} />,
+          ol: ({node, ...props}) => <ol className="space-y-1 my-2 list-decimal ml-4" {...props} />,
+          li: ({node, ...props}) => <li className="ml-4 list-disc pl-1 mb-1 text-on-surface-variant" {...props} />,
+          p: ({node, ...props}) => <p className="mb-3 leading-relaxed text-sm" {...props} />,
+          blockquote: ({node, ...props}) => <blockquote className="pl-4 mb-2 border-l-2 border-primary/40 text-on-surface-variant/90 text-sm leading-relaxed" {...props} />
+        }}
+      >
+        {content || ''}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -155,7 +130,7 @@ function AudioAdPlayer({ item, user }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center bg-surface-container/20 border border-outline/10 rounded-2xl p-6">
       <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
-        <IconMusic size={28} className="text-purple-400 animate-pulse" />
+        <IconMusic size={28} className="text-purple-400" />
       </div>
       <p className="text-sm font-semibold text-on-surface mb-2">
         {isAd ? `Playing Ad ${currentTrackIndex + 1} of ${AD_URLS.length}...` : item.title}
@@ -175,7 +150,8 @@ function AudioAdPlayer({ item, user }) {
   );
 }
 
-export default function CoursePlayer({ course, onBack, currentTrack, user, onUpgradeClick }) {
+export default function CoursePlayer({ course, onBack, onViewChange, currentTrack, user, onUpgradeClick }) {
+  const navigate = useNavigate();
   const [selectedLessonIdx, setSelectedLessonIdx] = useState(null);
   const [selectedItemIdx, setSelectedItemIdx] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -195,6 +171,7 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
     return [...(course?.lessons || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [course?.lessons]);
   const coverColor = course?.coverColor || '#ecc246';
+  const SubjectIcon = getSubjectIcon(course?.subject);
 
   // Calculate total items across all lessons
   const totalItemsCount = lessons.reduce((acc, l) => acc + (l.items || []).length, 0);
@@ -337,7 +314,7 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
   if (selectedLessonIdx === null || selectedItemIdx === null) {
     return (
       <div
-        className={`fixed left-0 right-0 flex flex-col bg-surface text-on-surface overflow-hidden z-[50] ${bottomClass}`}
+        className={`fixed left-0 right-0 flex flex-col bg-surface text-on-surface overflow-hidden z-player-mobile ${bottomClass}`}
         style={{ top: headerHeight }}
       >
         <div className="flex flex-1 overflow-hidden">
@@ -351,18 +328,23 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
                 <IconArrowLeft size={16} /> Back to Courses
               </button>
 
-              {/* Course color bar + icon */}
-              <div
-                className="w-full rounded-2xl p-5 mb-4 flex items-center gap-4 relative overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${coverColor}28, ${coverColor}0a)`, border: `1px solid ${coverColor}30` }}
-              >
-                <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20 blur-xl pointer-events-none" style={{ background: coverColor }} />
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative z-10" style={{ background: coverColor + '30' }}>
-                  <IconBook2 size={22} stroke={1.5} style={{ color: coverColor }} />
-                </div>
-                <div className="relative z-10 min-w-0">
-                  <p className="font-bold text-on-surface text-sm leading-tight truncate">{course?.title || 'Course'}</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">{course?.class} · {course?.subject}</p>
+              {/* Course preview card */}
+              <div className="w-full p-1 rounded-2xl bg-surface-container-lowest/40 border border-outline/5 mb-4">
+                <div
+                  className="flex items-center gap-3.5 p-4 rounded-[calc(1rem-0.125rem)] border border-outline/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
+                  style={{
+                    background: 'linear-gradient(180deg, rgb(var(--color-surface-container-low) / 0.4) 0%, rgb(var(--color-surface-container-lowest) / 0.8) 100%)'
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 border border-outline/10 text-on-surface-variant transition-all duration-300"
+                  >
+                    <SubjectIcon size={20} stroke={1.5} style={{ color: coverColor }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-on-surface text-sm leading-tight truncate">{course?.title || 'Course'}</p>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">{course?.class} · {course?.subject}</p>
+                  </div>
                 </div>
               </div>
 
@@ -538,7 +520,7 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
 
   return (
     <div
-      className={`fixed left-0 right-0 flex flex-col bg-surface text-on-surface overflow-hidden z-[50] ${bottomClass}`}
+      className={`fixed left-0 right-0 flex flex-col bg-surface text-on-surface overflow-hidden z-player-mobile ${bottomClass}`}
       style={{ top: headerHeight }}
     >
       {/* Top bar */}
@@ -602,6 +584,14 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
+        {/* Backdrop for mobile drawer */}
+        {isSidebarOpen && (
+          <div 
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 z-20 lg:hidden animate-in fade-in duration-200"
+            aria-hidden="true"
+          />
+        )}
         {/* Sidebar — accordion content tree */}
         <aside className={`
           absolute lg:static top-0 left-0 h-full w-72 bg-surface-container-low border-r border-outline/10
@@ -640,8 +630,10 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
                             setSelectedItemIdx(itemIdx);
                             setIsSidebarOpen(false);
                           }}
-                          className={`w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs transition-colors ${
-                            isSelected ? 'bg-primary/10 font-bold border-l-2 border-primary' : 'hover:bg-surface-container-highest'
+                          className={`w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs transition-all border rounded-lg ${
+                            isSelected 
+                              ? 'bg-primary/15 font-bold border-primary/30 text-on-surface' 
+                              : 'border-transparent hover:bg-surface-container-highest text-on-surface-variant'
                           }`}
                         >
                           <div className={`w-5.5 h-5.5 rounded-md border flex items-center justify-center shrink-0 ${m.bg}`}>
@@ -757,7 +749,7 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
                                   setQuizAnswers({});
                                   setQuizSubmitted(false);
                                   setQuizScore(0);
-                                  setCurrentQuizQuestionIdx(0);
+                                  navigate('/checkout');
                                   setMarkedForReview({});
                                 }}
                                 className="mt-3 px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:brightness-105 active:scale-95 transition-all shadow-sm"
@@ -853,7 +845,7 @@ export default function CoursePlayer({ course, onBack, currentTrack, user, onUpg
                                 </div>
 
                                 {quizSubmitted && q.explanation && (
-                                  <div className="text-xs text-on-surface-variant/80 mt-4 p-4 rounded-xl bg-background/50 border-l-2 border-amber-500/50 leading-relaxed">
+                                  <div className="text-xs text-on-surface-variant/80 mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 leading-relaxed">
                                     <strong className="text-amber-400 block mb-1">Explanation:</strong>
                                     {q.explanation}
                                   </div>

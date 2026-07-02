@@ -1,6 +1,47 @@
 // Force HMR 1
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Global Fetch Interceptor for sliding session token refresh
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  window.fetch = async function (...args) {
+    const response = await originalFetch(...args);
+    try {
+      const newToken = response.headers.get('x-new-token');
+      if (newToken) {
+        let sentToken = null;
+        const options = args[1];
+        if (options && options.headers) {
+          let authHeader = null;
+          if (typeof options.headers.get === 'function') {
+            authHeader = options.headers.get('Authorization') || options.headers.get('authorization');
+          } else {
+            authHeader = options.headers['Authorization'] || options.headers['authorization'];
+          }
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            sentToken = authHeader.substring(7);
+          }
+        }
+        
+        if (sentToken) {
+          if (localStorage.getItem('user_token') === sentToken) {
+            localStorage.setItem('user_token', newToken);
+          }
+          if (localStorage.getItem('lms_token') === sentToken) {
+            localStorage.setItem('lms_token', newToken);
+          }
+          if (localStorage.getItem('affiliate_token') === sentToken) {
+            localStorage.setItem('affiliate_token', newToken);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error updating token from header:', err);
+    }
+    return response;
+  };
+}
+
 const getHeaders = () => {
   const isLms = typeof window !== 'undefined' && window.location.pathname.startsWith('/lms');
   const token = isLms
@@ -38,6 +79,16 @@ export const register = async (name, email, password) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const loginWithSupabaseToken = async (accessToken) => {
+  const res = await fetch(`${API_URL}/auth/supabase-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

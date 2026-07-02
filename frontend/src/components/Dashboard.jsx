@@ -8,18 +8,15 @@ import {
   IconCertificate, IconX, IconPencil, IconCrown
 } from '@tabler/icons-react';
 import { getUserProfile } from '../services/api';
+import Button from './ui/Button';
+import { Card, CardHeader, CardBody } from './ui/Card';
 
-const AVATARS = [
-  { id: 'general', label: 'Reader', icon: IconBook, color: 'bg-amber-500/10 text-primary border-primary/20' },
-  { id: 'bio', label: 'Bio Explorer', icon: IconBrain, color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
-  { id: 'academic', label: 'Scholar', icon: IconSchool, color: 'bg-sky-500/10 text-sky-500 border-sky-500/20' },
-  { id: 'champ', label: 'Achiever', icon: IconAward, color: 'bg-red-500/10 text-red-500 border-red-500/20' }
-];
 
 
 
 export default function Dashboard({ 
-  setCurrentPage, 
+  navigate, 
+  onLogout,
   tracks, 
   currentTrack, 
   isPlaying, 
@@ -37,7 +34,6 @@ export default function Dashboard({
   const profileClass = user?.class || 'Class 12';
   const profilePrefs = user?.preferences || ['Biology', 'Chemistry'];
   const profileGoal = user?.studyGoal || '30 mins';
-  const profileAvatar = user?.avatar || 'general';
 
   // Form states
   const [profileData, setProfileData] = useState(null);
@@ -57,20 +53,19 @@ export default function Dashboard({
   const [editClass, setEditClass] = useState(profileClass);
   const [editPrefs, setEditPrefs] = useState(profilePrefs);
   const [editGoal, setEditGoal] = useState(profileGoal);
-  const [editAvatar, setEditAvatar] = useState(profileAvatar);
   
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
   // Modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
     setEditName(user?.name || '');
     setEditClass(user?.class || 'Class 12');
     setEditPrefs(user?.preferences || ['Biology', 'Chemistry']);
     setEditGoal(user?.studyGoal || '30 mins');
-    setEditAvatar(user?.avatar || 'general');
   }, [user]);
 
   // Prevent scroll when modal is open
@@ -100,8 +95,7 @@ export default function Dashboard({
       name: editName,
       class: editClass,
       preferences: editPrefs,
-      studyGoal: editGoal,
-      avatar: editAvatar
+      studyGoal: editGoal
     };
 
     setUser(updatedUser);
@@ -122,8 +116,7 @@ export default function Dashboard({
         name: editName,
         class: editClass,
         preferences: editPrefs,
-        studyGoal: editGoal,
-        avatar: editAvatar
+        studyGoal: editGoal
       };
       localStorage.setItem('neetband_users', JSON.stringify(existingUsers));
     }
@@ -136,11 +129,19 @@ export default function Dashboard({
   };
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
+    setIsLogoutModalOpen(true);
+  };
+
+  const confirmLogoutAction = () => {
+    setIsLogoutModalOpen(false);
+    if (onLogout) {
+      onLogout();
+    } else {
       localStorage.removeItem('neetband_current_user');
+      localStorage.removeItem('user_token');
       setUser({ isLoggedIn: false, name: '', email: '' });
-      setCurrentPage('home');
     }
+    navigate('/');
   };
 
   // Get favorite tracks data
@@ -154,86 +155,52 @@ export default function Dashboard({
 
   return (
     <div className="min-h-screen bg-surface pt-32 pb-32 transition-colors duration-300 relative overflow-hidden">
-      
       {/* Ambient orbs — matches site-wide style */}
       <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-[0.06] bg-primary pointer-events-none" />
       <div className="absolute top-[20%] left-[-8%] w-[400px] h-[400px] rounded-full blur-[100px] opacity-[0.04] bg-primary pointer-events-none" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 mt-12">
-        
         <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
           
-          {/* Header Greeting */}
-          <div className="flex flex-col-reverse md:flex-row md:items-center justify-between gap-6 md:gap-8 mb-16 md:mb-20">
-            <div className="max-w-2xl mt-2 md:mt-0">
-              <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
-                Welcome back, <br className="md:hidden" />
-                <span className="text-primary">{profileName.split(' ')[0] || 'Student'}</span>.
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-20">
+            <div className="max-w-2xl">
+              <h1 className="text-display-1 text-on-surface mb-6">
+                Welcome back, <br className="hidden md:block" />{(profileName || 'Student').split(' ')[0]}.
               </h1>
-              <p className="mt-4 md:mt-6 text-lg text-on-surface-variant leading-relaxed">
-                Your daily goal is set to <strong className="text-on-surface">{editGoal}</strong>. Let's focus and make this session count for your {editClass} prep.
+              <p className="text-xl md:text-2xl font-medium text-on-surface-variant max-w-lg leading-relaxed">
+                Your daily goal is <span className="text-on-surface border-b border-primary/50 pb-1">{editGoal || '30 mins'}</span>. Let's make this session count.
               </p>
             </div>
             
-            {/* Interactive Profile Avatar */}
-            <button 
-              onClick={() => setIsProfileModalOpen(true)}
-              className="group relative w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center shrink-0 shadow-lg border-[4px] border-surface-container overflow-hidden hover:border-primary/50 transition-all duration-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 self-start md:self-auto"
-              aria-label="Edit Profile"
-            >
-              <img 
-                src={avatarUrl} 
-                alt={`${profileName}'s Avatar`} 
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <IconPencil size={24} className="text-white" />
-              </div>
-            </button>
+            <Button variant="secondary" onClick={() => setIsProfileModalOpen(true)} className="self-start px-6 py-4">
+              <IconPencil size={20} className="mr-2" /> Edit Profile
+            </Button>
           </div>
 
-          {/* Unified Progress Module */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 py-8 mb-16">
-            
-            <div className="flex flex-col">
-              <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3 flex items-center gap-2">
-                <IconHeart size={14} className="text-primary" /> Saved Tracks
+          <div className="grid grid-cols-1 md:grid-cols-3 mb-24 border-t border-b border-outline/10 divide-y md:divide-y-0 md:divide-x divide-outline/10">
+            <div className="flex flex-col gap-4 py-12 md:py-16 md:px-12 first:md:pl-0 last:md:pr-0">
+              <span className="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase flex items-center gap-2">
+                <IconHeart size={16} className="text-primary" /> Saved Tracks
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface leading-none">
-                  {favoriteTracksList.length}
-                </span>
-                <span className="text-lg font-semibold text-on-surface-variant">Songs</span>
-              </div>
+              <span className="text-7xl lg:text-[110px] font-extrabold tracking-tighter leading-none text-on-surface">{favoriteTracksList.length}</span>
             </div>
-
-            <div className="flex flex-col">
-              <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3 flex items-center gap-2">
-                <IconClock size={14} className="text-primary" /> Goal Progress
+            <div className="flex flex-col gap-4 py-12 md:py-16 md:px-12 first:md:pl-0 last:md:pr-0">
+              <span className="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase flex items-center gap-2">
+                <IconClock size={16} className="text-primary" /> Goal Progress
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface leading-none">
-                  0
+              <span className="text-7xl lg:text-[110px] font-extrabold tracking-tighter leading-none text-on-surface">
+                0
+                <span className="text-4xl lg:text-6xl text-primary font-bold">
+                  /{(editGoal || '30 mins').replace(' mins', '')}
                 </span>
-                <span className="text-lg font-semibold text-on-surface-variant">/ {editGoal.replace(' mins', '')}</span>
-              </div>
-              <div className="w-full h-1.5 bg-surface-container mt-4 rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full w-[0%]" />
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3 flex items-center gap-2">
-                <IconFlame size={14} className="text-primary" /> Study Streak
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface leading-none">
-                  {profileData?.streak || 0}
-                </span>
-                <span className="text-lg font-semibold text-on-surface-variant">Days</span>
-              </div>
             </div>
-
+            <div className="flex flex-col gap-4 py-12 md:py-16 md:px-12 first:md:pl-0 last:md:pr-0">
+              <span className="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase flex items-center gap-2">
+                <IconFlame size={16} className="text-primary" /> Study Streak
+              </span>
+              <span className="text-7xl lg:text-[110px] font-extrabold tracking-tighter leading-none text-on-surface">{profileData?.streak || 0}</span>
+            </div>
           </div>
 
           {/* ENROLLED COURSES */}
@@ -252,78 +219,82 @@ export default function Dashboard({
                     : 0;
 
                   return (
-                    <div key={index} className="bg-surface-container-low rounded-[32px] p-8 hover:bg-surface-container transition-all flex flex-col justify-between group">
-                      <div>
+                    <Card key={index} className="flex flex-col justify-between group h-full hover:-translate-y-1 transition-all duration-300">
+                      <CardBody className="p-6 md:p-8">
                         <div className="flex justify-between items-start mb-6">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant font-bold bg-surface px-3 py-1.5 rounded-lg shadow-sm">
+                          <span className="text-xs font-bold text-on-surface uppercase tracking-widest px-3 py-1.5 border border-outline/20 rounded-full bg-surface-container-high/50">
                             {course.subject || 'Course'}
                           </span>
-                          <span className="text-xl font-mono font-bold text-primary">{percentage}%</span>
+                          <span className="text-2xl font-extrabold text-on-surface">{percentage}%</span>
                         </div>
-                        <h3 className="text-[22px] font-extrabold text-on-surface mb-2">{course.title}</h3>
-                        <p className="text-[15px] text-on-surface-variant leading-relaxed mb-8 max-w-sm line-clamp-2">
+                        <h3 className="text-3xl md:text-4xl font-extrabold text-on-surface mb-4 leading-tight">{course.title}</h3>
+                        <p className="text-lg font-medium text-on-surface-variant line-clamp-2">
                           {course.summary || 'Continue learning this course.'}
                         </p>
+                      </CardBody>
+                      <div className="px-6 md:px-8 pb-6 md:pb-8 pt-2">
+                        <div className="w-full h-2 bg-surface-container-high overflow-hidden rounded-full border border-outline/10">
+                          <div 
+                            className="h-full bg-primary expand-width-anim" 
+                            style={{ 
+                              '--target-width': `${percentage}%`,
+                              width: `${percentage}%` 
+                            }} 
+                          />
+                        </div>
                       </div>
-                      <div className="w-full h-2.5 bg-surface rounded-full overflow-hidden shadow-inner">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
-                      </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
             ) : (
-              <div className="bg-surface-container-low rounded-[32px] p-8 text-center">
+              <div className="bg-surface-container-low rounded-[32px] p-8 text-center border border-outline/10">
                 <p className="text-on-surface-variant">You are not enrolled in any courses yet.</p>
               </div>
             )}
           </div>
 
-          {/* YOUR SUBSCRIPTION */}
           <div className="mb-24">
             <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-8 flex items-center gap-2">
               <IconCertificate className="text-primary" size={28} strokeWidth={1.5} /> Your Subscription
             </h2>
             <div className="grid grid-cols-1 gap-6">
-              <div className="bg-surface-container-low rounded-[32px] p-8 md:p-10 border border-outline/10 flex flex-col md:flex-row md:items-center justify-between gap-8 group">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className={`text-[11px] font-mono uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg shadow-sm ${user?.isPremium ? 'bg-primary/10 text-primary' : 'bg-surface text-on-surface-variant'}`}>
+              <Card className="flex flex-col md:flex-row md:items-center justify-between gap-8 group">
+                <CardBody className="p-8 md:p-12">
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className={`text-xs font-bold uppercase tracking-widest px-4 py-2 border border-outline/20 rounded-full bg-surface-container-high/50 ${user?.isPremium ? 'text-primary' : 'text-on-surface'}`}>
                       {user?.isPremium ? 'Active Plan' : 'Free Tier'}
                     </span>
                     {user?.isPremium && (
-                      <span className="flex items-center gap-1 text-sm font-bold text-emerald-500">
-                        <IconCheck size={16} /> Verified
+                      <span className="flex items-center gap-1 text-sm font-bold text-emerald-500 uppercase tracking-widest">
+                        <IconCheck size={18} strokeWidth={1.5} /> Verified
                       </span>
                     )}
                   </div>
-                  <h3 className="text-3xl font-extrabold text-on-surface mb-3 flex items-center gap-3">
+                  <h3 className="text-4xl md:text-5xl font-extrabold text-on-surface mb-6 flex items-center gap-3">
                     {user?.isPremium ? 'Premium Scholar' : 'Basic Listener'}
-                    {user?.isPremium && <IconCrown className="text-primary" size={32} />}
+                    {user?.isPremium && <IconCrown className="text-primary" size={40} />}
                   </h3>
-                  <p className="text-[15px] text-on-surface-variant leading-relaxed max-w-lg">
+                  <p className="text-xl font-medium text-on-surface-variant max-w-xl leading-relaxed">
                     {user?.isPremium 
                       ? "You have full access to all premium tracks, offline downloads, and ad-free listening. Enjoy the full NeetBand experience!"
                       : "You are currently on the free plan. Upgrade to access all 2000+ songs, premium quizzes, and offline downloads."}
                   </p>
-                </div>
+                </CardBody>
                 
-                <div className="shrink-0 flex flex-col items-start md:items-end gap-4">
+                <div className="shrink-0 flex flex-col items-start md:items-end gap-4 px-8 pb-8 md:p-12">
                   {!user?.isPremium ? (
-                    <button 
-                      onClick={() => setCurrentPage('pricing')}
-                      className="bg-primary text-on-primary font-bold px-8 py-4 rounded-xl hover:bg-primary-fixed hover:-translate-y-0.5 transition-all shadow-sm"
-                    >
+                    <Button onClick={() => navigate('/pricing')} size="lg" className="w-full md:w-auto">
                       Upgrade to Premium
-                    </button>
+                    </Button>
                   ) : (
                     <div className="text-left md:text-right">
-                      <p className="text-sm font-bold text-on-surface-variant mb-1">Membership Plan</p>
-                      <p className="text-xl font-mono text-on-surface capitalize">{user?.membershipPlan?.replace('_', ' ') || 'Premium'}</p>
+                      <p className="text-sm font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Membership Plan</p>
+                      <p className="text-3xl font-extrabold text-on-surface capitalize">{user?.membershipPlan?.replace('_', ' ') || 'Premium'}</p>
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
 
@@ -331,12 +302,13 @@ export default function Dashboard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             
             {/* Favourites Widget */}
-            <div className="flex flex-col bg-surface-container-low rounded-[32px] p-8 h-full shadow-sm">
+            <Card className="flex flex-col h-full">
+              <CardBody className="p-8 md:p-10 flex flex-col flex-1">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold tracking-tight text-on-surface">Your Favourites</h2>
                 {favoriteTracksList.length > 0 && (
                   <button 
-                    onClick={() => setCurrentPage('library')}
+                    onClick={() => navigate('/library')}
                     className="text-sm font-semibold text-primary hover:text-primary/70 transition-colors flex items-center gap-1"
                   >
                     Browse Library <IconArrowRight size={16} />
@@ -354,7 +326,7 @@ export default function Dashboard({
                     Hit the heart icon on any track in the library to save it here for quick access.
                   </p>
                   <button 
-                    onClick={() => setCurrentPage('library')}
+                    onClick={() => navigate('/library')}
                     className="mt-8 px-8 py-3.5 rounded-xl bg-on-surface text-surface font-extrabold text-[15px] hover:opacity-90 transition-opacity shadow-sm"
                   >
                     Explore Library
@@ -387,7 +359,7 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" />
+                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         
@@ -417,15 +389,17 @@ export default function Dashboard({
                   })}
                 </div>
               )}
-            </div>
+              </CardBody>
+            </Card>
 
             {/* Recently Played Widget */}
-            <div className="flex flex-col bg-surface-container-low rounded-[32px] p-8 h-full shadow-sm">
+            <Card className="flex flex-col h-full">
+              <CardBody className="p-8 md:p-10 flex flex-col flex-1">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold tracking-tight text-on-surface">Recently Played</h2>
                 {recentTracksList.length > 0 && (
                   <button 
-                    onClick={() => setCurrentPage('library')}
+                    onClick={() => navigate('/library')}
                     className="text-sm font-semibold text-primary hover:text-primary/70 transition-colors flex items-center gap-1"
                   >
                     Browse Library <IconArrowRight size={16} />
@@ -443,7 +417,7 @@ export default function Dashboard({
                     Your recently played tracks will appear here as you listen.
                   </p>
                   <button 
-                    onClick={() => setCurrentPage('library')}
+                    onClick={() => navigate('/library')}
                     className="mt-8 px-8 py-3.5 rounded-xl bg-on-surface text-surface font-extrabold text-[15px] hover:opacity-90 transition-opacity shadow-sm"
                   >
                     Start Listening
@@ -476,7 +450,7 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" />
+                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         
@@ -506,18 +480,20 @@ export default function Dashboard({
                   })}
                 </div>
               )}
-            </div>
+              </CardBody>
+            </Card>
 
           </div>
           
           {/* Logout Button at the bottom */}
-          <div className="flex justify-center mt-12 mb-8">
-            <button
+          <div className="flex justify-center mt-16 mb-8">
+            <Button
+              variant="secondary"
               onClick={handleLogout}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="text-red-500 border border-red-500/10 hover:bg-red-500/10 hover:text-red-500 transition-colors"
             >
-              <IconLogout size={20} strokeWidth={2} /> Log Out
-            </button>
+              <IconLogout size={20} strokeWidth={1.5} className="mr-2" /> Log Out
+            </Button>
           </div>
 
         </div>
@@ -525,7 +501,7 @@ export default function Dashboard({
 
       {/* ── Profile Edit Modal ── */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center px-4">
           <div 
             className="absolute inset-0 bg-surface/80 backdrop-blur-sm transition-opacity" 
             onClick={() => setIsProfileModalOpen(false)}
@@ -573,31 +549,6 @@ export default function Dashboard({
                       disabled
                       className="w-full bg-surface/50 border border-outline/5 rounded-xl px-4 py-3 text-sm text-on-surface-variant/50 cursor-not-allowed"
                     />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-on-surface block">Avatar Identity</label>
-                  <div className="flex flex-wrap gap-4">
-                    {AVATARS.map((av) => (
-                      <button
-                        key={av.id}
-                        type="button"
-                        onClick={() => setEditAvatar(av.id)}
-                        className={`flex items-center gap-3 p-3 pr-4 rounded-xl border transition-all ${
-                          editAvatar === av.id 
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm' 
-                            : 'border-outline/10 bg-surface hover:border-outline/30'
-                        }`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${av.color}`}>
-                          <av.icon size={20} />
-                        </div>
-                        <span className={`text-sm font-semibold ${editAvatar === av.id ? 'text-primary' : 'text-on-surface'}`}>
-                          {av.label}
-                        </span>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </section>
@@ -683,6 +634,45 @@ export default function Dashboard({
         </div>
       )}
 
+      {/* ── Logout Confirmation Modal ── */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-modal flex items-center justify-center px-4">
+          <div 
+            className="absolute inset-0 bg-surface/85 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsLogoutModalOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative bg-surface-container-low rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl border border-outline/10 animate-in zoom-in-95 duration-200 text-center">
+            
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 text-red-500">
+              <IconLogout size={32} strokeWidth={1.5} />
+            </div>
+
+            <h2 className="text-2xl font-extrabold tracking-tight text-on-surface mb-2">Confirm Log Out</h2>
+            <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
+              Are you sure you want to log out of NeetBand? You will need to verify your email or sign in again to access your playlist and MCQ progress.
+            </p>
+
+            <div className="flex justify-center gap-4 w-full">
+              <button
+                type="button"
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 py-3 px-6 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container transition-colors border border-outline/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogoutAction}
+                className="flex-1 py-3 px-6 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-sm"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

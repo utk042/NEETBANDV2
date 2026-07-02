@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.11",
+    "@supabase/supabase-js": "^2.110.0",
     "@tabler/icons-react": "^3.44.0",
     "@tiptap/extension-color": "^3.27.1",
     "@tiptap/extension-font-family": "^3.27.1",
@@ -32,7 +33,10 @@
     "lucide-react": "^1.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.18.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.18.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

@@ -69,21 +69,16 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Favorite button — hidden on extra-narrow mobile screens (<375px) to prevent title text clipping */}
           <button 
             onClick={(e) => { e.stopPropagation(); toggleFavorite?.(displayTrack.id || displayTrack._id); }}
-            className={`w-11 h-11 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full ${isFav ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
+            className={`w-11 h-11 hidden min-[375px]:flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full ${isFav ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
             aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
           >
             <IconHeart size={24} className={`block ${isFav ? 'fill-current' : ''}`} />
           </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-            className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
-            aria-label="Previous Track"
-          >
-            <IconPlayerSkipBackFilled size={24} className="block text-on-surface" aria-hidden="true" />
-          </button>
+          
           <button 
             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
@@ -95,6 +90,7 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
               <IconPlayerPlayFilled size={24} className="text-on-surface" aria-hidden="true" />
             )}
           </button>
+          
           <button 
             onClick={(e) => { e.stopPropagation(); handleNext(); }}
             className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"

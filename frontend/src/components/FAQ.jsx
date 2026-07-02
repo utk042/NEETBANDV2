@@ -53,18 +53,24 @@ export default function FAQ() {
                 className="bg-surface rounded-2xl border border-outline/20 overflow-hidden transition-all duration-300"
               >
                 <button
+                  id={`faq-question-${idx}`}
                   onClick={() => toggleFAQ(idx)}
-                  className="w-full px-6 py-5 flex justify-between items-center text-left gap-4 hover:bg-surface-container/30 transition-colors"
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${idx}`}
+                  className="w-full px-6 py-5 flex justify-between items-center text-left gap-4 hover:bg-surface-container/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                   <span className="font-headline-md text-base md:text-lg text-on-surface font-semibold">
                     {item.question}
                   </span>
-                  <IconChevronDown size={24} className={`text-primary transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                  <IconChevronDown size={24} className={`text-primary transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
                 
                 <div 
+                  id={`faq-answer-${idx}`}
+                  role="region"
+                  aria-labelledby={`faq-question-${idx}`}
                   className={`transition-all duration-300 ease-in-out ${
-                    isOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'
+                    isOpen ? 'max-h-[350px] opacity-100' : 'max-h-0 opacity-0'
                   } overflow-hidden`}
                 >
                   <div className="px-6 pb-6 pt-2 font-body-md text-sm md:text-base text-on-surface-variant leading-relaxed border-t border-[var(--border-floating-card)]/50">

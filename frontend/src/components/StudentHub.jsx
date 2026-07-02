@@ -31,7 +31,7 @@ export default function StudentHub() {
               
               <div className="p-8 md:p-10 flex flex-col md:flex-row gap-8 items-center relative z-10">
                 <div className="w-48 h-64 rounded-xl flex-shrink-0 shadow-lg overflow-hidden border border-[var(--border-floating-card)] relative group/cover">
-                  <img src={bookCoverImg} alt="Protect Your Child's Eyes Book Cover" className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-500" />
+                  <img src={bookCoverImg} alt="Protect Your Child's Eyes Book Cover" className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-500" loading="lazy" />
                 </div>
                 
                 <div className="flex-1 flex flex-col">

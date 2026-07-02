@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconPlaylist, IconVolume, IconSearch, IconDots, IconShare, IconHeart } from '@tabler/icons-react';
 import { usePlayer } from '../contexts/PlayerContext';
 
@@ -7,6 +7,23 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
   const { isShuffled, setIsShuffled, repeatMode, cycleRepeat } = usePlayer();
   const [searchQuery, setSearchQuery] = useState('');
   
+  const [selectedClass, setSelectedClass] = useState('All');
+  const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedChapter, setSelectedChapter] = useState('All');
+  const [openDropdown, setOpenDropdown] = useState(null); // 'class' | 'subject' | 'chapter' | null
+  
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const displayTrack = currentTrack || tracks[0] || {
     id: 1,
     title: "Mendelian Genetics Anthem",
@@ -37,10 +54,28 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
     [...Array(90)].map(() => (Math.random() * 0.5).toFixed(2))
   );
 
-  const filteredTracks = tracks.filter(track => 
-    track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    track.chapter.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const chaptersList = React.useMemo(() => {
+    const chapters = new Set();
+    tracks.forEach(track => {
+      if (!track.chapter) return;
+      const classMatch = selectedClass === 'All' || track.grade === selectedClass || track.class === selectedClass;
+      const subjectMatch = selectedSubject === 'All' || track.subject?.toLowerCase() === selectedSubject.toLowerCase();
+      if (classMatch && subjectMatch) chapters.add(track.chapter);
+    });
+    return ['All', ...Array.from(chapters)];
+  }, [tracks, selectedClass, selectedSubject]);
+
+  const filteredTracks = React.useMemo(() => {
+    return tracks.filter(track => {
+      const classMatch = selectedClass === 'All' || track.grade === selectedClass || track.class === selectedClass;
+      const subjectMatch = selectedSubject === 'All' || track.subject?.toLowerCase() === selectedSubject.toLowerCase();
+      const chapterMatch = selectedChapter === 'All' || track.chapter === selectedChapter;
+      const searchMatch = !searchQuery || 
+        track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        track.chapter.toLowerCase().includes(searchQuery.toLowerCase());
+      return classMatch && subjectMatch && chapterMatch && searchMatch;
+    });
+  }, [tracks, selectedClass, selectedSubject, selectedChapter, searchQuery]);
 
   return (
     <>
@@ -67,43 +102,107 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
             <p className="font-body-md font-normal text-lg text-on-surface-variant opacity-80">Find the perfect study track for your current topic.</p>
           </div>
           
-          <div data-gsap="syllabus-filters" className="flex flex-wrap gap-4 w-full md:w-auto">
-            {/* Dropdowns styled as pills */}
-            <div 
-              className="relative group cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
-              tabIndex={0} 
-              role="button" 
-              aria-haspopup="listbox" 
-              aria-label="Select Class"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); } }}
-            >
-              <div className="px-5 py-2.5 rounded-full border border-[var(--border-floating-card)] text-on-surface font-label-md text-sm flex items-center gap-2 bg-surface hover:bg-surface-container hover:border-primary/50 transition-[colors,border-color] duration-200 backdrop-blur-sm">
-                Class 12 <IconChevronDown size={18} className="text-primary" />
-              </div>
+          <div data-gsap="syllabus-filters" ref={dropdownRef} className="flex flex-wrap gap-4 w-full md:w-auto relative z-30">
+            {/* Class Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'class' ? null : 'class')}
+                aria-haspopup="listbox"
+                aria-expanded={openDropdown === 'class'}
+                aria-label="Select Class"
+                className={`px-5 py-2.5 rounded-full border font-label-md text-sm flex items-center gap-2 transition-[colors,border-color] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedClass !== 'All' ? 'border-primary/50 text-primary bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)]' : 'border-[var(--border-floating-card)] text-on-surface bg-surface hover:bg-surface-container hover:border-primary/50'}`}
+              >
+                {selectedClass === 'All' ? 'All Classes' : selectedClass} 
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'class' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'class' && (
+                <ul 
+                  role="listbox" 
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
+                >
+                  {['All', 'Class 11', 'Class 12', 'Class 10', 'Dropper'].map((cls) => (
+                    <li
+                      key={cls}
+                      role="option"
+                      aria-selected={selectedClass === cls}
+                      tabIndex={0}
+                      onClick={() => { setSelectedClass(cls); setSelectedChapter('All'); setOpenDropdown(null); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedClass(cls); setSelectedChapter('All'); setOpenDropdown(null); } }}
+                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedClass === cls ? 'text-primary font-bold bg-primary/5' : ''}`}
+                    >
+                      {cls}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div 
-              className="relative group cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
-              tabIndex={0} 
-              role="button" 
-              aria-haspopup="listbox" 
-              aria-label="Select Subject"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); } }}
-            >
-              <div className="px-5 py-2.5 rounded-full border border-[var(--border-floating-card)] text-on-surface font-label-md text-sm flex items-center gap-2 bg-surface hover:bg-surface-container hover:border-primary/50 transition-[colors,border-color] duration-200 backdrop-blur-sm">
-                Biology <IconChevronDown size={18} className="text-primary" />
-              </div>
+
+            {/* Subject Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'subject' ? null : 'subject')}
+                aria-haspopup="listbox"
+                aria-expanded={openDropdown === 'subject'}
+                aria-label="Select Subject"
+                className={`px-5 py-2.5 rounded-full border font-label-md text-sm flex items-center gap-2 transition-[colors,border-color] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedSubject !== 'All' ? 'border-primary/50 text-primary bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)]' : 'border-[var(--border-floating-card)] text-on-surface bg-surface hover:bg-surface-container hover:border-primary/50'}`}
+              >
+                {selectedSubject === 'All' ? 'All Subjects' : selectedSubject}
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'subject' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'subject' && (
+                <ul 
+                  role="listbox" 
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
+                >
+                  {['All', 'Biology', 'Physics', 'Chemistry'].map((sub) => (
+                    <li
+                      key={sub}
+                      role="option"
+                      aria-selected={selectedSubject === sub}
+                      tabIndex={0}
+                      onClick={() => { setSelectedSubject(sub); setSelectedChapter('All'); setOpenDropdown(null); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedSubject(sub); setSelectedChapter('All'); setOpenDropdown(null); } }}
+                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedSubject === sub ? 'text-primary font-bold bg-primary/5' : ''}`}
+                    >
+                      {sub}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div 
-              className="relative group cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
-              tabIndex={0} 
-              role="button" 
-              aria-haspopup="listbox" 
-              aria-label="Select Chapter"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); } }}
-            >
-              <div className="px-5 py-2.5 rounded-full border border-primary/50 text-primary font-label-md text-sm flex items-center gap-2 bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)] transition-[colors,border-color,box-shadow] duration-200 backdrop-blur-sm">
-                Genetics <IconChevronDown size={18} className="text-primary" />
-              </div>
+
+            {/* Chapter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'chapter' ? null : 'chapter')}
+                aria-haspopup="listbox"
+                aria-expanded={openDropdown === 'chapter'}
+                aria-label="Select Chapter"
+                className="px-5 py-2.5 rounded-full border border-primary/50 text-primary font-label-md text-sm flex items-center gap-2 bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)] transition-[colors,border-color,box-shadow] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+              >
+                {selectedChapter === 'All' ? 'All Chapters' : selectedChapter}
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'chapter' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'chapter' && (
+                <ul 
+                  role="listbox" 
+                  className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                >
+                  {chaptersList.map((chap) => (
+                    <li
+                      key={chap}
+                      role="option"
+                      aria-selected={selectedChapter === chap}
+                      tabIndex={0}
+                      onClick={() => { setSelectedChapter(chap); setOpenDropdown(null); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedChapter(chap); setOpenDropdown(null); } }}
+                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedChapter === chap ? 'text-primary font-bold bg-primary/5' : ''}`}
+                    >
+                      {chap}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
@@ -352,7 +451,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
 
                   {/* Class Column */}
                   <div className="hidden md:block w-24 lg:w-48 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
-                    Class 12
+                    {track.class || track.grade || 'Class 12'}
                   </div>
                   
                   {/* Action Icons */}

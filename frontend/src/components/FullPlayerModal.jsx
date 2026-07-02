@@ -22,6 +22,44 @@ export default function FullPlayerModal({ isOpen, onClose }) {
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
+  // Swipe to dismiss mobile gestures
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchCurrent, setTouchCurrent] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    // Only swipe dismiss when scrolled to the very top
+    const scrollContainer = e.currentTarget;
+    if (scrollContainer.scrollTop > 5) return;
+    setTouchStart(e.touches[0].clientY);
+    setTouchCurrent(e.touches[0].clientY);
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isSwiping) return;
+    setTouchCurrent(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwiping) return;
+    const diff = touchCurrent - touchStart;
+    const threshold = 120; // threshold in pixels to trigger close
+    if (diff > threshold) {
+      onClose();
+    }
+    setIsSwiping(false);
+    setTouchStart(0);
+    setTouchCurrent(0);
+  };
+
+  const dragTranslateY = isSwiping && touchCurrent > touchStart ? touchCurrent - touchStart : 0;
+  const modalStyle = dragTranslateY > 0 ? {
+    transform: `translateY(${dragTranslateY}px)`,
+    transition: 'none'
+  } : {};
+
   const displayTrack = currentTrack || {
     title: "DNA Replication",
     chapter: "Molecular Basis of Inheritance",
@@ -198,7 +236,13 @@ export default function FullPlayerModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar">
+    <div 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={modalStyle}
+      className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar"
+    >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes waveRise {
           0%   { transform: scaleY(0.4) translateY(0); }

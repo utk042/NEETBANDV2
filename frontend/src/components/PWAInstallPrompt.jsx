@@ -59,7 +59,7 @@ export default function PWAInstallPrompt() {
     <div
       role="dialog"
       aria-label="Install NeetBand App"
-      className="fixed bottom-24 md:bottom-28 left-4 right-4 md:right-auto md:left-6 md:max-w-sm z-[80] animate-[slideUp_0.3s_cubic-bezier(0.16,1,0.3,1)]"
+      className="fixed top-24 md:top-auto md:bottom-28 left-4 right-4 md:right-auto md:left-6 md:max-w-sm z-toast animate-[slideDown_0.3s_cubic-bezier(0.16,1,0.3,1)] md:animate-[slideUp_0.3s_cubic-bezier(0.16,1,0.3,1)]"
     >
       <div className="bg-surface-container border border-[var(--border-floating-card)] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.3)] p-4 flex items-start gap-4">
         {/* App icon */}
@@ -102,6 +102,10 @@ export default function PWAInstallPrompt() {
       <style>{`
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>

@@ -84,6 +84,7 @@ export default function SongLibrary({
                       src={track.cover || track.image} 
                       alt={track.title} 
                       className="w-full h-full object-cover" 
+                      loading="lazy"
                     />
                     {isActive && isPlaying && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
