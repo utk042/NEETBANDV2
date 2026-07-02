@@ -12,12 +12,12 @@ export default function CommunityForum({ user }) {
   const [sortBy, setSortBy] = useState('newest');
   
   const [commentInputs, setCommentInputs] = useState({});
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [pendingComment, setPendingComment] = useState(null);
 
   useEffect(() => {
     fetchPosts();
   }, []);
-
-
 
   const fetchPosts = async () => {
     try {
@@ -37,6 +37,19 @@ export default function CommunityForum({ user }) {
     if (!text?.trim()) return;
     if (!user?.isLoggedIn) return alert('Please login to comment');
 
+    const rulesKey = `neetband_rules_accepted_${user.id || user._id || 'guest'}`;
+    const hasAcceptedRules = localStorage.getItem(rulesKey) === 'true';
+
+    if (!hasAcceptedRules) {
+      setPendingComment({ postId, text });
+      setIsRulesModalOpen(true);
+      return;
+    }
+
+    await submitComment(postId, text);
+  };
+
+  const submitComment = async (postId, text) => {
     try {
       const res = await api.post(`/forums/posts/${postId}/comments`, { content: text });
       setPosts(posts.map(p => p._id === postId ? { ...p, comments: res.data } : p));
@@ -94,7 +107,7 @@ export default function CommunityForum({ user }) {
         <div className="flex-1">
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 className="font-headline-lg font-bold text-4xl text-on-surface mb-3">Community Forum</h2>
+              <h2 className="font-headline-lg font-bold text-4xl text-on-surface mb-3">Community Feed</h2>
               <p className="font-body-md text-lg text-on-surface-variant opacity-80">
                 Join the discussion, ask doubts, participate in polls, and learn together.
               </p>
@@ -266,6 +279,47 @@ export default function CommunityForum({ user }) {
       </div>
 
 
+      {isRulesModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface w-full max-w-md rounded-2xl shadow-2xl border border-outline-variant/30 p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold tracking-tight text-on-surface mb-4">Community Feed Rules</h3>
+            <p className="text-on-surface-variant text-sm mb-4">
+              Before posting your first comment, please read and agree to our community rules:
+            </p>
+            <ul className="list-disc pl-5 text-on-surface-variant text-sm space-y-2 mb-6">
+              <li>Be respectful, friendly, and constructive to all peers.</li>
+              <li>No spam, links to unverified materials, or self-promotion.</li>
+              <li>Keep discussions academic and relevant to learning and NEET preparation.</li>
+              <li>Do not share personal contact details or copyrighted study material.</li>
+            </ul>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setIsRulesModalOpen(false);
+                  setPendingComment(null);
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (pendingComment && user) {
+                    const rulesKey = `neetband_rules_accepted_${user.id || user._id}`;
+                    localStorage.setItem(rulesKey, 'true');
+                    await submitComment(pendingComment.postId, pendingComment.text);
+                  }
+                  setIsRulesModalOpen(false);
+                  setPendingComment(null);
+                }}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary hover:bg-primary-fixed transition-colors"
+              >
+                I Agree & Comment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

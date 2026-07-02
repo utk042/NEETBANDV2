@@ -210,14 +210,14 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           </button>
 
           <button
-            onClick={() => changeTab('forums')}
+            onClick={() => changeTab('feed')}
             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
-              activeTab === 'forums' 
+              activeTab === 'feed' 
                 ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
                 : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
             }`}
           >
-            <IconMessageCircle size={20} stroke={2.5} /> Forums
+            <IconMessageCircle size={20} stroke={2.5} /> Feed
           </button>
 
           <button
@@ -499,7 +499,7 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             </div>
           )}
 
-          {activeTab === 'forums' && (
+          {activeTab === 'feed' && (
             <div className="max-w-6xl mx-auto pb-8">
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <AdminForums api={api} />

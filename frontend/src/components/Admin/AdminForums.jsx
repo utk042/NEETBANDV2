@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, BarChart2, Paperclip, MessageSquare, Heart, Eye } from 'lucide-react';
 import BlogEditor from './BlogEditor';
 
+const getErrorMessage = (error) => {
+  if (!error) return "Unknown error occurred";
+  try {
+    const parsed = JSON.parse(error.message);
+    if (parsed && parsed.message) {
+      return parsed.message;
+    }
+  } catch (e) {
+    // Not a JSON string
+  }
+  return error.message || String(error);
+};
+
 const AdminForums = ({ api }) => {
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -13,6 +26,30 @@ const AdminForums = ({ api }) => {
   const [attachments, setAttachments] = useState('');
   const [isPoll, setIsPoll] = useState(false);
   const [pollOptions, setPollOptions] = useState(['', '']);
+  const [selectedCommentsPost, setSelectedCommentsPost] = useState(null);
+
+  const handleOpenCommentsModal = async (post) => {
+    try {
+      const res = await api.get(`/forums/posts/${post._id}`);
+      setSelectedCommentsPost(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load comments: " + getErrorMessage(err));
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      const res = await api.delete(`/forums/posts/${selectedCommentsPost._id}/comments/${commentId}`);
+      const updatedPost = { ...selectedCommentsPost, comments: res.data };
+      setSelectedCommentsPost(updatedPost);
+      setPosts(posts.map(p => p._id === selectedCommentsPost._id ? updatedPost : p));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete comment: " + getErrorMessage(err));
+    }
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -24,6 +61,7 @@ const AdminForums = ({ api }) => {
       setPosts(res.data);
     } catch (error) {
       console.error('Error fetching posts:', error);
+      alert('Error fetching posts: ' + getErrorMessage(error));
     }
   };
 
@@ -49,7 +87,7 @@ const AdminForums = ({ api }) => {
       fetchPosts();
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('Failed to save post. Note: Update route may not be implemented on backend.');
+      alert('Failed to save post: ' + getErrorMessage(error));
     }
   };
 
@@ -70,6 +108,7 @@ const AdminForums = ({ api }) => {
       fetchPosts();
     } catch (error) {
       console.error('Error deleting post:', error);
+      alert('Error deleting post: ' + getErrorMessage(error));
     }
   };
 
@@ -197,7 +236,7 @@ const AdminForums = ({ api }) => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-on-surface">Manage Forums</h2>
+        <h2 className="text-2xl font-bold text-on-surface">Manage Feed</h2>
         <button 
           onClick={startNew}
           className="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2"
@@ -213,14 +252,16 @@ const AdminForums = ({ api }) => {
               <th className="p-4 font-semibold text-on-surface-variant">Title</th>
               <th className="p-4 font-semibold text-on-surface-variant">Author</th>
               <th className="p-4 font-semibold text-on-surface-variant">Type</th>
-              <th className="p-4 font-semibold text-on-surface-variant">Stats</th>
+              <th className="p-4 font-semibold text-on-surface-variant text-center">Views</th>
+              <th className="p-4 font-semibold text-on-surface-variant text-center">Likes</th>
+              <th className="p-4 font-semibold text-on-surface-variant text-center">Comments</th>
               <th className="p-4 font-semibold text-on-surface-variant text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {posts.length === 0 ? (
               <tr>
-                <td colSpan="5" className="p-8 text-center text-on-surface-variant">No posts found. Create an advanced post!</td>
+                <td colSpan="7" className="p-8 text-center text-on-surface-variant">No posts found. Create an advanced post!</td>
               </tr>
             ) : (
               posts.map((post) => (
@@ -234,12 +275,16 @@ const AdminForums = ({ api }) => {
                       <span className="bg-surface-container-high text-on-surface-variant text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1">Standard</span>
                     )}
                   </td>
-                  <td className="p-4 text-on-surface-variant text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1" title="Views"><Eye size={14} className="opacity-70" /> {post.views || 0}</span>
-                      <span className="flex items-center gap-1" title="Likes"><Heart size={14} className="opacity-70" /> {post.likes?.length || 0}</span>
-                      <span className="flex items-center gap-1" title="Comments"><MessageSquare size={14} className="opacity-70" /> {post.comments?.length || 0}</span>
-                    </div>
+                  <td className="p-4 font-bold text-center text-primary">{post.views || 0}</td>
+                  <td className="p-4 font-bold text-center text-red-500">{post.likes?.length || 0}</td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleOpenCommentsModal(post)}
+                      className="font-bold text-blue-500 hover:text-blue-700 hover:underline bg-surface-container/40 px-3 py-1 rounded-lg transition-colors border border-outline-variant/10"
+                      title="Manage Comments"
+                    >
+                      {post.comments?.length || 0}
+                    </button>
                   </td>
                   <td className="p-4 flex items-center justify-end gap-2">
                     <button
@@ -263,6 +308,69 @@ const AdminForums = ({ api }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Comments Moderation Modal */}
+      {selectedCommentsPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+          <div className="bg-surface-container-lowest border border-outline-variant/30 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
+              <div>
+                <h3 className="text-xl font-bold text-on-surface">Manage Feed Comments</h3>
+                <p className="text-xs text-on-surface-variant opacity-80 mt-1 truncate max-w-md">Post: {selectedCommentsPost.title}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedCommentsPost(null)}
+                className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              {selectedCommentsPost.comments?.length === 0 ? (
+                <div className="text-center py-12 text-on-surface-variant opacity-60">
+                  No comments on this post.
+                </div>
+              ) : (
+                selectedCommentsPost.comments.map(comment => (
+                  <div key={comment._id} className="flex justify-between items-start gap-4 p-4 rounded-xl bg-surface-container-low border border-outline-variant/10">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-semibold text-sm text-on-surface truncate">
+                          {comment.author?.name || "Anonymous"}
+                        </span>
+                        <span className="text-[10px] bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant font-bold border border-outline-variant/20 uppercase">
+                          {comment.author?.role || "user"}
+                        </span>
+                        <span className="text-xs text-on-surface-variant/60">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-on-surface-variant break-words leading-relaxed">{comment.content}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteComment(comment._id)}
+                      className="p-2 text-on-surface-variant hover:text-error transition-colors bg-surface-container rounded-lg hover:bg-error/10 flex-shrink-0"
+                      title="Delete Comment"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-outline-variant/20 bg-surface-container-low flex justify-end">
+              <button 
+                onClick={() => setSelectedCommentsPost(null)}
+                className="px-6 py-2 bg-surface-container border border-outline-variant/50 text-on-surface font-semibold rounded-xl hover:bg-surface-container-high transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

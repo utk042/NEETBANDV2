@@ -3,7 +3,7 @@ import { IconMenu2, IconX, IconMoon, IconSun, IconLogin, IconSearch, IconHelp } 
 import logoImg from '../assets/logo.png';
 import { getNewsScrollSettings } from '../services/api';
 
-export default function Header({ theme, toggleTheme, currentPage, setCurrentPage, user = { isLoggedIn: false }, onLogout }) {
+export default function Header({ theme, toggleTheme, currentPage, navigate, user = { isLoggedIn: false }, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsVisible, setNewsVisible] = useState(false);
   const [newsItems, setNewsItems] = useState([]);
@@ -55,21 +55,21 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
 
   const handleNav = (e, page) => {
     e.preventDefault();
-    setCurrentPage(page);
+    navigate(page === 'home' ? '/' : `/${page}`);
     setMobileMenuOpen(false);
   };
 
   const linkClass = (page) => 
-    `font-label-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-2 py-1 ${currentPage === page ? 'text-primary font-bold hover:opacity-80' : 'text-on-surface hover:text-primary'}`;
+    `font-label-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-3 py-2.5 ${currentPage === page ? 'text-primary font-bold hover:opacity-80' : 'text-on-surface hover:text-primary'}`;
 
   return (
     <>
-      <header data-gsap="header" className="fixed top-0 w-full z-[60] bg-surface/85 backdrop-blur-md border-b border-outline/20 transition-colors duration-300">
-        <div className="flex justify-between items-center px-gutter py-4 md:py-2.5 w-full max-w-container-max mx-auto gap-8 relative z-[60] bg-transparent">
+      <header data-gsap="header" className="fixed top-0 w-full z-header bg-surface/95 border-b border-outline/20 transition-colors duration-300">
+        <div className="flex justify-between items-center px-gutter py-4 md:py-2.5 w-full max-w-container-max mx-auto gap-8 relative z-header bg-transparent">
           <div className="flex items-center gap-sm">
             <button 
               onClick={() => {
-                setCurrentPage('home');
+                navigate('/');
                 setMobileMenuOpen(false);
               }}
               className="focus-visible:outline-none rounded-xl active:scale-[0.98] transition-transform duration-200"
@@ -83,7 +83,7 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
             <a className={linkClass('home')} href="#" onClick={(e) => handleNav(e, 'home')}>Home</a>
             <a className={linkClass('library')} href="#" onClick={(e) => handleNav(e, 'library')}>Library</a>
             <a className={linkClass('course')} href="#" onClick={(e) => handleNav(e, 'course')}>Courses</a>
-            <a className={linkClass('forum')} href="#" onClick={(e) => handleNav(e, 'forum')}>Forum</a>
+            <a className={linkClass('feed')} href="#" onClick={(e) => handleNav(e, 'feed')}>Feed</a>
             <a className={linkClass('blog')} href="#" onClick={(e) => handleNav(e, 'blog')}>Blog</a>
             <a className={linkClass('contact')} href="#" onClick={(e) => handleNav(e, 'contact')}>Contact</a>
           </nav>
@@ -104,8 +104,8 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
                 <div className="hidden md:flex items-center gap-3">
 
                   <button 
-                    onClick={() => setCurrentPage('dashboard')}
-                    className="font-label-md px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed font-bold transition-[colors,box-shadow,transform] duration-200 shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px]"
+                    onClick={() => navigate('/dashboard')}
+                    className="font-label-md px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed font-bold transition-[colors,box-shadow,transform] duration-200 shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
                     Dashboard
                   </button>
@@ -113,7 +113,7 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
             ) : (
               currentPage !== 'login' && (
                 <button 
-                  onClick={() => setCurrentPage('login')}
+                  onClick={() => navigate('/login')}
                   className="hidden md:flex group font-label-md text-on-primary bg-primary px-5 py-2.5 rounded-xl hover:bg-primary-fixed hover:text-on-primary-fixed transition-[colors,box-shadow,transform] shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] duration-200 flex items-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                   Log In <IconLogin size={18} className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
@@ -136,13 +136,13 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
 
         {/* News Scroll */}
         {newsVisible && !mobileMenuOpen && newsItems.length > 0 && !['course-player', 'lms', 'lms-login', 'affiliate', 'affiliate-login', 'login', 'checkout'].includes(currentPage) && (
-          <div className="w-full bg-primary/10 border-t border-primary/20 backdrop-blur-md text-primary py-2 px-4 flex items-center justify-between overflow-hidden relative z-[59]">
-            <div className="flex-1 overflow-hidden">
+          <div className="w-full bg-primary/10 border-t border-primary/20 text-primary py-2 px-4 flex items-center justify-between overflow-hidden relative z-header-news">
+            <div className="flex-1 overflow-hidden relative">
               <div className="whitespace-nowrap animate-marquee flex items-center gap-8 font-medium text-sm">
-                {newsItems.map((item, idx) => (
+                {[...newsItems, ...newsItems].map((item, idx) => (
                   <React.Fragment key={idx}>
                     <span>{item}</span>
-                    {idx < newsItems.length - 1 && <span>•</span>}
+                    {idx < (newsItems.length * 2) - 1 && <span>•</span>}
                   </React.Fragment>
                 ))}
               </div>
@@ -160,7 +160,7 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
 
       {/* Mobile Menu Full Page Overlay */}
       <div 
-        className={`md:hidden fixed inset-0 bg-surface z-[58] flex flex-col justify-center items-center gap-8 transition-opacity duration-300 ease-in-out ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`md:hidden fixed inset-0 bg-surface z-header-mobile flex flex-col justify-center items-center gap-8 transition-opacity duration-300 ease-in-out ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container to-surface opacity-95 pointer-events-none"></div> 
         
@@ -168,7 +168,7 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
         <div className={`flex flex-col items-center gap-6 pt-10 overflow-y-auto max-h-screen transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
           <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Library</a>
-          <a onClick={(e) => handleNav(e, 'forum')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'forum' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Forum</a>
+          <a onClick={(e) => handleNav(e, 'feed')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'feed' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Feed</a>
 
           <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
           <a onClick={(e) => handleNav(e, 'course')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
@@ -177,7 +177,7 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
             <a 
               onClick={(e) => {
                 e.preventDefault();
-                setCurrentPage('login');
+                navigate('/login');
                 setMobileMenuOpen(false);
               }}
               className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${
@@ -192,19 +192,13 @@ export default function Header({ theme, toggleTheme, currentPage, setCurrentPage
 
         {/* Decorative Bottom Elements */}
         <div className={`absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-6 z-10 transition-all duration-700 delay-300 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <button className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" aria-label="Search">
-            <IconSearch size={28} className="block" />
-          </button>
           <button 
             onClick={toggleTheme}
-            className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
+            className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2.5 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
             aria-label="Toggle Theme"
           >
             <IconMoon size={28} className="block dark:hidden" aria-hidden="true" />
             <IconSun size={28} className="block hidden dark:block" aria-hidden="true" />
-          </button>
-          <button className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" aria-label="Help">
-            <IconHelp size={28} className="block" />
           </button>
         </div>
       </div>

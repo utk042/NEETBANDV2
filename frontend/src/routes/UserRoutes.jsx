@@ -35,13 +35,13 @@ import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 
-function ForumGuard({ user, isAuthLoading, setPostLoginRedirect }) {
+function FeedGuard({ user, isAuthLoading, setPostLoginRedirect }) {
   const navigate = useNavigate();
   
   useEffect(() => {
     if (!isAuthLoading) {
       if (!user || !user.isLoggedIn) {
-        setPostLoginRedirect('forum');
+        setPostLoginRedirect('feed');
         navigate('/login', { replace: true });
       } else if (!user.isPremium && user.role !== 'admin' && user.role !== 'owner') {
         alert("Premium access required. Redirecting to checkout...");
@@ -227,7 +227,7 @@ export default function UserRoutes() {
 
             <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub /></div>} />
             <Route path="/library" element={<SongLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} />} />
-            <Route path="/forum" element={<ForumGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
+            <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />
             <Route path="/about" element={<AboutUs />} />
