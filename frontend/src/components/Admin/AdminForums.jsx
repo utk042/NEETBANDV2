@@ -23,10 +23,16 @@ const getErrorMessage = (error) => {
     const cleanErrors = errorList.map(err => {
       const fieldParts = err.split(":");
       const field = fieldParts[0] ? fieldParts[0].trim() : "";
-      let detail = fieldParts[1] ? fieldParts[1].trim() : "";
+      let detail = fieldParts.slice(1).join(":").trim(); // join rest in case of nested colons
+      
       // Simplify "Path `field` is required."
       detail = detail.replace(/Path `\w+` is/, "is");
       detail = detail.replace(/Path '\w+' is/, "is");
+      
+      // Clean cast/validation messages
+      if (detail.toLowerCase().includes("cast to") || detail.toLowerCase().includes("failed for value")) {
+        detail = "invalid input format.";
+      }
       
       const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1);
       return `- ${capitalizedField}: ${detail}`;
@@ -133,7 +139,27 @@ const AdminForums = ({ api }) => {
     const payload = { 
       title, 
       content, 
-      attachments: attachments.split(',').map(s => s.trim()).filter(Boolean),
+      attachments: attachments.split(',').map(s => s.trim()).filter(Boolean).map(url => {
+        let type = 'other';
+        if (url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || url.includes('image')) {
+          type = 'image';
+        } else if (url.match(/\.pdf/i) || url.includes('pdf')) {
+          type = 'pdf';
+        }
+        
+        let name = 'Attachment';
+        try {
+          const parts = url.split('/');
+          const lastPart = parts[parts.length - 1];
+          if (lastPart) {
+            name = decodeURIComponent(lastPart);
+          }
+        } catch (e) {
+          // ignore
+        }
+        
+        return { url, type, name };
+      }),
       isPoll,
       pollOptions: isPoll ? pollOptions.filter(o => o.trim()).map(text => ({ text })) : []
     };
@@ -156,7 +182,7 @@ const AdminForums = ({ api }) => {
     setCurrentPost(post);
     setTitle(post.title);
     setContent(post.content);
-    setAttachments(post.attachments ? post.attachments.join(', ') : '');
+    setAttachments(post.attachments ? post.attachments.map(att => att.url || att).join(', ') : '');
     setIsPoll(post.isPoll || false);
     setPollOptions(post.pollOptions && post.pollOptions.length > 0 ? post.pollOptions.map(o => o.text) : ['', '']);
     setIsEditing(true);
