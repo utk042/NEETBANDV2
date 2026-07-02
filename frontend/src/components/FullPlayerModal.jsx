@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled, IconHeart, IconVolume, IconRepeat, IconArrowsShuffle, IconMicrophone2 } from '@tabler/icons-react';
+import { IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled, IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconArrowsShuffle, IconMicrophone2 } from '@tabler/icons-react';
 import defaultCover from '../assets/dna_replication_thumbnail.png';
 
-export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlaying, togglePlay, currentTime, onNext, onPrev, onSeek, favoritedTrackIds, onToggleFavorite }) {
+export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlaying, togglePlay, currentTime, onNext, onPrev, onSeek, favoritedTrackIds, onToggleFavorite, isMuted, onToggleMute }) {
   const [lyrics, setLyrics] = useState([]);
   const [showLyrics, setShowLyrics] = useState(false);
   const lyricsContainerRef = useRef(null);
@@ -22,48 +22,121 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
   const progressPercent = Math.min((currentSeconds / totalSeconds) * 100, 100);
 
   useEffect(() => {
-    if (displayTrack.lyricsUrl) {
-      fetch(displayTrack.lyricsUrl)
-        .then(res => res.text())
-        .then(text => {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(text, 'text/xml');
-          const pTags = doc.getElementsByTagName('p');
-          const parsed = [];
-          
-          const parseTime = (timeStr) => {
-            if (!timeStr) return 0;
-            const parts = timeStr.split(':');
-            let seconds = 0;
-            if (parts.length === 3) {
-              seconds = parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-            } else if (parts.length === 2) {
-              seconds = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-            } else {
-              seconds = parseFloat(timeStr);
-            }
-            return seconds;
-          };
-
-          for (let i = 0; i < pTags.length; i++) {
-            const p = pTags[i];
-            const begin = parseTime(p.getAttribute('begin'));
-            let endStr = p.getAttribute('end');
-            let end = endStr ? parseTime(endStr) : begin + 5; // Default 5s if no end
-            const text = p.textContent.trim();
-            if (text) {
-              parsed.push({ begin, end, text });
-            }
-          }
-          setLyrics(parsed);
-        })
-        .catch(err => {
-          console.error("Failed to load lyrics:", err);
-          setLyrics([]);
-        });
-    } else {
+    if (!displayTrack.lyricsUrl) {
       setLyrics([]);
+      return;
     }
+
+    const parseTTML = (text) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/xml');
+      const pTags = doc.getElementsByTagName('p');
+      const parsed = [];
+      const parseTime = (timeStr) => {
+        if (!timeStr) return 0;
+        const parts = timeStr.split(':');
+        if (parts.length === 3) return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+        if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+        return parseFloat(timeStr);
+      };
+      for (let i = 0; i < pTags.length; i++) {
+        const p = pTags[i];
+        const begin = parseTime(p.getAttribute('begin'));
+        const endStr = p.getAttribute('end');
+        const end = endStr ? parseTime(endStr) : begin + 5;
+        const text = p.textContent.trim();
+        if (text) parsed.push({ begin, end, text });
+      }
+      return parsed;
+    };
+
+    const parseLRC = (text) => {
+      // LRC format: [MM:SS.xx]Lyric line
+      const lines = text.split('\n');
+      const timeRegex = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+      const parsed = [];
+      const entries = [];
+      for (const line of lines) {
+        const matches = [...line.matchAll(timeRegex)];
+        if (matches.length === 0) continue;
+        const lyricText = line.replace(timeRegex, '').trim();
+        if (!lyricText) continue;
+        for (const match of matches) {
+          const mins = parseInt(match[1], 10);
+          const secs = parseInt(match[2], 10);
+          const ms = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+          const begin = mins * 60 + secs + ms / 1000;
+          entries.push({ begin, text: lyricText });
+        }
+      }
+      entries.sort((a, b) => a.begin - b.begin);
+      for (let i = 0; i < entries.length; i++) {
+        const end = entries[i + 1] ? entries[i + 1].begin : entries[i].begin + 5;
+        parsed.push({ begin: entries[i].begin, end, text: entries[i].text });
+      }
+      return parsed;
+    };
+
+    const parseSRT = (text) => {
+      // SRT format: index\nHH:MM:SS,ms --> HH:MM:SS,ms\nLyric text\n
+      const parseTimestamp = (ts) => {
+        const [hms, ms] = ts.split(',');
+        const [h, m, s] = hms.split(':').map(Number);
+        return h * 3600 + m * 60 + s + (parseInt(ms, 10) || 0) / 1000;
+      };
+      const blocks = text.trim().split(/\n\s*\n/);
+      const parsed = [];
+      for (const block of blocks) {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length < 2) continue;
+        // Skip index line if it's just a number
+        let startLine = 0;
+        if (/^\d+$/.test(lines[0])) startLine = 1;
+        const timeLine = lines[startLine];
+        if (!timeLine || !timeLine.includes('-->')) continue;
+        const [startStr, endStr] = timeLine.split('-->').map(s => s.trim());
+        const begin = parseTimestamp(startStr);
+        const end = parseTimestamp(endStr);
+        const lyricText = lines.slice(startLine + 1).join(' ').trim();
+        if (lyricText) parsed.push({ begin, end, text: lyricText });
+      }
+      return parsed;
+    };
+
+    const parsePlainText = (text) => {
+      // Plain text: no timestamps, display as static lyrics with even spacing
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return [];
+      return lines.map((line, i) => ({ begin: i * 5, end: (i + 1) * 5, text: line }));
+    };
+
+    const detectFormat = (url, text) => {
+      const lower = url.toLowerCase();
+      if (lower.endsWith('.ttml') || lower.includes('.ttml')) return 'ttml';
+      if (lower.endsWith('.lrc') || lower.includes('.lrc')) return 'lrc';
+      if (lower.endsWith('.srt') || lower.includes('.srt')) return 'srt';
+      // Content sniffing
+      if (text.includes('<?xml') || text.includes('<tt') || text.includes('<body')) return 'ttml';
+      if (text.match(/\[\d{1,2}:\d{2}/)) return 'lrc';
+      if (text.match(/\d+\n\d{2}:\d{2}:\d{2},\d{3} -->/)) return 'srt';
+      return 'plain';
+    };
+
+    fetch(displayTrack.lyricsUrl)
+      .then(res => res.text())
+      .then(text => {
+        const format = detectFormat(displayTrack.lyricsUrl, text);
+        let parsed = [];
+        if (format === 'ttml') parsed = parseTTML(text);
+        else if (format === 'lrc') parsed = parseLRC(text);
+        else if (format === 'srt') parsed = parseSRT(text);
+        else parsed = parsePlainText(text);
+        setLyrics(parsed);
+      })
+      .catch(err => {
+        console.error('Failed to load lyrics:', err);
+        setLyrics([]);
+      });
   }, [displayTrack.lyricsUrl]);
 
   // Find active lyric index
@@ -109,7 +182,22 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[50] flex flex-col bg-surface/95 backdrop-blur-xl transition-all duration-300 pt-20 md:pt-24 pb-20 md:pb-0 overflow-y-auto overflow-x-hidden no-scrollbar">
+    <div className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes wavePulse {
+          0% {
+            transform: scaleY(0.75);
+          }
+          100% {
+            transform: scaleY(var(--pulse-scale));
+          }
+        }
+        .wave-bar-active {
+          animation: wavePulse var(--pulse-dur) ease-in-out infinite alternate;
+          animation-delay: var(--pulse-delay);
+          transform-origin: center;
+        }
+      `}} />
       {/* Header */}
       <div className="flex justify-between items-center p-4 md:px-8 shrink-0">
         <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
@@ -123,7 +211,7 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
           onClick={() => setShowLyrics(!showLyrics)}
           className={`p-2 rounded-full transition-colors ${showLyrics ? 'text-primary bg-primary/10' : 'text-on-surface hover:text-primary'} ${!displayTrack.lyricsUrl && 'opacity-50 cursor-not-allowed'}`}
           disabled={!displayTrack.lyricsUrl}
-          title={displayTrack.lyricsUrl ? "Toggle Lyrics" : "No lyrics available"}
+          title={displayTrack.lyricsUrl ? "Toggle Lyrics (TTML/LRC/SRT/TXT)" : "No lyrics available"}
         >
           <IconMicrophone2 size={28} />
         </button>
@@ -136,10 +224,10 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
         <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col items-center justify-center py-2">
           <div className="w-[75vw] max-w-[360px] md:max-w-[460px] aspect-square bg-black rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-floating-card)] relative shrink min-h-0">
             <img 
-              src={displayTrack.cover} 
+              src={displayTrack.cover || defaultCover} 
               alt={displayTrack.title} 
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${showLyrics ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
-            />
+            onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
             
             {/* Lyrics Overlay */}
             <div 
@@ -209,11 +297,24 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
           >
             {waveData.map((height, i) => {
               const isPlayed = (i / waveData.length) * 100 <= progressPercent;
+              const pulseDur = `${0.65 + (i % 7) * 0.12}s`;
+              const pulseScale = 1.15 + (i % 4) * 0.15;
+              const delay = `${-(i % 10) * 0.1}s`;
+
               return (
                 <div 
                   key={i}
-                  className={`flex-1 rounded-full transition-colors duration-300 ${isPlayed ? 'bg-primary shadow-[0_0_8px_rgba(201,162,39,0.5)]' : 'bg-surface-container-highest group-hover:bg-surface-container-highest/80'}`}
-                  style={{ height: `${height}%` }}
+                  className={`flex-1 rounded-full transition-all duration-300 ${
+                    isPlayed 
+                      ? 'bg-primary shadow-[0_0_8px_rgba(201,162,39,0.5)]' 
+                      : 'bg-surface-container-highest group-hover:bg-surface-container-highest/80'
+                  } ${isPlaying && isPlayed ? 'wave-bar-active' : ''}`}
+                  style={{ 
+                    height: `${height}%`,
+                    '--pulse-dur': pulseDur,
+                    '--pulse-scale': pulseScale,
+                    '--pulse-delay': delay
+                  }}
                 />
               );
             })}
@@ -234,7 +335,7 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
             </button>
             <button 
               onClick={togglePlay}
-              className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 transition-transform shrink-0"
+              className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
             >
               {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} className="translate-x-1" />}
             </button>
@@ -248,9 +349,19 @@ export default function FullPlayerModal({ isOpen, onClose, currentTrack, isPlayi
 
           {/* Bottom Bar (Volume, etc) */}
           <div className="flex justify-center items-center gap-4 text-on-surface-variant hidden md:flex mt-4">
-            <IconVolume size={24} />
-            <div className="w-1/3 h-1.5 bg-surface-container-highest rounded-full cursor-pointer">
-              <div className="w-2/3 h-full bg-on-surface-variant rounded-full"></div>
+            <button 
+              onClick={onToggleMute}
+              className="hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full p-1"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? (
+                <IconVolumeOff size={24} className="opacity-50" />
+              ) : (
+                <IconVolume size={24} />
+              )}
+            </button>
+            <div className="w-1/3 h-1.5 bg-surface-container-highest rounded-full cursor-pointer" onClick={onToggleMute}>
+              <div className="h-full bg-on-surface-variant rounded-full transition-all duration-300" style={{ width: isMuted ? '0%' : '100%' }}></div>
             </div>
           </div>
         </div>
