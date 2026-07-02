@@ -26,6 +26,7 @@ import SyllabusLibrary from '../components/SyllabusLibrary';
 const LibraryPage = React.lazy(() => import('../components/LibraryPage'));
 const SongLibrary = React.lazy(() => import('../components/SongLibrary'));
 import GoToTop from '../components/GoToTop';
+import ProtectedRoute from '../components/ProtectedRoute';
 const CommunityForum = React.lazy(() => import('../components/CommunityForum'));
 const CoursePlayer = React.lazy(() => import('../components/CoursePlayer'));
 const Checkout = React.lazy(() => import('../components/Checkout'));
@@ -201,13 +202,11 @@ export default function UserRoutes() {
               <FAQ />
             </>} />
 
-            <Route path="/dashboard" element={isAuthLoading ? (
-              <div className="min-h-[80vh] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
-              </div>
-            ) : (
-              <Dashboard tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} />
-            )} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Dashboard" loginRoute="/login">
+                <Dashboard tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} />
+              </ProtectedRoute>
+            } />
             
             <Route path="/favourites" element={<div className="pt-32 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} /></div>} />
 
