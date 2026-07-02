@@ -165,6 +165,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           >
             <IconMusic size={20} stroke={2.5} /> Manage Songs
           </button>
+
+          <button
+            onClick={() => changeTab('song-analytics')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'song-analytics' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconChartBar size={20} stroke={2.5} /> Song Analytics
+          </button>
           
           <button 
             onClick={() => changeTab('lms-courses')}
@@ -253,17 +264,6 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconSettings size={20} stroke={2.5} /> News Scroller
-          </button>
-
-          <button
-            onClick={() => changeTab('song-analytics')}
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
-              activeTab === 'song-analytics' 
-                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
-                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <IconChartBar size={20} stroke={2.5} /> Song Analytics
           </button>
         </nav>
 
