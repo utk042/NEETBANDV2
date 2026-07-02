@@ -9,6 +9,7 @@ import AdminAffiliates from './AdminAffiliates';
 import ManageContactMessages from './ManageContactMessages';
 import ManageNewsScroll from './ManageNewsScroll';
 import SongAnalyticsDashboard from './SongAnalyticsDashboard';
+import ManageNewsletter from './ManageNewsletter';
 import api from '../../services/api';
 import { 
   IconMusic, 
@@ -35,7 +36,8 @@ import {
   IconMessageCircle,
   IconAffiliate,
   IconMail,
-  IconChartBar
+  IconChartBar,
+  IconMailOpened
 } from '@tabler/icons-react';
 
 export default function AdminDashboard({ navigate, user, theme, setTheme }) {
@@ -264,6 +266,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconSettings size={20} stroke={2.5} /> News Scroller
+          </button>
+
+          <button
+            onClick={() => changeTab('newsletter')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'newsletter' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconMailOpened size={20} stroke={2.5} /> Newsletter
           </button>
         </nav>
 
@@ -532,6 +545,14 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           {activeTab === 'song-analytics' && (
             <div className="max-w-6xl mx-auto pb-8">
               <SongAnalyticsDashboard />
+            </div>
+          )}
+
+          {activeTab === 'newsletter' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageNewsletter />
+              </div>
             </div>
           )}
 
