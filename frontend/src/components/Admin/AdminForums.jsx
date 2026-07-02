@@ -4,15 +4,36 @@ import BlogEditor from './BlogEditor';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
+  let msg = error.message || String(error);
   try {
     const parsed = JSON.parse(error.message);
     if (parsed && parsed.message) {
-      return parsed.message;
+      msg = parsed.message;
     }
   } catch (e) {
     // Not a JSON string
   }
-  return error.message || String(error);
+
+  // Format Mongoose validation errors
+  if (msg.includes("validation failed:")) {
+    const parts = msg.split("validation failed:");
+    const errorsPart = parts[1] || "";
+    const errorList = errorsPart.split(",").map(s => s.trim()).filter(Boolean);
+    const cleanErrors = errorList.map(err => {
+      const fieldParts = err.split(":");
+      const field = fieldParts[0] ? fieldParts[0].trim() : "";
+      let detail = fieldParts[1] ? fieldParts[1].trim() : "";
+      // Simplify "Path `field` is required."
+      detail = detail.replace(/Path `\w+` is/, "is");
+      detail = detail.replace(/Path '\w+' is/, "is");
+      
+      const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1);
+      return `- ${capitalizedField}: ${detail}`;
+    });
+    return "Validation Error:\n" + cleanErrors.join("\n");
+  }
+
+  return msg;
 };
 
 const AdminForums = ({ api }) => {
@@ -161,7 +182,7 @@ const AdminForums = ({ api }) => {
           <div className="space-y-2">
             <label className="text-sm font-medium text-on-surface-variant">Post Content</label>
             <div className="border border-outline-variant rounded-xl overflow-hidden bg-background">
-              <BlogEditor value={content} onChange={setContent} />
+              <BlogEditor content={content} setContent={setContent} />
             </div>
           </div>
 
