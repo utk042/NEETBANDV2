@@ -262,19 +262,14 @@ body {
 
 .editor-toolbar-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
     padding: 8px;
     gap: 12px;
     background: rgb(var(--color-surface-container-high));
     border-bottom: 1px solid rgba(var(--color-outline) / 0.2);
-}
-
-@media (min-width: 768px) {
-    .editor-toolbar-container {
-        flex-direction: row;
-        align-items: center;
-    }
 }
 
 .editor-toolbar-scroll {
@@ -294,8 +289,8 @@ body {
 .editor-toolbar-inner {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 18px;
+    gap: 4px 16px;
+    min-width: max-content;
     padding: 8px 10px;
 }
 
