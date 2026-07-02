@@ -1,16 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { IconArrowRight, IconCalendarEvent, IconClock, IconArrowLeft, IconHeart, IconMessageCircle, IconUser } from '@tabler/icons-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { IconArrowRight, IconCalendarEvent, IconClock, IconArrowLeft, IconHeart, IconMessageCircle, IconUser, IconShare } from '@tabler/icons-react';
 import api from '../services/api';
 
 export default function Blog({ user }) {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [commentText, setCommentText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const blogsPerPage = 10;
+
+  useEffect(() => {
+    if (!selectedBlog) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentPage, selectedBlog]);
+
+  const indexOfLastBlog = currentPage * blogsPerPage;
+  const indexOfFirstBlog = indexOfLastBlog - blogsPerPage;
+  const currentBlogs = blogs.slice(indexOfFirstBlog, indexOfLastBlog);
+  const totalPages = Math.ceil(blogs.length / blogsPerPage);
+
+  const getPaginationRange = (current, total) => {
+    const range = [];
+    const delta = 1;
+    for (let i = 1; i <= total; i++) {
+      if (
+        i === 1 ||
+        i === total ||
+        (i >= current - delta && i <= current + delta)
+      ) {
+        range.push(i);
+      } else if (range[range.length - 1] !== '...') {
+        range.push('...');
+      }
+    }
+    return range;
+  };
 
   useEffect(() => {
     fetchBlogs();
   }, []);
+
+  useEffect(() => {
+    if (slug) {
+      fetchBlogDetail(slug);
+    } else {
+      setSelectedBlog(null);
+    }
+  }, [slug]);
 
   const fetchBlogs = async () => {
     try {
@@ -24,16 +66,20 @@ export default function Blog({ user }) {
     }
   };
 
-  const fetchBlogDetail = async (id) => {
+  const fetchBlogDetail = async (idOrSlug) => {
     try {
       setLoading(true);
-      const res = await api.get(`/blogs/${id}`);
+      const res = await api.get(`/blogs/${idOrSlug}`);
       setSelectedBlog(res.data);
     } catch (error) {
       console.error('Error fetching blog details:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToBlogs = () => {
+    navigate('/blog');
   };
 
   const handleLike = async () => {
@@ -60,6 +106,27 @@ export default function Blog({ user }) {
     }
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: selectedBlog.title,
+          text: selectedBlog.shortDescription,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy link:", err);
+      }
+    }
+  };
+
   if (selectedBlog) {
     const isLiked = user?.isLoggedIn && selectedBlog.likes.includes(user._id);
 
@@ -67,7 +134,7 @@ export default function Blog({ user }) {
       <section className="py-32 px-gutter bg-transparent relative min-h-screen">
         <div className="max-w-4xl mx-auto">
           <button 
-            onClick={() => setSelectedBlog(null)} 
+            onClick={handleBackToBlogs} 
             className="flex items-center gap-2 text-on-surface-variant hover:text-primary mb-8 transition-colors"
           >
             <IconArrowLeft size={20} /> Back to blogs
@@ -77,12 +144,12 @@ export default function Blog({ user }) {
             <img 
               src={selectedBlog.coverImage} 
               alt={selectedBlog.title}
-              className="w-full h-64 md:h-96 object-cover rounded-3xl mb-8 border border-white/10"
+              className="w-full h-64 md:h-96 object-cover rounded-3xl mb-8 border border-[var(--border-floating-card)]"
             />
           )}
 
           <div className="flex items-center gap-4 mb-4 text-on-surface-variant/70 text-sm">
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-surface-container-low rounded-full border border-[var(--border-floating-card)]">
               <IconUser size={16} /> {selectedBlog.author?.name || 'Unknown'}
             </span>
             <span className="flex items-center gap-1.5">
@@ -90,11 +157,11 @@ export default function Blog({ user }) {
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-8 leading-tight">
+          <h1 className="text-3xl md:text-5xl font-bold text-on-surface mb-8 leading-tight">
             {selectedBlog.title}
           </h1>
 
-          <div className="prose prose-invert prose-lg max-w-none mb-12 tiptap-editor-content">
+          <div className="prose dark:prose-invert prose-lg max-w-none mb-12 text-on-surface-variant/90 tiptap-editor-content">
             <div dangerouslySetInnerHTML={{ __html: selectedBlog.content }} />
           </div>
 
@@ -102,30 +169,40 @@ export default function Blog({ user }) {
           {selectedBlog.tags && selectedBlog.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-12">
               {selectedBlog.tags.map(tag => (
-                <span key={tag} className="px-3 py-1 bg-white/5 rounded-full text-sm text-gray-400 border border-white/10">
+                <span key={tag} className="px-3 py-1 bg-surface-container-low rounded-full text-sm text-on-surface-variant/80 border border-[var(--border-floating-card)]">
                   #{tag}
                 </span>
               ))}
             </div>
           )}
 
-          <div className="border-t border-white/10 pt-8 mt-12 flex flex-wrap gap-4 items-center justify-between">
+          <div className="border-t border-[var(--border-floating-card)] pt-8 mt-12 flex flex-wrap gap-4 items-center justify-between">
             <div className="flex gap-4">
               <button 
                 onClick={handleLike}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
-                  isLiked ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors border ${
+                  isLiked 
+                    ? 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30' 
+                    : 'bg-surface-container-low text-on-surface-variant border-[var(--border-floating-card)] hover:bg-surface-container-high'
                 }`}
               >
                 <IconHeart size={20} className={isLiked ? 'fill-current' : ''} />
                 {selectedBlog.likes.length} Likes
               </button>
+
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors border bg-surface-container-low text-on-surface-variant border-[var(--border-floating-card)] hover:bg-surface-container-high"
+              >
+                <IconShare size={20} />
+                Share
+              </button>
             </div>
           </div>
 
           {/* Comments Section */}
-          <div className="mt-12 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className="mt-12 bg-surface-container-lowest border border-[var(--border-floating-card)] rounded-2xl p-6 md:p-8">
+            <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
               <IconMessageCircle /> Comments ({selectedBlog.comments.length})
             </h3>
 
@@ -135,33 +212,33 @@ export default function Blog({ user }) {
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Share your thoughts..."
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#c5ff4a] focus:ring-1 focus:ring-[#c5ff4a] outline-none transition-all resize-none h-24 mb-3"
+                  className="w-full bg-surface-container border border-[var(--border-floating-card)] rounded-xl px-4 py-3 text-on-surface placeholder-on-surface-variant/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none h-24 mb-3"
                   required
                 />
                 <div className="flex justify-end">
-                  <button type="submit" className="px-6 py-2 bg-[#c5ff4a] text-black font-semibold rounded-xl hover:bg-[#b0eb38] transition-colors">
+                  <button type="submit" className="px-6 py-2 bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed text-on-primary font-semibold rounded-xl transition-colors">
                     Post Comment
                   </button>
                 </div>
               </form>
             ) : (
-              <div className="bg-black/30 border border-white/5 rounded-xl p-4 text-center mb-8">
-                <p className="text-gray-400 text-sm">Please log in to join the discussion.</p>
+              <div className="bg-surface-container-low border border-[var(--border-floating-card)] rounded-xl p-4 text-center mb-8">
+                <p className="text-on-surface-variant/80 text-sm">Please log in to join the discussion.</p>
               </div>
             )}
 
             <div className="space-y-6">
               {selectedBlog.comments.map(comment => (
                 <div key={comment._id} className="flex gap-4">
-                  <div className="w-10 h-10 bg-[#c5ff4a]/20 text-[#c5ff4a] flex items-center justify-center rounded-full font-bold flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-full font-bold flex-shrink-0">
                     {comment.user?.name?.charAt(0) || 'U'}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-white">{comment.user?.name || 'Unknown User'}</span>
-                      <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                      <span className="font-semibold text-on-surface">{comment.user?.name || 'Unknown User'}</span>
+                      <span className="text-xs text-on-surface-variant/60">{new Date(comment.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">{comment.content}</p>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -186,36 +263,28 @@ export default function Blog({ user }) {
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-white/10 border-t-[#c5ff4a] rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-[var(--border-floating-card)] border-t-primary rounded-full animate-spin"></div>
           </div>
         ) : blogs.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p>No articles found yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogs.map((article, index) => {
-              const isFeatured = index === 0;
-              return (
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {currentBlogs.map((article) => (
                 <article 
                   key={article._id} 
-                  className={`bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-[var(--shadow-floating-card)] overflow-hidden hover:border-primary/30 transition-all duration-300 group flex flex-col cursor-pointer ${
-                    isFeatured 
-                      ? 'md:col-span-2 lg:col-span-3 lg:flex-row' 
-                      : 'col-span-1'
-                  }`}
-                  onClick={() => fetchBlogDetail(article._id)}
+                  className="col-span-1 bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-[var(--shadow-floating-card)] overflow-hidden hover:border-primary/30 transition-all duration-300 group flex flex-col cursor-pointer"
+                  onClick={() => navigate(`/blog/${article.slug || article._id}`)}
                 >
-                  <div className={`overflow-hidden relative border-[var(--border-floating-card)] bg-black/20 ${
-                    isFeatured 
-                      ? 'w-full lg:w-1/2 h-64 lg:h-auto border-b lg:border-b-0 lg:border-r' 
-                      : 'w-full h-48 border-b'
-                  }`}>
+                  <div className="w-full aspect-[16/10] relative overflow-hidden border-b border-[var(--border-floating-card)] bg-black/20">
                     {article.coverImage ? (
                       <img 
                         src={article.coverImage} 
                         alt={article.title} 
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-700" 
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-600">No Image</div>
@@ -229,21 +298,21 @@ export default function Blog({ user }) {
                     )}
                   </div>
                   
-                  <div className={`p-6 md:p-8 flex-1 flex flex-col justify-center ${isFeatured ? 'lg:p-12' : ''}`}>
-                    <div className="flex items-center gap-4 mb-3 text-on-surface-variant/70 text-xs font-body-md">
-                      <span className="flex items-center gap-1.5"><IconCalendarEvent size={14} /> {new Date(article.createdAt).toLocaleDateString()}</span>
-                      <span className="flex items-center gap-1.5"><IconUser size={14} /> {article.author?.name || 'Unknown'}</span>
+                  <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-4 mb-3 text-on-surface-variant/70 text-xs font-body-md">
+                        <span className="flex items-center gap-1.5"><IconCalendarEvent size={14} /> {new Date(article.createdAt).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1.5"><IconUser size={14} /> {article.author?.name || 'Unknown'}</span>
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                        {article.title}
+                      </h3>
+                      
+                      <p className="font-body-md text-sm text-on-surface-variant mb-6 leading-relaxed line-clamp-3">
+                        {article.content.replace(/<[^>]+>/g, '').substring(0, 150)}...
+                      </p>
                     </div>
-                    
-                    <h3 className={`font-headline-md font-bold text-on-surface mb-3 group-hover:text-primary transition-colors leading-snug ${
-                      isFeatured ? 'text-2xl md:text-3xl' : 'text-xl'
-                    }`}>
-                      {article.title}
-                    </h3>
-                    
-                    <p className="font-body-md text-sm text-on-surface-variant mb-6 leading-relaxed line-clamp-3">
-                      {article.content.replace(/<[^>]+>/g, '').substring(0, 150)}...
-                    </p>
                     
                     <div className="mt-auto">
                       <span className="inline-flex items-center gap-2 font-label-md text-sm font-bold text-primary group-hover:gap-3 transition-all">
@@ -252,8 +321,49 @@ export default function Blog({ user }) {
                     </div>
                   </div>
                 </article>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-16 font-body-md">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-[var(--border-floating-card)] bg-surface-container-low text-on-surface hover:bg-surface-container-high disabled:opacity-50 disabled:hover:bg-surface-container-low transition-all"
+                >
+                  Prev
+                </button>
+                
+                {getPaginationRange(currentPage, totalPages).map((page, idx) => (
+                  page === '...' ? (
+                    <span key={`ell-${idx}`} className="px-3 py-2 text-on-surface-variant opacity-60">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={`page-${page}`}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all border ${
+                        currentPage === page
+                          ? 'bg-primary text-on-primary border-primary shadow-lg shadow-primary/20'
+                          : 'border-[var(--border-floating-card)] bg-surface-container-low text-on-surface hover:bg-surface-container-high'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                ))}
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-xl border border-[var(--border-floating-card)] bg-surface-container-low text-on-surface hover:bg-surface-container-high disabled:opacity-50 disabled:hover:bg-surface-container-low transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
