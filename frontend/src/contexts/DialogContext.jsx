@@ -1,0 +1,127 @@
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from '@tabler/icons-react';
+
+const DialogContext = createContext(null);
+
+export const DialogProvider = ({ children }) => {
+  const [toasts, setToasts] = useState([]);
+  const [confirmState, setConfirmState] = useState(null); // { title, message, resolve }
+
+  const showToast = useCallback((message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }, []);
+
+  const toast = {
+    success: (msg) => showToast(msg, 'success'),
+    error: (msg) => showToast(msg, 'error'),
+    info: (msg) => showToast(msg, 'info'),
+  };
+
+  const confirm = useCallback((title, message) => {
+    return new Promise((resolve) => {
+      setConfirmState({ title, message, resolve });
+    });
+  }, []);
+
+  const alert = useCallback((title, message) => {
+    return new Promise((resolve) => {
+      setConfirmState({ title, message, resolve, isAlert: true });
+    });
+  }, []);
+
+  const handleCloseConfirm = (result) => {
+    if (confirmState && confirmState.resolve) {
+      confirmState.resolve(result);
+    }
+    setConfirmState(null);
+  };
+
+  return (
+    <DialogContext.Provider value={{ toast, confirm, alert }}>
+      {children}
+
+      {/* Global Confirm/Alert Modal */}
+      {confirmState && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => !confirmState.isAlert && handleCloseConfirm(false)}
+          />
+          {/* Modal Container */}
+          <div className="relative bg-surface rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl border border-outline-variant/30 animate-in zoom-in-95 duration-200 text-center text-on-surface">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              confirmState.isAlert ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-500'
+            }`}>
+              {confirmState.isAlert ? <IconInfoCircle size={32} /> : <IconAlertTriangle size={32} />}
+            </div>
+
+            <h2 className="text-2xl font-extrabold tracking-tight text-on-surface mb-2">{confirmState.title}</h2>
+            <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
+              {confirmState.message}
+            </p>
+
+            <div className="flex justify-center gap-4 w-full">
+              {!confirmState.isAlert && (
+                <button
+                  type="button"
+                  onClick={() => handleCloseConfirm(false)}
+                  className="flex-1 py-3 px-6 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-variant transition-colors border border-outline-variant/30"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleCloseConfirm(true)}
+                className={`flex-1 py-3 px-6 font-bold rounded-xl transition-colors shadow-sm text-white ${
+                  confirmState.isAlert ? 'bg-primary hover:bg-primary/95' : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                {confirmState.isAlert ? 'OK' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Toast Notifications Stack */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        {toasts.map((t) => (
+          <div 
+            key={t.id} 
+            className={`flex items-start gap-3 p-4 rounded-2xl shadow-lg border animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto bg-surface text-on-surface ${
+              t.type === 'success' ? 'border-green-500/20' : 
+              t.type === 'error' ? 'border-red-500/20' : 'border-outline-variant/30'
+            }`}
+          >
+            <div className={`mt-0.5 rounded-full p-1 flex-shrink-0 ${
+              t.type === 'success' ? 'bg-green-500/10 text-green-500' :
+              t.type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-primary/10 text-primary'
+            }`}>
+              {t.type === 'success' ? <IconCheck size={18} /> : 
+               t.type === 'error' ? <IconAlertTriangle size={18} /> : <IconInfoCircle size={18} />}
+            </div>
+            <div className="flex-1 text-sm font-medium pr-2">{t.message}</div>
+            <button 
+              onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+              className="text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <IconX size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </DialogContext.Provider>
+  );
+};
+
+export const useDialog = () => {
+  const context = useContext(DialogContext);
+  if (!context) throw new Error('useDialog must be used within a DialogProvider');
+  return context;
+};

@@ -4,6 +4,7 @@ import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { UserAuthProvider, useUserAuth } from './contexts/UserAuthContext';
 import { LmsAuthProvider } from './contexts/LmsAuthContext';
 import { AffiliateAuthProvider } from './contexts/AffiliateAuthContext';
+import { DialogProvider } from './contexts/DialogContext';
 import { PlayerProvider } from './contexts/PlayerContext';
 
 import UserRoutes from './routes/UserRoutes';
@@ -49,7 +50,9 @@ export default function App() {
   return (
     <Router>
       <UserAuthProvider>
-        <AppContent />
+        <DialogProvider>
+          <AppContent />
+        </DialogProvider>
       </UserAuthProvider>
     </Router>
   );
