@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAdminAffiliates, createAdminAffiliate, updateAdminAffiliate, deleteAdminAffiliate, addAdminAffiliateSettlement } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconEdit, IconTrash, IconReceipt, IconCurrencyRupee } from '@tabler/icons-react';
 
 export default function AdminAffiliates() {
+  const { toast, confirm } = useDialog();
   const [affiliates, setAffiliates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,7 +26,7 @@ export default function AdminAffiliates() {
       setAffiliates(data);
     } catch (error) {
       console.error(error);
-      alert('Failed to fetch affiliates');
+      toast.error('Failed to fetch affiliates');
     } finally {
       setIsLoading(false);
     }
@@ -64,23 +66,26 @@ export default function AdminAffiliates() {
     try {
       if (currentAffiliate) {
         await updateAdminAffiliate(currentAffiliate._id, formData);
+        toast.success('Affiliate updated successfully');
       } else {
         await createAdminAffiliate(formData);
+        toast.success('Affiliate created successfully');
       }
       fetchAffiliates();
       setIsModalOpen(false);
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this affiliate?')) {
+    if (await confirm("Delete Affiliate", "Are you sure you want to delete this affiliate?")) {
       try {
         await deleteAdminAffiliate(id);
+        toast.success('Affiliate deleted successfully');
         fetchAffiliates();
       } catch (error) {
-        alert(error.message);
+        toast.error(error.message);
       }
     }
   };
@@ -92,10 +97,11 @@ export default function AdminAffiliates() {
         amount: Number(settlementData.amount),
         notes: settlementData.notes
       });
+      toast.success('Settlement recorded successfully');
       fetchAffiliates();
       setIsSettlementModalOpen(false);
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 

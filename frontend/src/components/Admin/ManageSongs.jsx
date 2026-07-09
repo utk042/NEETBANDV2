@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getSongs, createSong, updateSong, deleteSong, uploadFile } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
 
 export default function ManageSongs() {
+  const { toast, confirm } = useDialog();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -18,8 +20,9 @@ export default function ManageSongs() {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const fullUrl = `${backendUrl}${res.url}`;
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
+      toast.success("File uploaded successfully");
     } catch (err) {
-      alert("Failed to upload file: " + err.message);
+      toast.error("Failed to upload file: " + err.message);
     }
   };
 
@@ -57,12 +60,13 @@ export default function ManageSongs() {
   };
 
   const handleDeleteClick = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this song?")) return;
+    if (!await confirm("Delete Song", "Are you sure you want to delete this song?")) return;
     try {
       await deleteSong(id);
+      toast.success("Song deleted successfully");
       fetchSongs();
     } catch (err) {
-      alert("Failed to delete song: " + err.message);
+      toast.error("Failed to delete song: " + err.message);
     }
   };
 
@@ -86,15 +90,17 @@ export default function ManageSongs() {
     try {
       if (editingSongId) {
         await updateSong(editingSongId, formData);
+        toast.success("Song updated successfully");
       } else {
         await createSong(formData);
+        toast.success("Song added successfully");
       }
       setFormData({ title: '', class: '', subject: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
