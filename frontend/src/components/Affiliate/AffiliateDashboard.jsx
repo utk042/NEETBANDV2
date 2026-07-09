@@ -11,13 +11,15 @@ import {
   IconMenu2,
   IconX,
   IconLayoutDashboard,
-  IconArrowRight
+  IconArrowRight,
+  IconCopy,
+  IconCheck
 } from '@tabler/icons-react';
 import { getAffiliateDashboard } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 
 export default function AffiliateDashboard({ user, navigate, theme, setTheme }) {
-  const { confirm } = useDialog();
+  const { toast, confirm } = useDialog();
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,6 +28,7 @@ export default function AffiliateDashboard({ user, navigate, theme, setTheme }) 
     return params.get('tab') || 'dashboard';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +68,15 @@ export default function AffiliateDashboard({ user, navigate, theme, setTheme }) 
     const newUrl = new URL(window.location);
     newUrl.searchParams.set('tab', tab);
     window.history.pushState({}, '', newUrl);
+  };
+
+  const handleCopyCode = () => {
+    if (dashboardData?.promoCode) {
+      navigator.clipboard.writeText(dashboardData.promoCode);
+      setIsCopied(true);
+      toast.success("Promo code copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   if (isLoading) {
@@ -237,9 +249,16 @@ export default function AffiliateDashboard({ user, navigate, theme, setTheme }) 
                   <div>
                     <p className="text-xs text-on-surface-variant font-medium mb-1">Your Promo Code</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-lg font-bold text-on-surface bg-surface-container px-2 py-0.5 rounded">
+                      <code className="text-lg font-bold text-on-surface bg-surface-container px-2 py-0.5 rounded select-all">
                         {dashboardData?.promoCode}
                       </code>
+                      <button
+                        onClick={handleCopyCode}
+                        className="p-1.5 hover:bg-surface-variant rounded-lg text-on-surface-variant hover:text-on-surface transition-colors"
+                        title="Copy Promo Code"
+                      >
+                        {isCopied ? <IconCheck size={18} className="text-green-500" /> : <IconCopy size={18} />}
+                      </button>
                     </div>
                   </div>
                 </div>
