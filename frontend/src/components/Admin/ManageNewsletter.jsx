@@ -5,6 +5,7 @@ import {
   deleteNewsletterSubscriber,
   subscribeNewsletter 
 } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { 
   IconTrash, 
   IconPencil, 
@@ -16,6 +17,7 @@ import {
 } from '@tabler/icons-react';
 
 export default function ManageNewsletter() {
+  const { confirm, toast } = useDialog();
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,8 +56,10 @@ export default function ManageNewsletter() {
       setNewEmail('');
       await fetchSubscribers();
       setError('');
+      toast.success("Subscriber added successfully");
     } catch (err) {
       setError(err.message || 'Failed to add subscriber');
+      toast.error(err.message || 'Failed to add subscriber');
     } finally {
       setAdding(false);
     }
@@ -79,21 +83,25 @@ export default function ManageNewsletter() {
       setEditingEmail('');
       await fetchSubscribers();
       setError('');
+      toast.success("Subscriber updated successfully");
     } catch (err) {
       setError(err.message || 'Failed to update subscriber');
+      toast.error(err.message || 'Failed to update subscriber');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this email subscription?')) {
+    if (!await confirm("Remove Subscription", "Are you sure you want to remove this email subscription?")) {
       return;
     }
     try {
       await deleteNewsletterSubscriber(id);
       await fetchSubscribers();
       setError('');
+      toast.success("Subscription removed successfully");
     } catch (err) {
       setError(err.message || 'Failed to delete subscriber');
+      toast.error(err.message || 'Failed to delete subscriber');
     }
   };
 

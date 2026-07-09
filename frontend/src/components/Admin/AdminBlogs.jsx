@@ -3,6 +3,7 @@ import { Search, Code, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Im
 import api, { uploadFile } from '../../services/api';
 import BlogEditor from './BlogEditor';
 import SlugInput from './SlugInput';
+import { useDialog } from '../../contexts/DialogContext';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
@@ -18,6 +19,7 @@ const getErrorMessage = (error) => {
 };
 
 export default function AdminBlogs() {
+  const { confirm, toast } = useDialog();
   const [activeView, setActiveView] = useState('list'); // 'list', 'add', 'edit'
   const [blogs, setBlogs] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -28,15 +30,16 @@ export default function AdminBlogs() {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    if (!await confirm("Delete Comment", "Are you sure you want to delete this comment?")) return;
     try {
       const res = await api.delete(`/blogs/${selectedCommentsBlog._id}/comments/${commentId}`);
       const updatedBlog = { ...selectedCommentsBlog, comments: res.data };
       setSelectedCommentsBlog(updatedBlog);
       setBlogs(blogs.map(b => b._id === selectedCommentsBlog._id ? updatedBlog : b));
+      toast.success("Comment deleted successfully");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete comment: " + getErrorMessage(err));
+      toast.error("Failed to delete comment: " + getErrorMessage(err));
     }
   };
 
@@ -62,9 +65,9 @@ export default function AdminBlogs() {
       setBlogs(res.data);
     } catch (err) {
       console.error(err);
-      alert("Failed to fetch blogs: " + getErrorMessage(err));
+      toast.error("Failed to fetch blogs: " + getErrorMessage(err));
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (activeView === 'list') {
@@ -116,19 +119,20 @@ export default function AdminBlogs() {
       setCoverImage(data.coverImage || "");
     } catch (err) {
       console.error(err);
-      alert("Failed to load blog data: " + getErrorMessage(err));
+      toast.error("Failed to load blog data: " + getErrorMessage(err));
       setActiveView('list');
     }
   };
 
   const deleteBlog = async (id) => {
-    if (!window.confirm("Delete this blog?")) return;
+    if (!await confirm("Delete Blog", "Are you sure you want to delete this blog?")) return;
     try {
       await api.delete(`/blogs/${id}`);
       fetchBlogs();
+      toast.success("Blog deleted successfully");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete blog: " + getErrorMessage(err));
+      toast.error("Failed to delete blog: " + getErrorMessage(err));
     }
   };
 
@@ -149,17 +153,17 @@ export default function AdminBlogs() {
 
       if (activeView === 'edit') {
         await api.put(`/blogs/${editingId}`, payload);
-        alert("Blog Updated Successfully");
+        toast.success("Blog Updated Successfully");
       } else {
         await api.post(`/blogs`, payload);
-        alert("Blog Created Successfully");
+        toast.success("Blog Created Successfully");
       }
       
       resetForm();
       setActiveView('list');
     } catch (error) {
       console.error(error);
-      alert("Server error: " + getErrorMessage(error));
+      toast.error("Server error: " + getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -373,7 +377,7 @@ export default function AdminBlogs() {
                     const fullUrl = `${backendUrl}${res.url}`;
                     setCoverImage(fullUrl);
                   } catch (err) {
-                    alert("Failed to upload file: " + getErrorMessage(err));
+                    toast.error("Failed to upload file: " + getErrorMessage(err));
                   }
                 }} />
               </label>

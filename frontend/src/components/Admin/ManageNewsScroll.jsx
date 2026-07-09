@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getNewsScrollSettings, updateNewsScrollSettings } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { 
   IconPlus, 
   IconTrash, 
@@ -12,6 +13,7 @@ import {
 } from '@tabler/icons-react';
 
 export default function ManageNewsScroll() {
+  const { confirm, toast } = useDialog();
   const [enabled, setEnabled] = useState(true);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,7 @@ export default function ManageNewsScroll() {
   };
 
   const handleResetVisibility = async () => {
-    if (!window.confirm("This will force the news scroller to show up again for all users, even if they have previously hidden/closed it. Proceed?")) {
+    if (!await confirm("Reset Visibility", "This will force the news scroller to show up again for all users, even if they have previously hidden/closed it. Proceed?")) {
       return;
     }
     setResetting(true);

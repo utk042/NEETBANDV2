@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, BarChart2, Paperclip, MessageSquare, Heart, Eye } from 'lucide-react';
 import BlogEditor from './BlogEditor';
 import { uploadFile } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
@@ -44,6 +45,7 @@ const getErrorMessage = (error) => {
 };
 
 const AdminForums = ({ api }) => {
+  const { confirm, toast } = useDialog();
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -89,7 +91,7 @@ const AdminForums = ({ api }) => {
       }
     } catch (err) {
       console.error('File upload failed:', err);
-      alert('Upload failed: ' + getErrorMessage(err));
+      toast.error('Upload failed: ' + getErrorMessage(err));
     } finally {
       setIsUploading(false);
     }
@@ -101,20 +103,21 @@ const AdminForums = ({ api }) => {
       setSelectedCommentsPost(res.data);
     } catch (err) {
       console.error(err);
-      alert("Failed to load comments: " + getErrorMessage(err));
+      toast.error("Failed to load comments: " + getErrorMessage(err));
     }
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    if (!await confirm("Delete Comment", "Are you sure you want to delete this comment?")) return;
     try {
       const res = await api.delete(`/forums/posts/${selectedCommentsPost._id}/comments/${commentId}`);
       const updatedPost = { ...selectedCommentsPost, comments: res.data };
       setSelectedCommentsPost(updatedPost);
       setPosts(posts.map(p => p._id === selectedCommentsPost._id ? updatedPost : p));
+      toast.success("Comment deleted successfully");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete comment: " + getErrorMessage(err));
+      toast.error("Failed to delete comment: " + getErrorMessage(err));
     }
   };
 
@@ -128,7 +131,7 @@ const AdminForums = ({ api }) => {
       setPosts(res.data);
     } catch (error) {
       console.error('Error fetching posts:', error);
-      alert('Error fetching posts: ' + getErrorMessage(error));
+      toast.error('Error fetching posts: ' + getErrorMessage(error));
     }
   };
 
@@ -170,14 +173,16 @@ const AdminForums = ({ api }) => {
     try {
       if (currentPost) {
         await api.put(`/forums/posts/${currentPost._id}`, payload);
+        toast.success("Post updated successfully");
       } else {
         await api.post('/forums/posts', payload);
+        toast.success("Post created successfully");
       }
       setIsEditing(false);
       fetchPosts();
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('Failed to save post: ' + getErrorMessage(error));
+      toast.error('Failed to save post: ' + getErrorMessage(error));
     }
   };
 
@@ -192,13 +197,14 @@ const AdminForums = ({ api }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    if (!await confirm("Delete Post", "Are you sure you want to delete this post?")) return;
     try {
       await api.delete(`/forums/posts/${id}`);
       fetchPosts();
+      toast.success("Post deleted successfully");
     } catch (error) {
       console.error('Error deleting post:', error);
-      alert('Error deleting post: ' + getErrorMessage(error));
+      toast.error('Error deleting post: ' + getErrorMessage(error));
     }
   };
 

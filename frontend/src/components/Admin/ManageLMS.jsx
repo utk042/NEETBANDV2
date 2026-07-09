@@ -4,10 +4,12 @@ import {
   getCourses, createCourse, updateCourse, deleteCourse,
   getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent 
 } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette } from '@tabler/icons-react';
 import CourseDesigner from './CourseDesigner';
 
 export default function ManageLMS({ subTab = 'courses', user }) {
+  const { confirm, toast } = useDialog();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ title: '', class: '', subject: '', summary: '', order: 0 });
@@ -85,8 +87,9 @@ export default function ManageLMS({ subTab = 'courses', user }) {
       setStudentFormData({ name: '', email: '', password: '', role: subTab === 'admins' ? 'admin' : 'student', isPremium: false, membershipPlan: 'none' });
       setIsAddStudentModalOpen(false);
       fetchStudents();
+      toast.success("User registered successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -129,20 +132,22 @@ export default function ManageLMS({ subTab = 'courses', user }) {
       setIsEditStudentModalOpen(false);
       setEditingStudent(null);
       fetchStudents();
+      toast.success("User updated successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
 
 
   const handleDeleteStudent = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    if (!await confirm("Delete User", "Are you sure you want to delete this user?")) return;
     try {
       await deleteAdminStudent(id);
       fetchStudents();
+      toast.success("User deleted successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -153,8 +158,9 @@ export default function ManageLMS({ subTab = 'courses', user }) {
       setFormData({ title: '', class: '', subject: '', summary: '', order: 0 });
       setIsAddCourseModalOpen(false);
       fetchCourses();
+      toast.success("Course created successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -175,18 +181,20 @@ export default function ManageLMS({ subTab = 'courses', user }) {
       setIsEditCourseModalOpen(false);
       setEditingCourse(null);
       fetchCourses();
+      toast.success("Course updated successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleDeleteCourse = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    if (!await confirm("Delete Course", "Are you sure you want to delete this course?")) return;
     try {
       await deleteCourse(id);
       fetchCourses();
+      toast.success("Course deleted successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

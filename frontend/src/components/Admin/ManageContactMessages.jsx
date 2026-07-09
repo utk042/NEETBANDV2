@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getContactMessages, markContactMessageRead, deleteContactMessage } from '../../services/api';
 import { IconMail, IconMailOpened, IconTrash, IconSearch, IconAlertCircle } from '@tabler/icons-react';
+import { useDialog } from '../../contexts/DialogContext';
 
 export default function ManageContactMessages() {
+  const { confirm, toast } = useDialog();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,18 +33,22 @@ export default function ManageContactMessages() {
       setMessages(messages.map(msg => 
         msg._id === id ? { ...msg, isRead: true } : msg
       ));
+      toast.success("Message marked as read");
     } catch (err) {
       console.error('Error marking as read:', err);
+      toast.error("Failed to mark message as read: " + err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this message?')) return;
+    if (!await confirm("Delete Message", "Are you sure you want to delete this message?")) return;
     try {
       await deleteContactMessage(id);
       setMessages(messages.filter(msg => msg._id !== id));
+      toast.success("Message deleted successfully");
     } catch (err) {
       console.error('Error deleting message:', err);
+      toast.error("Failed to delete message: " + err.message);
     }
   };
 
