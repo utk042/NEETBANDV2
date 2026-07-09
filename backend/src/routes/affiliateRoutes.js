@@ -1,5 +1,5 @@
 import express from 'express';
-import { authAffiliate, getAffiliateDashboard } from '../controllers/affiliateController.js';
+import { authAffiliate, getAffiliateDashboard, updateAffiliateProfile } from '../controllers/affiliateController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -59,5 +59,6 @@ router.get('/dashboard', protectAffiliate, getAffiliateDashboard);
 router.get('/profile', protectAffiliate, (req, res) => {
   res.json(req.user);
 });
+router.put('/profile', protectAffiliate, updateAffiliateProfile);
 
 export default router;

@@ -72,3 +72,36 @@ export const getAffiliateDashboard = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const updateAffiliateProfile = async (req, res) => {
+  const { name, password } = req.body;
+  try {
+    const affiliate = await Affiliate.findById(req.user._id);
+
+    if (affiliate) {
+      if (name) {
+        affiliate.name = name;
+      }
+      if (password) {
+        affiliate.password = password;
+      }
+
+      const updatedAffiliate = await affiliate.save();
+
+      res.json({
+        _id: updatedAffiliate._id,
+        name: updatedAffiliate.name,
+        email: updatedAffiliate.email,
+        promoCode: updatedAffiliate.promoCode,
+        earnings: updatedAffiliate.earnings,
+        affiliatedUsers: updatedAffiliate.affiliatedUsers,
+        settlements: updatedAffiliate.settlements,
+      });
+    } else {
+      res.status(404).json({ message: 'Affiliate not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
