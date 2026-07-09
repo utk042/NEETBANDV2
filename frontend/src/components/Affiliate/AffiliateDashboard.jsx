@@ -5,14 +5,27 @@ import {
   IconLink,
   IconLogout,
   IconChevronLeft,
-  IconReceipt
+  IconReceipt,
+  IconSun,
+  IconMoon,
+  IconMenu2,
+  IconX,
+  IconLayoutDashboard,
+  IconArrowRight
 } from '@tabler/icons-react';
 import { getAffiliateDashboard } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 
-export default function AffiliateDashboard({ user, navigate }) {
+export default function AffiliateDashboard({ user, navigate, theme, setTheme }) {
+  const { confirm } = useDialog();
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'dashboard';
+  });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,8 +47,9 @@ export default function AffiliateDashboard({ user, navigate }) {
     }
   }, [user, navigate]);
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
+  const handleLogout = async () => {
+    const isConfirmed = await confirm("Confirm Log Out", "Are you sure you want to log out of the Affiliate Portal?");
+    if (isConfirmed) {
       localStorage.removeItem('neetband_affiliate_user');
       localStorage.removeItem('affiliate_token');
       navigate('/');
@@ -43,9 +57,19 @@ export default function AffiliateDashboard({ user, navigate }) {
     }
   };
 
+  const changeTab = (tab) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false); // Close sidebar on mobile after clicking a tab
+    
+    // Update URL without triggering a full page reload
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set('tab', tab);
+    window.history.pushState({}, '', newUrl);
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
       </div>
     );
@@ -53,7 +77,7 @@ export default function AffiliateDashboard({ user, navigate }) {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="bg-error/10 text-error p-6 rounded-2xl max-w-md text-center">
           <p className="font-bold mb-4">{error}</p>
           <button onClick={handleLogout} className="bg-error text-on-error px-4 py-2 rounded-lg">
@@ -68,155 +92,277 @@ export default function AffiliateDashboard({ user, navigate }) {
   const settlements = dashboardData?.settlements || [];
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-[var(--border-floating-card)] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
-          >
-            <IconChevronLeft size={24} />
-          </button>
-          <h1 className="text-xl font-bold text-on-surface">Affiliate Portal</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden md:block text-right">
-            <p className="text-sm font-semibold text-on-surface">{user.name}</p>
-            <p className="text-xs text-on-surface-variant">Affiliate Partner</p>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="p-2 text-error hover:bg-error/10 rounded-full transition-colors"
-            title="Logout"
-          >
-            <IconLogout size={24} />
-          </button>
-        </div>
-      </header>
+    <div className="fixed inset-0 w-full bg-background overflow-hidden font-sans text-on-background z-modal flex transition-colors duration-300">
+      
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      <main className="max-w-6xl mx-auto p-6 space-y-8 mt-4">
+      {/* Sidebar */}
+      <aside className={`
+        fixed md:static top-0 left-0 h-full w-[280px] bg-surface flex flex-col flex-shrink-0 
+        shadow-[4px_0_24px_rgba(0,0,0,0.02)] border-r border-outline-variant/30 
+        transition-all duration-300 z-50 md:z-10 md:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         
-        {/* Welcome Section */}
-        <div className="bg-primary/10 rounded-3xl p-8 border border-primary/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <h2 className="text-2xl font-bold text-on-surface mb-2">Welcome back, {user.name}!</h2>
-            <p className="text-on-surface-variant">Here is your referral overview and earnings.</p>
+        {/* Logo Section */}
+        <div className="p-6 flex items-center justify-between">
+          <div className="bg-primary text-on-primary font-bold text-lg px-6 py-2 rounded-xl inline-flex items-center justify-center shadow-sm shadow-primary/20">
+            Affiliate Partner
           </div>
-          <div className="bg-surface rounded-2xl p-4 border border-[var(--border-floating-card)] shadow-sm flex items-center gap-4 min-w-[240px]">
-            <div className="p-3 bg-primary/20 text-primary rounded-xl">
-              <IconLink size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-on-surface-variant font-medium mb-1">Your Promo Code</p>
-              <div className="flex items-center gap-2">
-                <code className="text-lg font-bold text-on-surface bg-surface-container px-2 py-0.5 rounded">
-                  {dashboardData?.promoCode}
-                </code>
+          <button 
+            className="md:hidden text-on-surface-variant hover:text-on-surface"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <IconX size={24} />
+          </button>
+        </div>
+
+        {/* User Profile Section */}
+        <div className="px-6 py-4 flex items-center gap-4 mb-4">
+          <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm">
+            <IconUsers size={24} />
+          </div>
+          <div>
+            <h3 className="font-bold text-on-surface text-[15px] leading-tight">{user.name || 'Partner'}</h3>
+            <p className="text-on-surface-variant text-xs mt-0.5 capitalize">Affiliate Partner</p>
+          </div>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
+          <button
+            onClick={() => changeTab('dashboard')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'dashboard' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconLayoutDashboard size={20} stroke={2.5} /> Dashboard
+          </button>
+          
+          <button
+            onClick={() => changeTab('referrals')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'referrals' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconUsers size={20} stroke={2.5} /> Referrals
+          </button>
+
+          <button
+            onClick={() => changeTab('settlements')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'settlements' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconReceipt size={20} stroke={2.5} /> Settlements
+          </button>
+        </nav>
+
+        {/* Logout Section */}
+        <div className="p-4 mt-auto">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3.5 bg-error/90 hover:bg-error text-on-error rounded-xl font-bold transition-colors shadow-md shadow-error/20"
+          >
+            <IconLogout size={20} stroke={2.5} className="rotate-180" /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-background transition-colors duration-300 relative w-full">
+        
+        {/* Top Header */}
+        <header className="h-[72px] bg-surface flex items-center justify-between md:justify-end px-4 md:px-8 flex-shrink-0 border-b border-outline-variant/30 z-0 transition-colors duration-300 w-full">
+          
+          <div className="flex items-center gap-3 md:hidden">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded-full transition-colors"
+            >
+              <IconMenu2 size={24} />
+            </button>
+            <span className="font-bold text-on-surface tracking-tight text-lg">Affiliate Portal</span>
+          </div>
+
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Theme Toggle Button */}
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded-full transition-colors"
+              title="Toggle Light/Dark Mode"
+            >
+              {theme === 'dark' ? <IconSun size={22} /> : <IconMoon size={22} />}
+            </button>
+          </div>
+        </header>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 text-on-background">
+          
+          {activeTab === 'dashboard' && (
+            <div className="max-w-6xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-[24px] md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Dashboard</h1>
+              <p className="text-on-surface-variant text-[14px] md:text-[15px] mb-6 md:mb-8">Welcome back! Here's your referral overview and earnings.</p>
+
+              {/* Welcome Card */}
+              <div className="bg-primary/10 rounded-2xl p-6 md:p-8 border border-primary/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-on-surface mb-2">Welcome back, {user.name}!</h2>
+                  <p className="text-on-surface-variant">Here is your referral overview and earnings.</p>
+                </div>
+                <div className="bg-surface rounded-2xl p-4 border border-outline-variant/30 shadow-sm flex items-center gap-4 min-w-[240px]">
+                  <div className="p-3 bg-primary/20 text-primary rounded-xl">
+                    <IconLink size={24} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-on-surface-variant font-medium mb-1">Your Promo Code</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-lg font-bold text-on-surface bg-surface-container px-2 py-0.5 rounded">
+                        {dashboardData?.promoCode}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {/* Earnings card */}
+                <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300">
+                  <div className="relative z-10">
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Total Earnings</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">₹{dashboardData?.earnings || 0}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Paid and pending payouts</p>
+                    <button onClick={() => changeTab('settlements')} className="text-emerald-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                      View Settlements <IconArrowRight size={16} />
+                    </button>
+                  </div>
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-emerald-500/20">
+                    <IconCurrencyRupee size={24} className="text-emerald-500 md:w-6 md:h-6" />
+                  </div>
+                </div>
+
+                {/* Referrals card */}
+                <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300">
+                  <div className="relative z-10">
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Total Referrals</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{affiliatedUsers.length}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Users registered with your code</p>
+                    <button onClick={() => changeTab('referrals')} className="text-blue-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                      View Referrals <IconArrowRight size={16} />
+                    </button>
+                  </div>
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-blue-500/20">
+                    <IconUsers size={24} className="text-blue-500 md:w-6 md:h-6" />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-6 shadow-sm flex items-center gap-4">
-            <div className="p-4 bg-green-500/20 text-green-600 rounded-2xl">
-              <IconCurrencyRupee size={32} />
-            </div>
-            <div>
-              <p className="text-sm text-on-surface-variant font-medium">Total Earnings</p>
-              <h3 className="text-3xl font-bold text-on-surface">₹{dashboardData?.earnings || 0}</h3>
-            </div>
-          </div>
+          {activeTab === 'referrals' && (
+            <div className="max-w-6xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-[24px] md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Your Referrals</h1>
+              <p className="text-on-surface-variant text-[14px] md:text-[15px] mb-6 md:mb-8">Detailed breakdown of users referred by you.</p>
 
-          <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-6 shadow-sm flex items-center gap-4">
-            <div className="p-4 bg-blue-500/20 text-blue-600 rounded-2xl">
-              <IconUsers size={32} />
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                {affiliatedUsers.length === 0 ? (
+                  <div className="p-8 text-center text-on-surface-variant">
+                    <p>No referrals yet. Share your promo code to start earning!</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-outline-variant/30 text-on-surface-variant font-semibold text-sm">
+                          <th className="p-4">Name</th>
+                          <th className="p-4">Email</th>
+                          <th className="p-4">Plan Type</th>
+                          <th className="p-4">Join Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/20">
+                        {affiliatedUsers.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
+                            <td className="p-4 font-medium text-on-surface">{item.userId?.name || 'Unknown User'}</td>
+                            <td className="p-4 text-on-surface-variant">{item.userId?.email || 'No email'}</td>
+                            <td className="p-4">
+                              <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                                {item.plan === 'scale_plan' ? 'Scale Plan' : 'Premium Scholar'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-on-surface-variant">
+                              {new Date(item.joinedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-on-surface-variant font-medium">Total Referrals</p>
-              <h3 className="text-3xl font-bold text-on-surface">{affiliatedUsers.length}</h3>
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Two Column Layout for Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Referrals List */}
-          <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-sm overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-[var(--border-floating-card)]">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <IconUsers size={20} className="text-primary" />
-                Your Referrals
-              </h3>
-            </div>
-            <div className="p-0 overflow-y-auto max-h-[400px]">
-              {affiliatedUsers.length === 0 ? (
-                <div className="p-8 text-center text-on-surface-variant">
-                  <p>No referrals yet. Share your promo code to start earning!</p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-[var(--border-floating-card)]">
-                  {affiliatedUsers.map((item, idx) => (
-                    <li key={idx} className="p-4 hover:bg-surface-container transition-colors flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-on-surface">{item.userId?.name || 'Unknown User'}</p>
-                        <p className="text-xs text-on-surface-variant">{item.userId?.email || 'No email'}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-medium text-on-surface bg-surface-container-high px-2 py-1 rounded">
-                          {item.plan === 'scale_plan' ? 'Scale Plan' : 'Premium Scholar'}
-                        </p>
-                        <p className="text-xs text-on-surface-variant mt-1">
-                          {new Date(item.joinedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          {activeTab === 'settlements' && (
+            <div className="max-w-6xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-[24px] md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Settlement History</h1>
+              <p className="text-on-surface-variant text-[14px] md:text-[15px] mb-6 md:mb-8">History of payments processed for your referrals.</p>
 
-          {/* Settlements List */}
-          <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] shadow-sm overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-[var(--border-floating-card)]">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <IconReceipt size={20} className="text-primary" />
-                Settlement History
-              </h3>
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                {settlements.length === 0 ? (
+                  <div className="p-8 text-center text-on-surface-variant">
+                    <p>No settlements yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-outline-variant/30 text-on-surface-variant font-semibold text-sm">
+                          <th className="p-4">Amount</th>
+                          <th className="p-4">Notes</th>
+                          <th className="p-4">Settlement Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/20">
+                        {settlements.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
+                            <td className="p-4 font-bold text-green-600 flex items-center gap-0.5">
+                              <IconCurrencyRupee size={16} />
+                              {item.amount}
+                            </td>
+                            <td className="p-4 text-on-surface-variant max-w-xs truncate" title={item.notes}>
+                              {item.notes}
+                            </td>
+                            <td className="p-4 text-on-surface-variant">
+                              {new Date(item.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="p-0 overflow-y-auto max-h-[400px]">
-              {settlements.length === 0 ? (
-                <div className="p-8 text-center text-on-surface-variant">
-                  <p>No settlements yet.</p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-[var(--border-floating-card)]">
-                  {settlements.map((item, idx) => (
-                    <li key={idx} className="p-4 hover:bg-surface-container transition-colors flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-on-surface text-lg flex items-center">
-                           <IconCurrencyRupee size={16} />{item.amount}
-                        </p>
-                        <p className="text-sm text-on-surface-variant">{item.notes}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-on-surface-variant">
-                          {new Date(item.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          )}
 
         </div>
       </main>
+
     </div>
   );
 }

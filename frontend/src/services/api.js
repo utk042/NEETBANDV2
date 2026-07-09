@@ -111,7 +111,7 @@ export const getAffiliateUserProfile = async () => {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_URL}/auth/profile`, { headers });
+  const res = await fetch(`${API_URL}/affiliates/profile`, { headers });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };

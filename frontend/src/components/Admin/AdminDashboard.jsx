@@ -11,6 +11,7 @@ import ManageNewsScroll from './ManageNewsScroll';
 import SongAnalyticsDashboard from './SongAnalyticsDashboard';
 import ManageNewsletter from './ManageNewsletter';
 import api from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 import { 
   IconMusic, 
   IconBook, 
@@ -41,6 +42,7 @@ import {
 } from '@tabler/icons-react';
 
 export default function AdminDashboard({ navigate, user, theme, setTheme }) {
+  const { confirm } = useDialog();
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || 'dashboard';
@@ -79,8 +81,9 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
     );
   }
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
+  const handleLogout = async () => {
+    const isConfirmed = await confirm("Confirm Log Out", "Are you sure you want to log out of the LMS Panel?");
+    if (isConfirmed) {
       localStorage.removeItem('neetband_lms_user');
       localStorage.removeItem('lms_token');
       navigate('/');

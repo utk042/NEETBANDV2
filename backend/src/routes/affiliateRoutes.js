@@ -56,5 +56,8 @@ const protectAffiliate = async (req, res, next) => {
 
 router.post('/login', authAffiliate);
 router.get('/dashboard', protectAffiliate, getAffiliateDashboard);
+router.get('/profile', protectAffiliate, (req, res) => {
+  res.json(req.user);
+});
 
 export default router;
