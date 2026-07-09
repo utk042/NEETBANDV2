@@ -116,6 +116,46 @@ export const getAffiliateUserProfile = async () => {
   return res.json();
 };
 
+export const updateLmsUserProfile = async (userData) => {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(userData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to update LMS profile');
+    } catch {
+      throw new Error(errText || 'Failed to update LMS profile');
+    }
+  }
+  return res.json();
+};
+
+export const updateAffiliateProfile = async (userData) => {
+  const token = localStorage.getItem('affiliate_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_URL}/affiliates/profile`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(userData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to update affiliate profile');
+    } catch {
+      throw new Error(errText || 'Failed to update affiliate profile');
+    }
+  }
+  return res.json();
+};
+
 // --- SONGS ---
 export const getSongs = async () => {
   const res = await fetch(`${API_URL}/songs`, { headers: getHeaders() });
