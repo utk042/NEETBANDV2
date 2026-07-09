@@ -3,6 +3,39 @@ import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from '@tabler/ico
 
 const DialogContext = createContext(null);
 
+const ToastItem = ({ toast, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose(toast.id);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.id, onClose]);
+
+  return (
+    <div 
+      className={`flex items-start gap-3 p-4 rounded-2xl shadow-lg border animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto bg-surface text-on-surface ${
+        toast.type === 'success' ? 'border-green-500/20' : 
+        toast.type === 'error' ? 'border-red-500/20' : 'border-outline-variant/30'
+      }`}
+    >
+      <div className={`mt-0.5 rounded-full p-1 flex-shrink-0 ${
+        toast.type === 'success' ? 'bg-green-500/10 text-green-500' :
+        toast.type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-primary/10 text-primary'
+      }`}>
+        {toast.type === 'success' ? <IconCheck size={18} /> : 
+         toast.type === 'error' ? <IconAlertTriangle size={18} /> : <IconInfoCircle size={18} />}
+      </div>
+      <div className="flex-1 text-sm font-medium pr-2">{toast.message}</div>
+      <button 
+        onClick={() => onClose(toast.id)}
+        className="text-on-surface-variant hover:text-on-surface transition-colors"
+      >
+        <IconX size={16} />
+      </button>
+    </div>
+  );
+};
+
 export const DialogProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [confirmState, setConfirmState] = useState(null); // { title, message, resolve }
@@ -10,9 +43,6 @@ export const DialogProvider = ({ children }) => {
   const showToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
   }, []);
 
   const toast = useMemo(() => ({
@@ -113,28 +143,11 @@ export const DialogProvider = ({ children }) => {
       {/* Global Toast Notifications Stack */}
       <div className="fixed bottom-6 right-6 z-toast flex flex-col gap-3 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
-          <div 
-            key={t.id} 
-            className={`flex items-start gap-3 p-4 rounded-2xl shadow-lg border animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto bg-surface text-on-surface ${
-              t.type === 'success' ? 'border-green-500/20' : 
-              t.type === 'error' ? 'border-red-500/20' : 'border-outline-variant/30'
-            }`}
-          >
-            <div className={`mt-0.5 rounded-full p-1 flex-shrink-0 ${
-              t.type === 'success' ? 'bg-green-500/10 text-green-500' :
-              t.type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-primary/10 text-primary'
-            }`}>
-              {t.type === 'success' ? <IconCheck size={18} /> : 
-               t.type === 'error' ? <IconAlertTriangle size={18} /> : <IconInfoCircle size={18} />}
-            </div>
-            <div className="flex-1 text-sm font-medium pr-2">{t.message}</div>
-            <button 
-              onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
-              className="text-on-surface-variant hover:text-on-surface transition-colors"
-            >
-              <IconX size={16} />
-            </button>
-          </div>
+          <ToastItem
+            key={t.id}
+            toast={t}
+            onClose={(id) => setToasts((prev) => prev.filter((toast) => toast.id !== id))}
+          />
         ))}
       </div>
     </DialogContext.Provider>

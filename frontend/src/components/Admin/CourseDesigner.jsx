@@ -18,6 +18,7 @@ import {
   getLessonQa, updateLessonQa,
   uploadFile
 } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 
 const LESSON_TYPES = [
   { value: 'notes',   label: 'Notes',   icon: IconFileText,        color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
@@ -56,6 +57,7 @@ const tempId = () => `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)
 
 // ── Quiz editor ─────────────────────────────────────────────
 function QuizEditor({ questions = [], onChange }) {
+  const { toast } = useDialog();
   const [showRawPaste, setShowRawPaste] = useState(false);
   const [rawText, setRawText] = useState('');
 
@@ -131,7 +133,7 @@ function QuizEditor({ questions = [], onChange }) {
       setRawText('');
       setShowRawPaste(false);
     } else {
-      alert("No questions matched. Please follow the format:\nQ: [Question]\n1) Option 1\n2) Option 2\nCorrect: 1");
+      toast.error("No questions matched. Please follow the format:\nQ: [Question]\n1) Option 1\n2) Option 2\nCorrect: 1");
     }
   };
 
@@ -352,6 +354,7 @@ function QuizEditor({ questions = [], onChange }) {
 
 // ── Q&A editor ──────────────────────────────────────────────
 function QaEditor({ qas = [], onChange }) {
+  const { toast } = useDialog();
   const [showRawPaste, setShowRawPaste] = useState(false);
   const [rawText, setRawText] = useState('');
 
@@ -373,7 +376,7 @@ function QaEditor({ qas = [], onChange }) {
       setRawText('');
       setShowRawPaste(false);
     } else {
-      alert("No Q&A pairs matched. Please follow the format:\nQ: [Question]\nA: [Answer]");
+      toast.error("No Q&A pairs matched. Please follow the format:\nQ: [Question]\nA: [Answer]");
     }
   };
 
@@ -811,6 +814,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
 }
 
 export default function CourseDesigner({ course, onClose, onSaved }) {
+  const { toast } = useDialog();
   const [lessons, setLessons] = useState(course.lessons || []);
   const [meta, setMeta] = useState({
     title: course.title,
@@ -836,7 +840,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
       const fullUrl = `${backendUrl}${res.url}`;
       setMeta(m => ({ ...m, thumbnail: fullUrl }));
     } catch (err) {
-      alert("Failed to upload file: " + err.message);
+      toast.error("Failed to upload file: " + err.message);
     }
   };
 
@@ -877,7 +881,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
     // Validate — every lesson must have a title
     const untitled = lessons.findIndex(l => !l.title?.trim());
     if (untitled !== -1) {
-      alert(`Lesson Heading ${untitled + 1} has no title. Please add a title before saving.`);
+      toast.error(`Lesson Heading ${untitled + 1} has no title. Please add a title before saving.`);
       return;
     }
     setSaving(true);
@@ -979,7 +983,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
       onSaved(updated);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      alert('Failed to save: ' + err.message);
+      toast.error('Failed to save: ' + err.message);
     } finally {
       setSaving(false);
     }

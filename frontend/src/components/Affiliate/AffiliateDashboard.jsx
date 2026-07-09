@@ -76,11 +76,18 @@ export default function AffiliateDashboard({ user, navigate, theme, setTheme }) 
   }
 
   if (error) {
+    const forceLogout = () => {
+      localStorage.removeItem('neetband_affiliate_user');
+      localStorage.removeItem('affiliate_token');
+      navigate('/');
+      window.location.reload();
+    };
+
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="bg-error/10 text-error p-6 rounded-2xl max-w-md text-center">
           <p className="font-bold mb-4">{error}</p>
-          <button onClick={handleLogout} className="bg-error text-on-error px-4 py-2 rounded-lg">
+          <button onClick={forceLogout} className="bg-error text-on-error px-4 py-2 rounded-lg">
             Logout and Try Again
           </button>
         </div>

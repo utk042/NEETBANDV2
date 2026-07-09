@@ -21,6 +21,7 @@ import {
     Undo, Redo, Code, Eye, Monitor, FileCode, Check, ChevronDown, Eraser, X, UploadCloud, Loader2
 } from 'lucide-react';
 import { uploadFile } from '../../services/api';
+import { useDialog } from '../../contexts/DialogContext';
 
 import SafeEditorContent from './SafeEditorContent';
 
@@ -39,6 +40,7 @@ const MenuButton = ({ onClick, isActive, disabled, children, title, className = 
 const ToolbarDivider = () => <div className="editor-toolbar-divider" />;
 
 const ImageUploadModal = ({ isOpen, onClose, onConfirm }) => {
+    const { toast } = useDialog();
     const [url, setUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     
@@ -57,7 +59,7 @@ const ImageUploadModal = ({ isOpen, onClose, onConfirm }) => {
             onConfirm(finalUrl);
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Upload failed. Please try again.");
+            toast.error("Upload failed. Please try again.");
         } finally {
             setIsUploading(false);
         }
