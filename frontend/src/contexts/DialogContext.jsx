@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from '@tabler/icons-react';
 
 const DialogContext = createContext(null);
@@ -39,12 +39,27 @@ export const DialogProvider = ({ children }) => {
     alert,
   }), [toast, confirm, alert]);
 
-  const handleCloseConfirm = (result) => {
+  const handleCloseConfirm = useCallback((result) => {
     if (confirmState && confirmState.resolve) {
       confirmState.resolve(result);
     }
     setConfirmState(null);
-  };
+  }, [confirmState]);
+
+  useEffect(() => {
+    if (!confirmState) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleCloseConfirm(confirmState.isAlert ? true : false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [confirmState, handleCloseConfirm]);
 
   return (
     <DialogContext.Provider value={contextValue}>
