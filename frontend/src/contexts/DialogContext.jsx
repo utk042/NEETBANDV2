@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from '@tabler/icons-react';
 
 const DialogContext = createContext(null);
@@ -15,23 +15,29 @@ export const DialogProvider = ({ children }) => {
     }, 4000);
   }, []);
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: (msg) => showToast(msg, 'success'),
     error: (msg) => showToast(msg, 'error'),
     info: (msg) => showToast(msg, 'info'),
-  };
+  }), [showToast]);
 
-  const confirm = useCallback((title, message) => {
+  const confirm = useMemo(() => (title, message) => {
     return new Promise((resolve) => {
       setConfirmState({ title, message, resolve });
     });
   }, []);
 
-  const alert = useCallback((title, message) => {
+  const alert = useMemo(() => (title, message) => {
     return new Promise((resolve) => {
       setConfirmState({ title, message, resolve, isAlert: true });
     });
   }, []);
+
+  const contextValue = useMemo(() => ({
+    toast,
+    confirm,
+    alert,
+  }), [toast, confirm, alert]);
 
   const handleCloseConfirm = (result) => {
     if (confirmState && confirmState.resolve) {
@@ -41,12 +47,12 @@ export const DialogProvider = ({ children }) => {
   };
 
   return (
-    <DialogContext.Provider value={{ toast, confirm, alert }}>
+    <DialogContext.Provider value={contextValue}>
       {children}
 
       {/* Global Confirm/Alert Modal */}
       {confirmState && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center px-4">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
@@ -90,7 +96,7 @@ export const DialogProvider = ({ children }) => {
       )}
 
       {/* Global Toast Notifications Stack */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+      <div className="fixed bottom-6 right-6 z-toast flex flex-col gap-3 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
           <div 
             key={t.id} 
