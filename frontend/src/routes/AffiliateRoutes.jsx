@@ -30,12 +30,13 @@ export default function AffiliateRoutes() {
   // Callback to update user profile in backend API, local state, global context and localStorage
   const handleUserUpdate = async (updatedUser) => {
     const data = await updateAffiliateProfile(updatedUser);
+    const activeUser = user || affiliateUser || {};
     const fullUpdatedUser = {
-      ...user,
+      ...activeUser,
       name: data.name || updatedUser.name,
-      email: data.email || user.email,
-      promoCode: data.promoCode || user.promoCode,
-      token: user.token,
+      email: data.email || activeUser.email,
+      promoCode: data.promoCode || activeUser.promoCode,
+      token: activeUser.token,
       isLoggedIn: true
     };
     localStorage.setItem('neetband_affiliate_user', JSON.stringify(fullUpdatedUser));

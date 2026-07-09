@@ -50,7 +50,7 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
     } else {
       navigate('/affiliate-login');
     }
-  }, [user, navigate]);
+  }, [user?._id, user?.isLoggedIn, navigate]);
 
   const handleLogout = async () => {
     const isConfirmed = await confirm("Confirm Log Out", "Are you sure you want to log out of the Affiliate Portal?");
