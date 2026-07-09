@@ -76,6 +76,8 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
     fetchStats();
   }, []);
 
+  useEffect(() => { setCurrentUser(user); }, [user]);
+
   if (user?.role !== 'admin' && user?.role !== 'owner') {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background text-error text-xl font-bold">
@@ -94,14 +96,18 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
   };
 
   const handleProfileUpdate = async (updatedUser) => {
-    const data = await updateLmsUserProfile(updatedUser);
-    const fullUpdatedUser = {
-      ...currentUser,
-      name: data.name || updatedUser.name,
-      email: data.email || currentUser.email,
-    };
-    localStorage.setItem('neetband_lms_user', JSON.stringify(fullUpdatedUser));
-    setCurrentUser(fullUpdatedUser);
+    try {
+      const data = await updateLmsUserProfile(updatedUser);
+      const fullUpdatedUser = {
+        ...currentUser,
+        name: data.name || updatedUser.name,
+        email: data.email || currentUser.email,
+      };
+      localStorage.setItem('neetband_lms_user', JSON.stringify(fullUpdatedUser));
+      setCurrentUser(fullUpdatedUser);
+    } catch (err) {
+      console.error('[AdminDashboard] handleProfileUpdate failed:', err);
+    }
   };
 
   const toggleTheme = () => {
@@ -585,7 +591,6 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
         onClose={() => setIsProfileModalOpen(false)}
         currentUser={currentUser}
         onSave={handleProfileUpdate}
-        updateApiFn={updateLmsUserProfile}
       />
 
     </div>

@@ -403,7 +403,6 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
         onClose={() => setIsProfileModalOpen(false)} 
         currentUser={user} 
         onSave={onUserUpdate} 
-        updateApiFn={updateAffiliateProfile} 
       />
 
     </div>
