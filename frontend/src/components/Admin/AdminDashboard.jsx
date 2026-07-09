@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminStats } from '../../services/api';
+import { getAdminStats, updateLmsUserProfile } from '../../services/api';
+import EditProfileModal from '../Common/EditProfileModal';
 import ManageSongs from './ManageSongs';
 import ManageLMS from './ManageLMS';
 import CourseDesigner from './CourseDesigner';
@@ -48,6 +49,8 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
     return params.get('tab') || 'dashboard';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(user);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [stats, setStats] = useState({ 
     totalStudents: 0,
     teachers: 0,
@@ -88,6 +91,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
       localStorage.removeItem('lms_token');
       navigate('/');
     }
+  };
+
+  const handleProfileUpdate = async (updatedUser) => {
+    const data = await updateLmsUserProfile(updatedUser);
+    const fullUpdatedUser = {
+      ...currentUser,
+      name: data.name || updatedUser.name,
+      email: data.email || currentUser.email,
+    };
+    localStorage.setItem('neetband_lms_user', JSON.stringify(fullUpdatedUser));
+    setCurrentUser(fullUpdatedUser);
   };
 
   const toggleTheme = () => {
@@ -137,15 +151,19 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
         </div>
 
         {/* User Profile Section */}
-        <div className="px-6 py-4 flex items-center gap-4 mb-4">
+        <button
+          type="button"
+          onClick={() => setIsProfileModalOpen(true)}
+          className="px-6 py-4 flex items-center gap-4 mb-4 w-full text-left rounded-xl hover:bg-surface-variant/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors cursor-pointer"
+        >
           <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm">
             <IconUser size={24} />
           </div>
           <div>
-            <h3 className="font-bold text-on-surface text-[15px] leading-tight">{user.name || 'Admin'}</h3>
-            <p className="text-on-surface-variant text-xs mt-0.5 capitalize">{user.role}</p>
+            <h3 className="font-bold text-on-surface text-[15px] leading-tight">{currentUser.name || 'Admin'}</h3>
+            <p className="text-on-surface-variant text-xs mt-0.5 capitalize">{currentUser.role}</p>
           </div>
-        </div>
+        </button>
 
         {/* Navigation Menu */}
         <nav className="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
@@ -561,6 +579,14 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
 
         </div>
       </main>
+
+      <EditProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={currentUser}
+        onSave={handleProfileUpdate}
+        updateApiFn={updateLmsUserProfile}
+      />
 
     </div>
   );
