@@ -5,10 +5,43 @@ import AffiliateDashboard from '../components/Affiliate/AffiliateDashboard';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAffiliateAuth } from '../contexts/AffiliateAuthContext';
 import NotFound from '../components/NotFound';
+import { updateAffiliateProfile } from '../services/api';
 
 export default function AffiliateRoutes() {
-  const { affiliateUser, isAuthLoading, login } = useAffiliateAuth();
+  const { affiliateUser, setAffiliateUser, isAuthLoading, login } = useAffiliateAuth();
   const navigate = useNavigate();
+
+  // Local user state initialized from localStorage
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('neetband_affiliate_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  // Sync local user state with authentication context changes
+  useEffect(() => {
+    if (affiliateUser && affiliateUser.isLoggedIn) {
+      setUser(affiliateUser);
+      localStorage.setItem('neetband_affiliate_user', JSON.stringify(affiliateUser));
+    } else if (!isAuthLoading) {
+      setUser(null);
+    }
+  }, [affiliateUser, isAuthLoading]);
+
+  // Callback to update user profile in backend API, local state, global context and localStorage
+  const handleUserUpdate = async (updatedUser) => {
+    const data = await updateAffiliateProfile(updatedUser);
+    const fullUpdatedUser = {
+      ...user,
+      name: data.name || updatedUser.name,
+      email: data.email || user.email,
+      promoCode: data.promoCode || user.promoCode,
+      token: user.token,
+      isLoggedIn: true
+    };
+    localStorage.setItem('neetband_affiliate_user', JSON.stringify(fullUpdatedUser));
+    setUser(fullUpdatedUser);
+    setAffiliateUser(fullUpdatedUser);
+  };
 
   // Theme state for Affiliate
   const [theme, setTheme] = useState(() => {
@@ -27,6 +60,8 @@ export default function AffiliateRoutes() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  const displayUser = user || affiliateUser;
+
   return (
     <Routes>
       <Route path="/affiliate-login" element={
@@ -41,7 +76,8 @@ export default function AffiliateRoutes() {
       <Route path="/affiliate" element={
         <ProtectedRoute isLoggedIn={affiliateUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Affiliate" loginRoute="/affiliate-login">
           <AffiliateDashboard 
-            user={affiliateUser} 
+            user={displayUser} 
+            onUserUpdate={handleUserUpdate}
             navigate={navigate} 
             theme={theme} 
             setTheme={setTheme} 
