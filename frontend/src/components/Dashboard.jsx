@@ -7,7 +7,7 @@ import {
   IconAward, IconPlayerPlayFilled, IconBookmark, IconTrendingUp,
   IconCertificate, IconX, IconPencil, IconCrown
 } from '@tabler/icons-react';
-import { getUserProfile } from '../services/api';
+import { getUserProfile, uploadFile, updateUserProfile } from '../services/api';
 import Button from './ui/Button';
 import { Card, CardHeader, CardBody } from './ui/Card';
 
@@ -35,8 +35,12 @@ export default function Dashboard({
   const profilePrefs = user?.preferences || ['Biology', 'Chemistry'];
   const profileGoal = user?.studyGoal || '30 mins';
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   // Form states
   const [profileData, setProfileData] = useState(null);
+  const [profileFile, setProfileFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   
   // Fetch real profile data on mount
   useEffect(() => {
@@ -62,6 +66,13 @@ export default function Dashboard({
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
+    if (isProfileModalOpen && user) {
+      setProfileFile(null);
+      setPreviewUrl(user.profilePicture ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`) : '');
+    }
+  }, [isProfileModalOpen, user]);
+
+  useEffect(() => {
     setEditName(user?.name || '');
     setEditClass(user?.class || 'Class 12');
     setEditPrefs(user?.preferences || ['Biology', 'Chemistry']);
@@ -80,7 +91,7 @@ export default function Dashboard({
     };
   }, [isProfileModalOpen]);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editName.trim()) {
       setErrorMsg('Full name cannot be empty');
@@ -90,9 +101,32 @@ export default function Dashboard({
     setErrorMsg(null);
     setSaveSuccess(false);
 
+    let uploadedUrl = user.profilePicture || '';
+    if (profileFile) {
+      try {
+        const uploadRes = await uploadFile(profileFile, 'profile_pictures');
+        uploadedUrl = uploadRes.url;
+      } catch (err) {
+        setErrorMsg('Failed to upload profile picture');
+        return;
+      }
+    }
+
+    try {
+      const dbUpdated = await updateUserProfile({
+        name: editName,
+        profilePicture: uploadedUrl
+      });
+      uploadedUrl = dbUpdated.profilePicture || uploadedUrl;
+    } catch (err) {
+      setErrorMsg('Failed to save profile to database');
+      return;
+    }
+
     const updatedUser = {
       ...user,
       name: editName,
+      profilePicture: uploadedUrl,
       class: editClass,
       preferences: editPrefs,
       studyGoal: editGoal
@@ -114,6 +148,7 @@ export default function Dashboard({
       existingUsers[idx] = {
         ...existingUsers[idx],
         name: editName,
+        profilePicture: uploadedUrl,
         class: editClass,
         preferences: editPrefs,
         studyGoal: editGoal
@@ -151,7 +186,9 @@ export default function Dashboard({
   const recentTracksList = (recentlyPlayedTrackIds || []).map(id => tracks.find(t => t.id === id)).filter(Boolean);
 
   // Generate a nice avatar URL based on the user's name using Dicebear
-  const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profileName || 'Student'}&backgroundColor=b6e3f4`;
+  const avatarUrl = user?.profilePicture 
+    ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`)
+    : `https://api.dicebear.com/9.x/avataaars/svg?seed=${profileName || 'Student'}&backgroundColor=b6e3f4`;
 
   return (
     <div className="min-h-screen bg-surface pt-32 pb-32 transition-colors duration-300 relative overflow-hidden">
@@ -526,6 +563,35 @@ export default function Dashboard({
             {/* Modal Body */}
             <form onSubmit={handleSaveProfile} className="p-6 md:p-8 space-y-10">
               
+              {/* Profile Picture Uploader */}
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/20 bg-surface-variant flex items-center justify-center text-on-surface-variant shadow-md">
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-extrabold uppercase">{editName.charAt(0) || '?'}</span>
+                    )}
+                  </div>
+                  <label className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold">
+                    Change
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setProfileFile(file);
+                          setPreviewUrl(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="text-[10px] text-on-surface-variant/60">Click to upload JPG, PNG, or GIF</p>
+              </div>
+
               {/* Profile Details */}
               <section className="space-y-6">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-mono">Personal Info</h3>
