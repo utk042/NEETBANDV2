@@ -12,7 +12,7 @@ const router = express.Router();
 // Get all blogs (Public/Student)
 router.get('/', async (req, res) => {
   try {
-    const blogs = await Blog.find({ isPublished: true }).populate('author', 'name email').sort('-createdAt');
+    const blogs = await Blog.find({ isPublished: true }).populate('author', 'name email profilePicture').sort('-createdAt');
     res.json(blogs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 // Get all blogs (Admin - including unpublished)
 router.get('/admin', protect, authorize('admin', 'owner'), async (req, res) => {
   try {
-    const blogs = await Blog.find({}).populate('author', 'name email').sort('-createdAt');
+    const blogs = await Blog.find({}).populate('author', 'name email profilePicture').sort('-createdAt');
     res.json(blogs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -36,12 +36,12 @@ router.get('/:idOrSlug', async (req, res) => {
     
     // Check if the param is a valid MongoDB ObjectId
     if (mongoose.Types.ObjectId.isValid(req.params.idOrSlug)) {
-      blog = await Blog.findById(req.params.idOrSlug).populate('author', 'name email').populate('comments.user', 'name');
+      blog = await Blog.findById(req.params.idOrSlug).populate('author', 'name email profilePicture').populate('comments.user', 'name profilePicture');
     }
     
     // Fallback to checking by slug if not found or not an ObjectId
     if (!blog) {
-      blog = await Blog.findOne({ slug: req.params.idOrSlug }).populate('author', 'name email').populate('comments.user', 'name');
+      blog = await Blog.findOne({ slug: req.params.idOrSlug }).populate('author', 'name email profilePicture').populate('comments.user', 'name profilePicture');
     }
 
     if (!blog) {
@@ -172,7 +172,7 @@ router.post('/:id/comments', protect, async (req, res) => {
     blog.comments.push(comment);
     await blog.save();
     
-    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name');
+    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name profilePicture');
     res.status(201).json(updatedBlog.comments);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -188,7 +188,7 @@ router.delete('/:id/comments/:commentId', protect, authorize('admin', 'owner'), 
     blog.comments.pull(req.params.commentId);
     await blog.save();
 
-    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name');
+    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name profilePicture');
     res.json(updatedBlog.comments);
   } catch (error) {
     res.status(500).json({ message: error.message });

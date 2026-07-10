@@ -100,7 +100,7 @@ export const getUserProfile = async (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, profilePicture } = req.body;
   try {
     const user = await User.findById(req.user._id);
 
@@ -110,6 +110,9 @@ export const updateUserProfile = async (req, res) => {
       }
       if (password) {
         user.password = password;
+      }
+      if (profilePicture !== undefined) {
+        user.profilePicture = profilePicture;
       }
 
       const updatedUser = await user.save();
@@ -122,6 +125,7 @@ export const updateUserProfile = async (req, res) => {
         membershipPlan: updatedUser.membershipPlan,
         isPremium: updatedUser.isPremium,
         streak: updatedUser.streak,
+        profilePicture: updatedUser.profilePicture,
       });
     } else {
       res.status(404).json({ message: 'User not found' });

@@ -74,7 +74,7 @@ export const getAffiliateDashboard = async (req, res) => {
 };
 
 export const updateAffiliateProfile = async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, profilePicture } = req.body;
   try {
     const affiliate = await Affiliate.findById(req.user._id);
 
@@ -84,6 +84,9 @@ export const updateAffiliateProfile = async (req, res) => {
       }
       if (password) {
         affiliate.password = password;
+      }
+      if (profilePicture !== undefined) {
+        affiliate.profilePicture = profilePicture;
       }
 
       const updatedAffiliate = await affiliate.save();
@@ -96,6 +99,7 @@ export const updateAffiliateProfile = async (req, res) => {
         earnings: updatedAffiliate.earnings,
         affiliatedUsers: updatedAffiliate.affiliatedUsers,
         settlements: updatedAffiliate.settlements,
+        profilePicture: updatedAffiliate.profilePicture,
       });
     } else {
       res.status(404).json({ message: 'Affiliate not found' });

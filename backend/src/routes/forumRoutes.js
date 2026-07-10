@@ -56,7 +56,7 @@ router.delete('/categories/:id', protect, authorize('admin', 'owner'), async (re
 router.get('/categories/:categoryId/posts', protect, premiumOnly, async (req, res) => {
   try {
     const posts = await ForumPost.find({ category: req.params.categoryId })
-      .populate('author', 'name role')
+      .populate('author', 'name role profilePicture')
       .sort({ isPinned: -1, createdAt: -1 });
     res.json(posts);
   } catch (error) {
@@ -68,7 +68,7 @@ router.get('/categories/:categoryId/posts', protect, premiumOnly, async (req, re
 router.get('/posts', protect, premiumOnly, async (req, res) => {
   try {
     const posts = await ForumPost.find()
-      .populate('author', 'name role')
+      .populate('author', 'name role profilePicture')
       .sort({ isPinned: -1, createdAt: -1 });
     res.json(posts);
   } catch (error) {
@@ -80,8 +80,8 @@ router.get('/posts', protect, premiumOnly, async (req, res) => {
 router.get('/posts/:id', protect, premiumOnly, async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id)
-      .populate('author', 'name role')
-      .populate('comments.author', 'name role');
+      .populate('author', 'name role profilePicture')
+      .populate('comments.author', 'name role profilePicture');
     if (!post) return res.status(404).json({ message: 'Post not found' });
     res.json(post);
   } catch (error) {
@@ -215,7 +215,7 @@ router.post('/posts/:id/comments', protect, premiumOnly, async (req, res) => {
     post.comments.push(comment);
     await post.save();
     
-    const updatedPost = await ForumPost.findById(req.params.id).populate('comments.author', 'name role');
+    const updatedPost = await ForumPost.findById(req.params.id).populate('comments.author', 'name role profilePicture');
     res.status(201).json(updatedPost.comments);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -254,8 +254,8 @@ router.delete('/posts/:id/comments/:commentId', protect, authorize('admin', 'own
     await post.save();
 
     const updatedPost = await ForumPost.findById(req.params.id)
-      .populate('author', 'name role')
-      .populate('comments.author', 'name role');
+      .populate('author', 'name role profilePicture')
+      .populate('comments.author', 'name role profilePicture');
     res.json(updatedPost.comments);
   } catch (error) {
     res.status(500).json({ message: error.message });
