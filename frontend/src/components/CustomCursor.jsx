@@ -1,114 +1,106 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export default function CustomCursor() {
-  const cursorRef = useRef(null);
+  const pointerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Only show on desktop (touch devices don't need a custom cursor)
     const mediaQuery = window.matchMedia('(pointer: fine)');
     if (!mediaQuery.matches) return;
 
-    const el = cursorRef.current;
-    if (!el) return;
+    setIsVisible(true);
 
-    // Exact JS from thecolourkart.in/public/assets/js/script.js
-    const onMouseMove = (n) => {
-      el.style.left = n.clientX + "px";
-      el.style.top = n.clientY + "px";
+    const onMouseMove = (e) => {
+      if (!pointerRef.current) return;
+      pointerRef.current.style.left = e.clientX + 'px';
+      pointerRef.current.style.top = e.clientY + 'px';
     };
 
-    // Their hover logic: buttons, links, .cursor-pointer get "large"
-    const onMouseEnterLarge = () => el.classList.add("large");
-    const onMouseLeaveLarge = () => el.classList.remove("large");
-
-    const bindHoverTargets = () => {
-      document.querySelectorAll("a, button, .cursor-pointer").forEach((t) => {
-        t.removeEventListener("mouseenter", onMouseEnterLarge);
-        t.removeEventListener("mouseleave", onMouseLeaveLarge);
-        t.addEventListener("mouseenter", onMouseEnterLarge);
-        t.addEventListener("mouseleave", onMouseLeaveLarge);
-      });
+    const onMouseOver = (e) => {
+      if (!pointerRef.current) return;
+      if (
+        e.target.tagName?.toLowerCase() === 'button' ||
+        e.target.tagName?.toLowerCase() === 'a' ||
+        e.target.tagName?.toLowerCase() === 'input' ||
+        e.target.tagName?.toLowerCase() === 'textarea' ||
+        e.target.tagName?.toLowerCase() === 'select' ||
+        e.target.tagName?.toLowerCase() === 'label' ||
+        e.target.closest('button') ||
+        e.target.closest('a') ||
+        e.target.classList?.contains('cursor-pointer') ||
+        e.target.closest('.cursor-pointer')
+      ) {
+        pointerRef.current.classList.add('large');
+      } else {
+        pointerRef.current.classList.remove('large');
+      }
     };
 
-    // Their body.out logic for when mouse leaves the window
-    const onDocLeave = () => document.body.classList.add("out");
-    const onDocEnter = () => document.body.classList.remove("out");
+    const onMouseLeave = () => {
+      if (!pointerRef.current) return;
+      pointerRef.current.style.left = '-100px';
+    };
 
-    document.getElementsByTagName("body")[0].addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseleave", onDocLeave);
-    document.addEventListener("mouseenter", onDocEnter);
+    const onMouseEnter = () => {
+      if (!pointerRef.current) return;
+      // Position will be set by mousemove
+    };
 
-    // Bind once now, then re-bind periodically for dynamically added elements
-    bindHoverTargets();
-    const observer = new MutationObserver(() => bindHoverTargets());
-    observer.observe(document.body, { childList: true, subtree: true });
+    document.body.addEventListener('mousemove', onMouseMove);
+    document.body.addEventListener('mouseover', onMouseOver);
+    document.body.addEventListener('mouseleave', onMouseLeave);
+    document.body.addEventListener('mouseenter', onMouseEnter);
 
     return () => {
-      document.getElementsByTagName("body")[0].removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseleave", onDocLeave);
-      document.removeEventListener("mouseenter", onDocEnter);
-      observer.disconnect();
+      document.body.removeEventListener('mousemove', onMouseMove);
+      document.body.removeEventListener('mouseover', onMouseOver);
+      document.body.removeEventListener('mouseleave', onMouseLeave);
+      document.body.removeEventListener('mouseenter', onMouseEnter);
     };
   }, []);
 
-  // Touch devices: render nothing
-  if (typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches === false) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
     <>
       <style>{`
-@media (pointer: fine) {
-  body, a, button, .cursor-pointer {
-    cursor: none !important;
-  }
-}
+        @media (pointer: fine) {
+          body, a, button, input, textarea, select, label, .cursor-pointer {
+            cursor: none !important;
+          }
+        }
 
-.mouse-pointer {
-  position: fixed;
-  top: 50%;
-  left: -100px;
-  -webkit-transform: translate(-50%, -50%);
-  -ms-transform: translate(-50%, -50%);
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  pointer-events: none;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  z-index: 9999;
-  -webkit-transition-property: width, height, background;
-  -o-transition-property: width, height, background;
-  transition-property: width, height, background;
-  -webkit-transition-duration: .5s;
-  -o-transition-duration: .5s;
-  transition-duration: .5s;
-  -webkit-transition-timing-function: cubic-bezier(.19, .94, .336, 1);
-  -o-transition-timing-function: cubic-bezier(.19, .94, .336, 1);
-  transition-timing-function: cubic-bezier(.19, .94, .336, 1);
-  border-radius: 50%;
-  background: #f4244f;
-  overflow: hidden;
-}
+        .ck-mouse-pointer {
+          position: fixed;
+          top: 50%;
+          left: -100px;
+          transform: translate(-50%, -50%);
+          width: 10px;
+          height: 10px;
+          pointer-events: none;
+          box-sizing: border-box;
+          z-index: 9999;
+          transition-property: width, height, background, box-shadow;
+          transition-duration: .5s;
+          transition-timing-function: cubic-bezier(.19, .94, .336, 1);
+          border-radius: 50%;
+          background: rgb(var(--color-primary));
+          overflow: hidden;
+        }
 
-body.out .mouse-pointer {
-  width: 0;
-  height: 0;
-}
-
-.mouse-pointer.large {
-  width: 65px;
-  height: 65px;
-  background: rgba(224,36,79,.0) !important;
-  -webkit-box-shadow: 0 0 30px rgba(224,36,79, 0.4);
-  box-shadow: 0 0 30px rgba(224,36,79, 0.4);
-}
-
-.touch .mouse-pointer {
-  display: none;
-}
+        .ck-mouse-pointer.large {
+          width: 65px;
+          height: 65px;
+          background: rgba(var(--color-primary), 0) !important;
+          box-shadow: 0 0 30px rgba(var(--color-primary), 0.4);
+        }
       `}</style>
-      <div ref={cursorRef} className="mouse-pointer" id="mouse-pointer" />
+
+      <div
+        ref={pointerRef}
+        className="ck-mouse-pointer"
+      />
     </>
   );
 }
