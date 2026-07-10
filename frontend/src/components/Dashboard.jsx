@@ -68,8 +68,21 @@ export default function Dashboard({
   useEffect(() => {
     if (isProfileModalOpen && user) {
       setProfileFile(null);
-      setPreviewUrl(user.profilePicture ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`) : '');
+      setPreviewUrl(prev => {
+        if (prev && prev.startsWith('blob:')) {
+          URL.revokeObjectURL(prev);
+        }
+        return user.profilePicture ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`) : '';
+      });
     }
+    return () => {
+      setPreviewUrl(prev => {
+        if (prev && prev.startsWith('blob:')) {
+          URL.revokeObjectURL(prev);
+        }
+        return '';
+      });
+    };
   }, [isProfileModalOpen, user]);
 
   useEffect(() => {
@@ -101,7 +114,7 @@ export default function Dashboard({
     setErrorMsg(null);
     setSaveSuccess(false);
 
-    let uploadedUrl = user.profilePicture || '';
+    let uploadedUrl = user?.profilePicture || '';
     if (profileFile) {
       try {
         const uploadRes = await uploadFile(profileFile, 'profile_pictures');
@@ -200,13 +213,18 @@ export default function Dashboard({
         <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
           
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-20">
-            <div className="max-w-2xl">
-              <h1 className="text-display-1 text-on-surface mb-6">
-                Welcome back, <br className="hidden md:block" />{(profileName || 'Student').split(' ')[0]}.
-              </h1>
-              <p className="text-xl md:text-2xl font-medium text-on-surface-variant max-w-lg leading-relaxed">
-                Your daily goal is <span className="text-on-surface border-b border-primary/50 pb-1">{editGoal || '30 mins'}</span>. Let's make this session count.
-              </p>
+            <div className="flex items-center gap-6 max-w-2xl">
+              <div className="w-20 h-20 rounded-full overflow-hidden border border-outline/10 shadow-md shrink-0 bg-surface-variant flex items-center justify-center">
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h1 className="text-display-1 text-on-surface mb-2">
+                  Welcome back, {(profileName || 'Student').split(' ')[0]}.
+                </h1>
+                <p className="text-xl md:text-2xl font-medium text-on-surface-variant leading-relaxed">
+                  Your daily goal is <span className="text-on-surface border-b border-primary/50 pb-1">{editGoal || '30 mins'}</span>. Let's make this session count.
+                </p>
+              </div>
             </div>
             
             <Button variant="secondary" onClick={() => setIsProfileModalOpen(true)} className="self-start px-6 py-4">
@@ -573,17 +591,23 @@ export default function Dashboard({
                       <span className="text-3xl font-extrabold uppercase">{editName.charAt(0) || '?'}</span>
                     )}
                   </div>
-                  <label className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold">
+                  <label className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold">
                     Change
                     <input
                       type="file"
                       accept="image/*"
-                      className="hidden"
+                      className="sr-only"
+                      onClick={(e) => { e.target.value = null; }}
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
                           setProfileFile(file);
-                          setPreviewUrl(URL.createObjectURL(file));
+                          setPreviewUrl(prev => {
+                            if (prev && prev.startsWith('blob:')) {
+                              URL.revokeObjectURL(prev);
+                            }
+                            return URL.createObjectURL(file);
+                          });
                         }
                       }}
                     />
