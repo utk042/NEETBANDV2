@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconMenu2, IconX, IconMoon, IconSun, IconLogin, IconSearch, IconHelp } from '@tabler/icons-react';
+import { IconMenu2, IconX, IconMoon, IconSun, IconLogin, IconSearch, IconHelp, IconPlayerPlay, IconPlayerPause } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import { getNewsScrollSettings } from '../services/api';
 
@@ -7,6 +7,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsVisible, setNewsVisible] = useState(false);
   const [newsItems, setNewsItems] = useState([]);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Fetch news scroll settings dynamically
   useEffect(() => {
@@ -15,10 +16,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         const settings = await getNewsScrollSettings();
         setNewsItems(settings.items || []);
         
-        const dismissedAt = localStorage.getItem('news_scroll_dismissed_at');
-        const isDismissed = dismissedAt && new Date(dismissedAt) >= new Date(settings.updatedAt);
-        
-        if (settings.enabled && !isDismissed) {
+        if (settings.enabled) {
           setNewsVisible(true);
         } else {
           setNewsVisible(false);
@@ -35,11 +33,6 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
       setNewsVisible(false);
     }
   }, [currentPage]);
-
-  const handleCloseNews = () => {
-    setNewsVisible(false);
-    localStorage.setItem('news_scroll_dismissed_at', new Date().toISOString());
-  };
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -192,7 +185,10 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         {newsVisible && !mobileMenuOpen && newsItems.length > 0 && !['course-player', 'lms', 'lms-login', 'affiliate', 'affiliate-login', 'login', 'checkout'].includes(currentPage) && (
           <div className="w-full bg-primary/10 border-t border-primary/20 text-primary py-2 px-4 flex items-center justify-between overflow-hidden relative z-header-news">
             <div className="flex-1 overflow-hidden relative">
-              <div className="whitespace-nowrap animate-marquee flex items-center gap-8 font-medium text-sm">
+              <div 
+                className="whitespace-nowrap animate-marquee flex items-center gap-8 font-medium text-sm hover:[animation-play-state:paused]"
+                style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+              >
                 {[...newsItems, ...newsItems].map((item, idx) => (
                   <React.Fragment key={idx}>
                     <span>{item}</span>
@@ -202,11 +198,11 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
               </div>
             </div>
             <button 
-              onClick={handleCloseNews}
+              onClick={() => setIsPaused(!isPaused)}
               className="ml-4 shrink-0 text-primary hover:scale-110 transition-transform focus:outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/50"
-              aria-label="Close news"
+              aria-label={isPaused ? "Play news" : "Pause news"}
             >
-              <IconX size={18} />
+              {isPaused ? <IconPlayerPlay size={18} /> : <IconPlayerPause size={18} />}
             </button>
           </div>
         )}
