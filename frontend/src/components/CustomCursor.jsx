@@ -4,10 +4,6 @@ export default function CustomCursor() {
   const cursorRef = useRef(null);
 
   useEffect(() => {
-    // Only show on desktop (coarse pointers don't need a custom cursor)
-    const mediaQuery = window.matchMedia('(pointer: fine)');
-    if (!mediaQuery.matches) return;
-
     const cursor = cursorRef.current;
     if (!cursor) return;
 
@@ -65,11 +61,9 @@ export default function CustomCursor() {
   return (
     <>
       <style>{`
-        /* Hide default cursor on body and interactive elements if we are showing custom cursor */
-        @media (pointer: fine) {
-          body, a, button, .cursor-pointer {
-            cursor: none !important;
-          }
+        /* Hide default cursor on body and interactive elements */
+        body, a, button, .cursor-pointer {
+          cursor: none !important;
         }
 
         .mouse-pointer {
