@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 export default function CustomCursor() {
   const cursorRef = useRef(null);
-  const [cursorClass, setCursorClass] = useState('');
+  const [isHovering, setIsHovering] = useState(false);
+  const [isOut, setIsOut] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -28,37 +29,56 @@ export default function CustomCursor() {
         e.target.classList?.contains('cursor-pointer') ||
         e.target.closest('.cursor-pointer')
       ) {
-        setCursorClass('large');
+        setIsHovering(true);
       } else {
-        setCursorClass('');
+        setIsHovering(false);
       }
+    };
+
+    const onMouseLeave = () => {
+      setIsOut(true);
+    };
+
+    const onMouseEnter = () => {
+      setIsOut(false);
     };
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseover', onMouseOver);
+    document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('mouseenter', onMouseEnter);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseover', onMouseOver);
+      document.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('mouseenter', onMouseEnter);
     };
   }, []);
 
   if (!isVisible) return null;
+
+  let cursorClass = '';
+  if (isOut) {
+    cursorClass = 'out';
+  } else if (isHovering) {
+    cursorClass = 'large';
+  }
 
   return (
     <>
       <style>{`
         /* Hide default cursor on body and interactive elements if we are showing custom cursor */
         @media (pointer: fine) {
-          body, a, button, .cursor-pointer, select, input, textarea {
+          body, a, button, .cursor-pointer {
             cursor: none !important;
           }
         }
 
         .mouse-pointer {
           position: fixed;
-          top: 0;
-          left: 0;
+          top: 50%;
+          left: -100px;
           -webkit-transform: translate(-50%, -50%);
           -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
@@ -68,9 +88,9 @@ export default function CustomCursor() {
           -webkit-box-sizing: border-box;
           box-sizing: border-box;
           z-index: 99999;
-          -webkit-transition-property: width, height, background, border, box-shadow;
-          -o-transition-property: width, height, background, border, box-shadow;
-          transition-property: width, height, background, border, box-shadow;
+          -webkit-transition-property: width, height, background;
+          -o-transition-property: width, height, background;
+          transition-property: width, height, background;
           -webkit-transition-duration: .5s;
           -o-transition-duration: .5s;
           transition-duration: .5s;
@@ -82,7 +102,7 @@ export default function CustomCursor() {
           overflow: hidden;
         }
 
-        body.out .mouse-pointer {
+        .mouse-pointer.out {
           width: 0;
           height: 0;
         }
@@ -91,9 +111,8 @@ export default function CustomCursor() {
           width: 65px;
           height: 65px;
           background: rgba(224, 36, 79, 0) !important;
-          border: 1px solid rgba(224, 36, 79, 0.2);
-          -webkit-box-shadow: 0 0 30px rgba(224, 36, 79, 0.6);
-          box-shadow: 0 0 30px rgba(224, 36, 79, 0.6);
+          -webkit-box-shadow: 0 0 30px rgba(224, 36, 79, 0.4);
+          box-shadow: 0 0 30px rgba(224, 36, 79, 0.4);
         }
       `}</style>
       
