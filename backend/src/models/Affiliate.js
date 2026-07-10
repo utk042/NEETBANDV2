@@ -61,6 +61,10 @@ const affiliateSchema = new mongoose.Schema({
       notes: String,
     }
   ],
+  profilePicture: {
+    type: String,
+    default: ''
+  },
   activeTokens: {
     type: [String],
     default: []

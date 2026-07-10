@@ -65,6 +65,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Affiliate'
   },
+  profilePicture: {
+    type: String,
+    default: ''
+  },
   activeTokens: {
     type: [String],
     default: []
