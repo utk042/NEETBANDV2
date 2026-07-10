@@ -1,50 +1,56 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function CustomCursor() {
   const cursorRef = useRef(null);
-  const [isHovering, setIsHovering] = useState(false);
-  const [isOut, setIsOut] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     // Only show on desktop (coarse pointers don't need a custom cursor)
     const mediaQuery = window.matchMedia('(pointer: fine)');
     if (!mediaQuery.matches) return;
 
-    setIsVisible(true);
+    const cursor = cursorRef.current;
+    if (!cursor) return;
 
+    // Track mouse position
     const onMouseMove = (e) => {
-      if (!cursorRef.current) return;
-      cursorRef.current.style.left = `${e.clientX}px`;
-      cursorRef.current.style.top = `${e.clientY}px`;
+      cursor.style.left = `${e.clientX}px`;
+      cursor.style.top = `${e.clientY}px`;
     };
 
+    // Hover effect using event delegation for instant class updates
     const onMouseOver = (e) => {
-      // Check if hovering over clickable elements
-      if (
-        e.target.tagName?.toLowerCase() === 'button' ||
-        e.target.tagName?.toLowerCase() === 'a' ||
-        e.target.closest('button') ||
-        e.target.closest('a') ||
-        e.target.classList?.contains('cursor-pointer') ||
-        e.target.closest('.cursor-pointer')
-      ) {
-        setIsHovering(true);
+      const target = e.target;
+      if (!target) return;
+
+      const isClickable =
+        target.tagName?.toLowerCase() === 'button' ||
+        target.tagName?.toLowerCase() === 'a' ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.classList?.contains('cursor-pointer') ||
+        target.closest('.cursor-pointer') ||
+        target.classList?.contains('pointer-large') ||
+        target.closest('.pointer-large') ||
+        target.classList?.contains('theme-btn') ||
+        target.closest('.theme-btn');
+
+      if (isClickable) {
+        cursor.classList.add('large');
       } else {
-        setIsHovering(false);
+        cursor.classList.remove('large');
       }
     };
 
     const onMouseLeave = () => {
-      setIsOut(true);
+      cursor.classList.add('out');
     };
 
     const onMouseEnter = () => {
-      setIsOut(false);
+      cursor.classList.remove('out');
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseover', onMouseOver);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('mouseover', onMouseOver, { passive: true });
     document.addEventListener('mouseleave', onMouseLeave);
     document.addEventListener('mouseenter', onMouseEnter);
 
@@ -55,15 +61,6 @@ export default function CustomCursor() {
       document.removeEventListener('mouseenter', onMouseEnter);
     };
   }, []);
-
-  if (!isVisible) return null;
-
-  let cursorClass = '';
-  if (isOut) {
-    cursorClass = 'out';
-  } else if (isHovering) {
-    cursorClass = 'large';
-  }
 
   return (
     <>
@@ -117,8 +114,9 @@ export default function CustomCursor() {
       `}</style>
       
       <div
+        id="mouse-pointer"
         ref={cursorRef}
-        className={`mouse-pointer ${cursorClass}`}
+        className="mouse-pointer"
       />
     </>
   );
