@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { IconArrowRight, IconCalendarEvent, IconClock, IconArrowLeft, IconHeart, IconMessageCircle, IconUser, IconShare } from '@tabler/icons-react';
 import api from '../services/api';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function Blog({ user }) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -150,7 +152,16 @@ export default function Blog({ user }) {
 
           <div className="flex items-center gap-4 mb-4 text-on-surface-variant/70 text-sm">
             <span className="flex items-center gap-1.5 px-3 py-1 bg-surface-container-low rounded-full border border-[var(--border-floating-card)]">
-              <IconUser size={16} /> {selectedBlog.author?.name || 'Unknown'}
+              {selectedBlog.author?.profilePicture ? (
+                <img 
+                  src={selectedBlog.author.profilePicture.startsWith('http') ? selectedBlog.author.profilePicture : `${API_URL}${selectedBlog.author.profilePicture}`} 
+                  alt="Author" 
+                  className="w-5 h-5 rounded-full object-cover shrink-0" 
+                />
+              ) : (
+                <IconUser size={16} />
+              )}
+              {selectedBlog.author?.name || 'Unknown'}
             </span>
             <span className="flex items-center gap-1.5">
               <IconCalendarEvent size={16} /> {new Date(selectedBlog.createdAt).toLocaleDateString()}
@@ -230,8 +241,16 @@ export default function Blog({ user }) {
             <div className="space-y-6">
               {selectedBlog.comments.map(comment => (
                 <div key={comment._id} className="flex gap-4">
-                  <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-full font-bold flex-shrink-0">
-                    {comment.user?.name?.charAt(0) || 'U'}
+                  <div className="w-10 h-10 overflow-hidden rounded-full flex-shrink-0 bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    {comment.user?.profilePicture ? (
+                      <img 
+                        src={comment.user.profilePicture.startsWith('http') ? comment.user.profilePicture : `${API_URL}${comment.user.profilePicture}`} 
+                        alt="Commenter" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span>{comment.user?.name?.charAt(0) || 'U'}</span>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">

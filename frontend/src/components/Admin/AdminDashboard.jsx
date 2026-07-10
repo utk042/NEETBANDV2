@@ -42,6 +42,8 @@ import {
   IconMailOpened
 } from '@tabler/icons-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function AdminDashboard({ navigate, user, theme, setTheme }) {
   const { confirm } = useDialog();
   const [activeTab, setActiveTab] = useState(() => {
@@ -162,8 +164,16 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           onClick={() => setIsProfileModalOpen(true)}
           className="px-6 py-4 flex items-center gap-4 mb-4 w-full text-left rounded-xl hover:bg-surface-variant/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors cursor-pointer"
         >
-          <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm">
-            <IconUser size={24} />
+          <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full overflow-hidden flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm">
+            {currentUser.profilePicture ? (
+              <img 
+                src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_URL}${currentUser.profilePicture}`} 
+                alt="Profile" 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <IconUser size={24} />
+            )}
           </div>
           <div>
             <h3 className="font-bold text-on-surface text-[15px] leading-tight">{currentUser.name || 'Admin'}</h3>

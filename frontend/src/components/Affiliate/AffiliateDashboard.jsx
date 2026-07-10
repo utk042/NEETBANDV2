@@ -19,6 +19,8 @@ import { getAffiliateDashboard, updateAffiliateProfile } from '../../services/ap
 import { useDialog } from '../../contexts/DialogContext';
 import EditProfileModal from '../Common/EditProfileModal';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme, setTheme }) {
   const { toast, confirm } = useDialog();
   const [dashboardData, setDashboardData] = useState(null);
@@ -150,8 +152,16 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
           title="Edit Profile"
           className="mx-4 px-4 py-3 flex items-center gap-4 mb-4 text-left rounded-2xl hover:bg-surface-variant/40 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
-          <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
-            <IconUsers size={24} />
+          <div className="w-12 h-12 bg-surface-variant border border-outline-variant/50 rounded-full overflow-hidden flex items-center justify-center text-on-surface flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
+            {user?.profilePicture ? (
+              <img 
+                src={user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`} 
+                alt="Profile" 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <IconUsers size={24} />
+            )}
           </div>
           <div>
             <h3 className="font-bold text-on-surface text-[15px] leading-tight group-hover:text-primary transition-colors duration-200">

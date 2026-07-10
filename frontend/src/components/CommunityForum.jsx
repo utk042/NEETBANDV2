@@ -3,6 +3,8 @@ import { IconMessageCircle, IconSend, IconUser, IconSearch, IconHeart, IconPaper
 import api from '../services/api';
 import BlogEditor from './Admin/BlogEditor';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function CommunityForum({ user }) {
   const [posts, setPosts] = useState([]);
 
@@ -159,8 +161,16 @@ export default function CommunityForum({ user }) {
                   <div key={post._id} className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] overflow-hidden shadow-sm hover:border-primary/30 transition-colors">
                     <div className="p-6 md:p-8">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                          {post.author?.name?.charAt(0) || 'U'}
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center text-primary font-bold">
+                          {post.author?.profilePicture ? (
+                            <img 
+                              src={post.author.profilePicture.startsWith('http') ? post.author.profilePicture : `${API_URL}${post.author.profilePicture}`} 
+                              alt="Author" 
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            <span>{post.author?.name?.charAt(0) || 'U'}</span>
+                          )}
                         </div>
                         <div>
                           <h4 className="font-label-md text-on-surface font-bold">{post.author?.name || 'Unknown'}</h4>
@@ -225,27 +235,46 @@ export default function CommunityForum({ user }) {
 
                       {/* Comments List */}
                       <div className="flex flex-col gap-5 mb-6">
-                        {post.comments?.map(comment => (
-                          <div key={comment._id} className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 mt-1">
-                              {comment.user?.name?.charAt(0) || <IconUser size={16} />}
-                            </div>
-                            <div className="bg-surface-container-low px-4 py-3 rounded-2xl rounded-tl-sm flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-label-md text-sm font-bold text-on-surface">{comment.user?.name || 'Unknown'}</span>
-                                <span className="text-[10px] text-on-surface-variant opacity-60">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                        {post.comments?.map(comment => {
+                          const commentUser = comment.author || comment.user;
+                          return (
+                            <div key={comment._id} className="flex gap-3">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 mt-1">
+                                {commentUser?.profilePicture ? (
+                                  <img 
+                                    src={commentUser.profilePicture.startsWith('http') ? commentUser.profilePicture : `${API_URL}${commentUser.profilePicture}`} 
+                                    alt="Commenter" 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <span>{commentUser?.name?.charAt(0) || <IconUser size={16} />}</span>
+                                )}
                               </div>
-                              <p className="font-body-sm text-sm text-on-surface-variant leading-snug">{comment.content}</p>
+                              <div className="bg-surface-container-low px-4 py-3 rounded-2xl rounded-tl-sm flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-label-md text-sm font-bold text-on-surface">{commentUser?.name || 'Unknown'}</span>
+                                  <span className="text-[10px] text-on-surface-variant opacity-60">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p className="font-body-sm text-sm text-on-surface-variant leading-snug">{comment.content}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Add Comment */}
                       {user?.isLoggedIn ? (
                         <form onSubmit={(e) => handleAddComment(e, post._id)} className="flex gap-3 items-start">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0 mt-1">
-                            {user.name?.charAt(0) || <IconUser size={16} />}
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center text-primary shrink-0 mt-1">
+                            {user.profilePicture ? (
+                              <img 
+                                src={user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`} 
+                                alt="User" 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <span>{user.name?.charAt(0) || <IconUser size={16} />}</span>
+                            )}
                           </div>
                           <div className="flex-1 flex gap-2">
                             <input
