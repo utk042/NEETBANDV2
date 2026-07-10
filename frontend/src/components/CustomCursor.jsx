@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
 
 export default function CustomCursor() {
-  const dotRef = useRef(null);
-  const ringRef = useRef(null);
+  const cursorRef = useRef(null);
+  const [cursorClass, setCursorClass] = useState('');
   const [isVisible, setIsVisible] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
     // Only show on desktop (coarse pointers don't need a custom cursor)
@@ -15,21 +13,9 @@ export default function CustomCursor() {
     setIsVisible(true);
 
     const onMouseMove = (e) => {
-      if (!dotRef.current || !ringRef.current) return;
-      
-      // Dot is w-2 h-2 (8px). Center offset is 4px.
-      gsap.set(dotRef.current, {
-        x: e.clientX - 4,
-        y: e.clientY - 4,
-      });
-
-      // Ring is w-8 h-8 (32px). Center offset is 16px.
-      gsap.to(ringRef.current, {
-        x: e.clientX - 16,
-        y: e.clientY - 16,
-        duration: 0.15,
-        ease: 'power3.out',
-      });
+      if (!cursorRef.current) return;
+      cursorRef.current.style.left = `${e.clientX}px`;
+      cursorRef.current.style.top = `${e.clientY}px`;
     };
 
     const onMouseOver = (e) => {
@@ -42,44 +28,20 @@ export default function CustomCursor() {
         e.target.classList?.contains('cursor-pointer') ||
         e.target.closest('.cursor-pointer')
       ) {
-        setIsHovering(true);
+        setCursorClass('large');
       } else {
-        setIsHovering(false);
+        setCursorClass('');
       }
     };
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseover', onMouseOver);
 
-    // Initial scale setup - check if refs exist since they might not be rendered yet
-    if (dotRef.current && ringRef.current) {
-      gsap.set(dotRef.current, { scale: 1 });
-      gsap.set(ringRef.current, { scale: 1 });
-    }
-
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseover', onMouseOver);
     };
   }, []);
-
-  // Handle hover animations with GSAP so it doesn't conflict with position transforms
-  useEffect(() => {
-    if (!isVisible || !dotRef.current || !ringRef.current) return;
-    
-    gsap.to(dotRef.current, {
-      scale: isHovering ? 0 : 1,
-      duration: 0.2,
-      ease: 'power2.out'
-    });
-    
-    gsap.to(ringRef.current, {
-      scale: isHovering ? 1.5 : 1,
-      backgroundColor: isHovering ? 'rgba(var(--color-primary), 0.1)' : 'transparent',
-      duration: 0.2,
-      ease: 'power2.out'
-    });
-  }, [isHovering, isVisible]);
 
   if (!isVisible) return null;
 
@@ -88,22 +50,56 @@ export default function CustomCursor() {
       <style>{`
         /* Hide default cursor on body and interactive elements if we are showing custom cursor */
         @media (pointer: fine) {
-          body, a, button, .cursor-pointer {
+          body, a, button, .cursor-pointer, select, input, textarea {
             cursor: none !important;
           }
         }
+
+        .mouse-pointer {
+          position: fixed;
+          top: 0;
+          left: 0;
+          -webkit-transform: translate(-50%, -50%);
+          -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+          width: 10px;
+          height: 10px;
+          pointer-events: none;
+          -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+          z-index: 99999;
+          -webkit-transition-property: width, height, background, border, box-shadow;
+          -o-transition-property: width, height, background, border, box-shadow;
+          transition-property: width, height, background, border, box-shadow;
+          -webkit-transition-duration: .5s;
+          -o-transition-duration: .5s;
+          transition-duration: .5s;
+          -webkit-transition-timing-function: cubic-bezier(.19, .94, .336, 1);
+          -o-transition-timing-function: cubic-bezier(.19, .94, .336, 1);
+          transition-timing-function: cubic-bezier(.19, .94, .336, 1);
+          border-radius: 50%;
+          background: #f4244f;
+          overflow: hidden;
+        }
+
+        body.out .mouse-pointer {
+          width: 0;
+          height: 0;
+        }
+
+        .mouse-pointer.large {
+          width: 65px;
+          height: 65px;
+          background: rgba(224, 36, 79, 0) !important;
+          border: 1px solid rgba(224, 36, 79, 0.2);
+          -webkit-box-shadow: 0 0 30px rgba(224, 36, 79, 0.6);
+          box-shadow: 0 0 30px rgba(224, 36, 79, 0.6);
+        }
       `}</style>
       
-      {/* Outer Ring */}
       <div
-        ref={ringRef}
-        className="fixed top-0 left-0 w-8 h-8 border-2 border-primary rounded-full pointer-events-none z-[9998]"
-      />
-
-      {/* Inner Dot */}
-      <div
-        ref={dotRef}
-        className="fixed top-0 left-0 w-2 h-2 bg-primary rounded-full pointer-events-none z-[9999]"
+        ref={cursorRef}
+        className={`mouse-pointer ${cursorClass}`}
       />
     </>
   );
