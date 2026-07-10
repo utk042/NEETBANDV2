@@ -116,6 +116,24 @@ export const getAffiliateUserProfile = async () => {
   return res.json();
 };
 
+export const updateUserProfile = async (userData) => {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(userData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to update profile');
+    } catch {
+      throw new Error(errText || 'Failed to update profile');
+    }
+  }
+  return res.json();
+};
+
 export const updateLmsUserProfile = async (userData) => {
   const res = await fetch(`${API_URL}/auth/profile`, {
     method: 'PUT',
