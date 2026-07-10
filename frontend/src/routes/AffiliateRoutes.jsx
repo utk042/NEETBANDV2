@@ -36,6 +36,7 @@ export default function AffiliateRoutes() {
       name: data.name || updatedUser.name,
       email: data.email || activeUser.email,
       promoCode: data.promoCode || activeUser.promoCode,
+      profilePicture: data.profilePicture || activeUser.profilePicture,
       token: activeUser.token,
       isLoggedIn: true
     };

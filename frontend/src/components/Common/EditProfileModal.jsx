@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconX, IconLoader2 } from '@tabler/icons-react';
 import { useDialog } from '../../contexts/DialogContext';
+import { uploadFile } from '../../services/api';
 
 export default function EditProfileModal({ isOpen, onClose, currentUser, onSave }) {
   const { toast } = useDialog();
@@ -9,6 +10,8 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [profileFile, setProfileFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   // Sync state with currentUser when modal opens
   useEffect(() => {
@@ -17,6 +20,9 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
       setEmail(currentUser.email || '');
       setPassword('');
       setConfirmPassword('');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      setPreviewUrl(currentUser.profilePicture ? (currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `${API_URL}${currentUser.profilePicture}`) : '');
+      setProfileFile(null);
     }
   }, [isOpen, currentUser]);
 
@@ -56,8 +62,15 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
 
     setIsSaving(true);
     try {
+      let uploadedUrl = currentUser.profilePicture || '';
+      if (profileFile) {
+        const uploadRes = await uploadFile(profileFile, 'profile_pictures');
+        uploadedUrl = uploadRes.url;
+      }
+
       const updatedUser = {
         name: name.trim(),
+        profilePicture: uploadedUrl,
       };
       if (password) {
         updatedUser.password = password;
@@ -103,6 +116,35 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Profile Picture Uploader */}
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/20 bg-surface-variant flex items-center justify-center text-on-surface-variant shadow-md">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-extrabold uppercase">{name.charAt(0) || '?'}</span>
+                )}
+              </div>
+              <label className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold">
+                Change
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setProfileFile(file);
+                      setPreviewUrl(URL.createObjectURL(file));
+                    }
+                  }}
+                  disabled={isSaving}
+                />
+              </label>
+            </div>
+            <p className="text-[10px] text-on-surface-variant/60">Click to upload JPG, PNG, or GIF</p>
+          </div>
           {/* Name Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant font-mono block">
