@@ -88,20 +88,7 @@ export function PlayerProvider({ children, user }) {
     }
   }, [volume, isMuted, currentTrack]);
 
-  // Update Media Session API
-  useEffect(() => {
-    if (!currentTrack || !('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentTrack.title || 'NeetBand',
-      artist: currentTrack.subject || 'NeetBand',
-      album: currentTrack.chapter || currentTrack.grade || '',
-      artwork: currentTrack.cover ? [{ src: currentTrack.cover, sizes: '512x512', type: 'image/png' }] : [],
-    });
-    navigator.mediaSession.setActionHandler('play', () => { audioRef.current?.play(); setIsPlaying(true); });
-    navigator.mediaSession.setActionHandler('pause', () => { audioRef.current?.pause(); setIsPlaying(false); });
-    navigator.mediaSession.setActionHandler('previoustrack', handlePrev);
-    navigator.mediaSession.setActionHandler('nexttrack', handleNext);
-  }, [currentTrack, handlePrev, handleNext]);
+
 
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
@@ -393,6 +380,21 @@ export function PlayerProvider({ children, user }) {
     handleShare, requestPip,
     audioRef, // expose for components that need direct access
   };
+
+  // Update Media Session API
+  useEffect(() => {
+    if (!currentTrack || !('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.title || 'NeetBand',
+      artist: currentTrack.subject || 'NeetBand',
+      album: currentTrack.chapter || currentTrack.grade || '',
+      artwork: currentTrack.cover ? [{ src: currentTrack.cover, sizes: '512x512', type: 'image/png' }] : [],
+    });
+    navigator.mediaSession.setActionHandler('play', () => { audioRef.current?.play(); setIsPlaying(true); });
+    navigator.mediaSession.setActionHandler('pause', () => { audioRef.current?.pause(); setIsPlaying(false); });
+    navigator.mediaSession.setActionHandler('previoustrack', handlePrev);
+    navigator.mediaSession.setActionHandler('nexttrack', handleNext);
+  }, [currentTrack, handlePrev, handleNext]);
 
   return (
     <PlayerContext.Provider value={value}>

@@ -258,6 +258,76 @@ export default function Dashboard({
             </div>
           </div>
 
+          {/* PREMIUM OFFERS */}
+          <div className="mb-16">
+            <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-6 flex items-center gap-2">
+              <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Book Offer */}
+              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
+                <CardBody className="p-6 flex flex-col flex-1">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 shadow-inner border border-amber-500/20">
+                    <IconBook size={24} strokeWidth={1.5} />
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border border-amber-500/30 rounded-full bg-amber-500/10 text-amber-600 mb-3 inline-block">
+                      50% OFF
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-on-surface mb-2">NeetBand Mastery Guide</h3>
+                  <p className="text-sm text-on-surface-variant mb-6 flex-1">
+                    Get the ultimate study guide written by our top authors. Claim your 50% discount and master the syllabus faster.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      if (!user?.isPremium) {
+                        setIsPremiumModalOpen(true);
+                      } else {
+                        navigate('/offers/book');
+                      }
+                    }} 
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 text-sm"
+                  >
+                    <IconShoppingCart size={18} className="mr-2" /> Claim Offer
+                  </Button>
+                </CardBody>
+              </Card>
+
+              {/* Eye Checkup Offer */}
+              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
+                <CardBody className="p-6 flex flex-col flex-1">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 shadow-inner border border-emerald-500/20">
+                    <IconEye size={24} strokeWidth={1.5} />
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border border-emerald-500/30 rounded-full bg-emerald-500/10 text-emerald-600 mb-3 inline-block">
+                      FREE
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-on-surface mb-2">Free Eye Checkup</h3>
+                  <p className="text-sm text-on-surface-variant mb-6 flex-1">
+                    Protect your vision while studying. Premium members can book a free comprehensive eye checkup at our partner clinics.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      if (!user?.isPremium) {
+                        setIsPremiumModalOpen(true);
+                      } else {
+                        navigate('/offers/eye-checkup');
+                      }
+                    }} 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 text-sm"
+                  >
+                    <IconCheck size={18} className="mr-2" /> Book Now
+                  </Button>
+                </CardBody>
+              </Card>
+
+            </div>
+          </div>
+
           {/* ENROLLED COURSES */}
           <div className="mb-16">
             <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-8 flex items-center gap-2">
@@ -353,75 +423,6 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* PREMIUM OFFERS */}
-          <div className="mb-24">
-            <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-8 flex items-center gap-2">
-              <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Book Offer */}
-              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
-                <CardBody className="p-8 flex flex-col flex-1">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-6 shadow-inner border border-amber-500/20">
-                    <IconBook size={32} strokeWidth={1.5} />
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 border border-amber-500/30 rounded-full bg-amber-500/10 text-amber-600 mb-4 inline-block">
-                      50% OFF
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-extrabold text-on-surface mb-3">NeetBand Mastery Guide</h3>
-                  <p className="text-on-surface-variant mb-8 flex-1">
-                    Get the ultimate study guide written by our top authors. Claim your 50% discount and master the syllabus faster.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      if (!user?.isPremium) {
-                        setIsPremiumModalOpen(true);
-                      } else {
-                        navigate('/offers/book');
-                      }
-                    }} 
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
-                  >
-                    <IconShoppingCart size={20} className="mr-2" /> Claim Offer
-                  </Button>
-                </CardBody>
-              </Card>
-
-              {/* Eye Checkup Offer */}
-              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
-                <CardBody className="p-8 flex flex-col flex-1">
-                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6 shadow-inner border border-emerald-500/20">
-                    <IconEye size={32} strokeWidth={1.5} />
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 border border-emerald-500/30 rounded-full bg-emerald-500/10 text-emerald-600 mb-4 inline-block">
-                      FREE
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-extrabold text-on-surface mb-3">Free Eye Checkup</h3>
-                  <p className="text-on-surface-variant mb-8 flex-1">
-                    Protect your vision while studying. Premium members can book a free comprehensive eye checkup at our partner clinics.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      if (!user?.isPremium) {
-                        setIsPremiumModalOpen(true);
-                      } else {
-                        navigate('/offers/eye-checkup');
-                      }
-                    }} 
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
-                  >
-                    <IconCheck size={20} className="mr-2" /> Book Now
-                  </Button>
-                </CardBody>
-              </Card>
-
-            </div>
-          </div>
 
           {/* Favourites & Recently Played */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">

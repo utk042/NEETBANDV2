@@ -1,7 +1,11 @@
 import React from 'react';
-import { IconVolume, IconPlayerPlayFilled, IconPlayerPauseFilled, IconHeart, IconDots, IconShare } from '@tabler/icons-react';
+import { IconVolume, IconPlayerPlayFilled, IconPlayerPauseFilled, IconHeart, IconDownload, IconShare } from '@tabler/icons-react';
+import { useUserAuth } from '../contexts/UserAuthContext';
+import { useDialog } from '../contexts/DialogContext';
 
 export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite, currentTrack, isPlaying, onTrackSelect }) {
+  const { user } = useUserAuth();
+  const { alert: customAlert, toast } = useDialog();
   const favoriteTracks = tracks.filter(t => favoritedTrackIds?.includes(t.id));
 
   return (
@@ -22,6 +26,7 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
               <div className="w-12"></div>
               <div className="flex-1">Title</div>
               <div className="w-24 lg:w-48 text-left">Class</div>
+              <div className="w-32 lg:w-56 text-left">Chapter</div>
               <div className="w-28 lg:w-32 text-right"></div>
             </div>
 
@@ -90,12 +95,35 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                     </div>
 
                     <div className="hidden md:block w-24 lg:w-48 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
-                      Class 12
+                      {track.class || track.grade || 'Class 12'}
+                    </div>
+
+                    <div className="hidden md:block w-32 lg:w-56 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4" title={track.chapter}>
+                      {track.chapter || '-'}
                     </div>
                     
                     <div className="w-auto md:w-28 lg:w-32 flex justify-end items-center gap-1 md:gap-3 text-on-surface-variant/60 flex-shrink-0">
-                      <button className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:block flex items-center justify-center" aria-label="More options"><IconDots size={20} className="block" /></button>
-                      <button className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:block flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
+                      <button onClick={(e) => { 
+                        e.stopPropagation();
+                        if (user?.isPremium) {
+                          if (track.audioUrl) {
+                            window.open(track.audioUrl, '_blank');
+                          } else {
+                            toast.error('Download not available for this track.');
+                          }
+                        } else {
+                          customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.');
+                        }
+                      }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Download track"><IconDownload size={20} className="block" /></button>
+                      <button onClick={(e) => { 
+                        e.stopPropagation();
+                        if (navigator.share) {
+                          navigator.share({ title: track.title, url: window.location.href }).catch(console.error);
+                        } else {
+                          navigator.clipboard.writeText(`${track.title} - ${window.location.href}`);
+                          toast.success('Link copied to clipboard!');
+                        }
+                      }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
                         className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl flex items-center justify-center text-primary" 

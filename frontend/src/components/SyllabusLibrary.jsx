@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconPlaylist, IconVolume, IconSearch, IconDots, IconShare, IconHeart } from '@tabler/icons-react';
+import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconPlaylist, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useUserAuth } from '../contexts/UserAuthContext';
+import { useDialog } from '../contexts/DialogContext';
 
 
 export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite, onSeek }) {
   const { isShuffled, setIsShuffled, repeatMode, cycleRepeat } = usePlayer();
+  const { user } = useUserAuth();
+  const { alert: customAlert, toast } = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
   
   const [selectedClass, setSelectedClass] = useState('All');
@@ -118,7 +122,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
               {openDropdown === 'class' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
                 >
                   {['All', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
                     <li
@@ -152,7 +156,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
               {openDropdown === 'subject' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
                 >
                   {['All', 'Biology', 'Physics', 'Chemistry'].map((sub) => (
                     <li
@@ -186,7 +190,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
               {openDropdown === 'chapter' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
                 >
                   {chaptersList.map((chap) => (
                     <li
@@ -462,8 +466,27 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   
                   {/* Action Icons */}
                   <div className="w-auto md:w-28 lg:w-32 flex justify-end items-center gap-1 md:gap-3 text-on-surface-variant/60 flex-shrink-0">
-                    <button className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:block flex items-center justify-center" aria-label="More options"><IconDots size={20} className="block" /></button>
-                    <button className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:block flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
+                    <button onClick={(e) => { 
+                      e.stopPropagation();
+                      if (user?.isPremium) {
+                        if (track.audioUrl) {
+                          window.open(track.audioUrl, '_blank');
+                        } else {
+                          toast.error('Download not available for this track.');
+                        }
+                      } else {
+                        customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.');
+                      }
+                    }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Download track"><IconDownload size={20} className="block" /></button>
+                    <button onClick={(e) => { 
+                      e.stopPropagation();
+                      if (navigator.share) {
+                        navigator.share({ title: track.title, url: window.location.href }).catch(console.error);
+                      } else {
+                        navigator.clipboard.writeText(`${track.title} - ${window.location.href}`);
+                        toast.success('Link copied to clipboard!');
+                      }
+                    }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
                       className={`hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl flex items-center justify-center ${favoritedTrackIds?.includes(track.id) ? 'text-primary' : ''}`} 
