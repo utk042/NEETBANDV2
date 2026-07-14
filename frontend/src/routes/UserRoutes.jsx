@@ -37,7 +37,9 @@ import NotFound from '../components/NotFound';
 import TermsAndConditions from '../components/TermsAndConditions';
 import DataPolicy from '../components/DataPolicy';
 import RefundPolicy from '../components/RefundPolicy';
+const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
 const BookOfferPreview = lazyWithRetry(() => import('../components/Offers/BookOfferPreview'));
+const BookCheckout = lazyWithRetry(() => import('../components/Offers/BookCheckout'));
 const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
@@ -193,6 +195,12 @@ export default function UserRoutes() {
             <Route path="/offers/book" element={
               <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Offers" loginRoute="/login">
                 <BookOfferPreview />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/offers/book/checkout" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Offers" loginRoute="/login">
+                <BookCheckout />
               </ProtectedRoute>
             } />
 
