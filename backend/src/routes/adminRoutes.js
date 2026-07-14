@@ -18,7 +18,10 @@ import {
   updateNewsScrollSettings
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
-import { getBookClaims, updateBookClaimStatus, getEyeCheckupClaims, updateEyeCheckupStatus } from '../controllers/offerAdminController.js';
+import { 
+  getBookClaims, updateBookClaimStatus, createBookClaim, deleteBookClaim,
+  getEyeCheckupClaims, updateEyeCheckupStatus, createEyeCheckupClaim, deleteEyeCheckupClaim 
+} from '../controllers/offerAdminController.js';
 
 const router = express.Router();
 
@@ -48,8 +51,13 @@ router.put('/news-scroll', protect, authorize('admin', 'owner'), updateNewsScrol
 
 // Offer Admin routes
 router.get('/offers/book', protect, authorize('admin', 'owner'), getBookClaims);
+router.post('/offers/book', protect, authorize('admin', 'owner'), createBookClaim);
 router.put('/offers/book/:id', protect, authorize('admin', 'owner'), updateBookClaimStatus);
+router.delete('/offers/book/:id', protect, authorize('admin', 'owner'), deleteBookClaim);
+
 router.get('/offers/eye-checkup', protect, authorize('admin', 'owner'), getEyeCheckupClaims);
+router.post('/offers/eye-checkup', protect, authorize('admin', 'owner'), createEyeCheckupClaim);
 router.put('/offers/eye-checkup/:id', protect, authorize('admin', 'owner'), updateEyeCheckupStatus);
+router.delete('/offers/eye-checkup/:id', protect, authorize('admin', 'owner'), deleteEyeCheckupClaim);
 
 export default router;

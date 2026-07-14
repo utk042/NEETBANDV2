@@ -376,6 +376,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
               <div className="w-12"></div>
               <div className="flex-1">Title</div>
               <div className="w-24 lg:w-48 text-left">Class</div>
+              <div className="w-32 lg:w-56 text-left">Chapter</div>
               <div className="w-28 lg:w-32 text-right"></div>
             </div>
 
@@ -452,6 +453,11 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   {/* Class Column */}
                   <div className="hidden md:block w-24 lg:w-48 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
                     {track.class || track.grade || 'Class 12'}
+                  </div>
+
+                  {/* Chapter Column */}
+                  <div className="hidden md:block w-32 lg:w-56 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4" title={track.chapter}>
+                    {track.chapter || '-'}
                   </div>
                   
                   {/* Action Icons */}

@@ -101,7 +101,7 @@ export function PlayerProvider({ children, user }) {
     navigator.mediaSession.setActionHandler('pause', () => { audioRef.current?.pause(); setIsPlaying(false); });
     navigator.mediaSession.setActionHandler('previoustrack', handlePrev);
     navigator.mediaSession.setActionHandler('nexttrack', handleNext);
-  }, [currentTrack]);
+  }, [currentTrack, handlePrev, handleNext]);
 
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
@@ -310,16 +310,22 @@ export function PlayerProvider({ children, user }) {
       const ctx = canvas.getContext('2d');
       canvas.width = 512;
       canvas.height = 512;
+      
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      if (currentTrack.cover) {
+        img.src = currentTrack.cover;
+      }
+      
       // Draw album art onto canvas
       const drawFrame = () => {
         ctx.fillStyle = '#0d1b2a';
         ctx.fillRect(0, 0, 512, 512);
-        if (currentTrack.cover) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => ctx.drawImage(img, 0, 0, 512, 512);
-          img.src = currentTrack.cover;
+        
+        if (img.complete && img.naturalHeight !== 0) {
+          ctx.drawImage(img, 0, 0, 512, 512);
         }
+        
         // Draw title
         ctx.fillStyle = '#ecc246';
         ctx.font = 'bold 28px sans-serif';
