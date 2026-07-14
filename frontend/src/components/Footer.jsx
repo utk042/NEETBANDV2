@@ -111,6 +111,7 @@ export default function Footer({ navigate }) {
             <nav className="flex flex-col gap-3">
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Terms & Conditions</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Privacy Policy</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/refund'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Refund Policy</a>
             </nav>
           </div>
 
@@ -150,6 +151,7 @@ export default function Footer({ navigate }) {
             <nav className="flex items-center gap-4">
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-xs text-on-surface-variant/60 hover:text-primary transition-colors">Terms</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="font-body-md text-xs text-on-surface-variant/60 hover:text-primary transition-colors">Privacy</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/refund'); }} className="font-body-md text-xs text-on-surface-variant/60 hover:text-primary transition-colors">Refund</a>
             </nav>
           </div>
 

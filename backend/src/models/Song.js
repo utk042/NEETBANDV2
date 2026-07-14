@@ -11,6 +11,12 @@ const songSchema = new mongoose.Schema({
   subject: {
     type: String, // e.g., 'Physics'
   },
+  chapter: {
+    type: String, // e.g., 'Kinematics'
+  },
+  chapterNumber: {
+    type: Number, // e.g., 1 (useful for 1st chapter free logic)
+  },
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
@@ -36,6 +42,8 @@ const songSchema = new mongoose.Schema({
   completionCount: { type: Number, default: 0 },
   shareCount: { type: Number, default: 0 },
   repeatCount: { type: Number, default: 0 },
+  watermarkUrl: { type: String }, // External link to mp3 for ad/watermark
+  watermarkPositions: { type: [Number], default: [20, 50, 90] }, // Percentages where watermark plays
   // 10 buckets representing each 10% segment of the song (drop-off distribution)
   dropOffDistribution: { type: [Number], default: () => [0,0,0,0,0,0,0,0,0,0] },
 }, { timestamps: true });

@@ -1,6 +1,6 @@
 import express from 'express';
 import { 
-  createCourse, getCourses, updateCourse, deleteCourse,
+  createCourse, getCourses, updateCourse, deleteCourse, getCourseById,
   createQuiz, getQuizByCourse, 
   submitQuiz,
   getLessonContent, updateLessonContent,
@@ -17,6 +17,7 @@ router.route('/courses')
   .post(protect, authorize('admin', 'owner'), createCourse);
 
 router.route('/courses/:id')
+  .get(getCourseById)
   .put(protect, authorize('admin', 'owner'), updateCourse)
   .delete(protect, authorize('admin', 'owner'), deleteCourse);
 

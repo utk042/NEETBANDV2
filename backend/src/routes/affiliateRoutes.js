@@ -61,4 +61,7 @@ router.get('/profile', protectAffiliate, (req, res) => {
 });
 router.put('/profile', protectAffiliate, updateAffiliateProfile);
 
+import { requestWithdrawal } from '../controllers/affiliateController.js';
+router.post('/withdrawals', protectAffiliate, requestWithdrawal);
+
 export default router;

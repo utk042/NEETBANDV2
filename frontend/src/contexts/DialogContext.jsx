@@ -51,9 +51,9 @@ export const DialogProvider = ({ children }) => {
     info: (msg) => showToast(msg, 'info'),
   }), [showToast]);
 
-  const confirm = useMemo(() => (title, message) => {
+  const confirm = useMemo(() => (title, message, options = {}) => {
     return new Promise((resolve) => {
-      setConfirmState({ title, message, resolve });
+      setConfirmState({ title, message, resolve, ...options });
     });
   }, []);
 
@@ -117,23 +117,23 @@ export const DialogProvider = ({ children }) => {
             </p>
 
             <div className="flex justify-center gap-4 w-full">
-              {!confirmState.isAlert && (
+              {!confirmState.isAlert && confirmState.showCancel !== false && (
                 <button
                   type="button"
                   onClick={() => handleCloseConfirm(false)}
                   className="flex-1 py-3 px-6 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-variant transition-colors border border-outline-variant/30"
                 >
-                  Cancel
+                  {confirmState.cancelText || 'Cancel'}
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => handleCloseConfirm(true)}
                 className={`flex-1 py-3 px-6 font-bold rounded-xl transition-colors shadow-sm text-white ${
-                  confirmState.isAlert ? 'bg-primary hover:bg-primary/95' : 'bg-red-500 hover:bg-red-600'
+                  confirmState.confirmClass ? confirmState.confirmClass : (confirmState.isAlert ? 'bg-primary hover:bg-primary/95' : 'bg-red-500 hover:bg-red-600')
                 }`}
               >
-                {confirmState.isAlert ? 'OK' : 'Confirm'}
+                {confirmState.confirmText || (confirmState.isAlert ? 'OK' : 'Confirm')}
               </button>
             </div>
           </div>

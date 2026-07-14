@@ -2,7 +2,8 @@ import React from 'react';
 import {
   IconVolume, IconVolumeOff, IconVolume2,
   IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
-  IconHeart, IconArrowsShuffle, IconRepeat, IconRepeatOnce, IconPictureInPicture
+  IconHeart, IconArrowsShuffle, IconRepeat, IconRepeatOnce, IconPictureInPicture,
+  IconRotate, IconRotate2
 } from '@tabler/icons-react';
 import defaultCover from '../assets/dna_replication_thumbnail.png';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -253,11 +254,29 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           </button>
 
           <button
+            onClick={(e) => { e.stopPropagation(); handleSeek(Math.max(0, currentSeconds - 10)); }}
+            className="text-on-surface-variant hover:text-primary transition-colors p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
+            aria-label="Replay 10s"
+            title="Replay 10s"
+          >
+            <IconRotate2 size={18} />
+          </button>
+
+          <button
             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             className="bg-primary text-on-primary rounded-full w-9 h-9 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
+          </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); handleSeek(Math.min(totalSeconds, currentSeconds + 30)); }}
+            className="text-on-surface-variant hover:text-primary transition-colors p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
+            aria-label="Forward 30s"
+            title="Forward 30s"
+          >
+            <IconRotate size={18} />
           </button>
 
           <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="text-on-surface hover:text-primary transition-colors p-1.5" aria-label="Next">

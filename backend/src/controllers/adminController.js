@@ -4,6 +4,7 @@ import Course from '../models/Course.js';
 import Quiz from '../models/Quiz.js';
 import Affiliate from '../models/Affiliate.js';
 import NewsScroll from '../models/NewsScroll.js';
+import WithdrawalRequest from '../models/WithdrawalRequest.js';
 export const getDashboardStats = async (req, res) => {
   try {
     const totalStudents = await User.countDocuments({ role: 'student' });
@@ -157,7 +158,50 @@ export const deleteStudent = async (req, res) => {
 export const getAffiliates = async (req, res) => {
   try {
     const affiliates = await Affiliate.find().select('-password').populate('affiliatedUsers.userId', 'name email');
-    res.json(affiliates);
+    
+    // Add computed wallet balances to each affiliate
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Get all pending and completed withdrawals to subtract
+    const allWithdrawals = await WithdrawalRequest.find();
+
+    const affiliatesWithBalances = affiliates.map(affiliate => {
+      let totalEarned = 0;
+      let availableCommissions = 0;
+
+      if (affiliate.walletTransactions && affiliate.walletTransactions.length > 0) {
+        affiliate.walletTransactions.forEach(tx => {
+          if (tx.type === 'commission' || tx.type === 'manual_addition') {
+            totalEarned += tx.amount;
+            if (new Date(tx.date) <= sevenDaysAgo || tx.type === 'manual_addition') {
+              availableCommissions += tx.amount;
+            }
+          } else if (tx.type === 'manual_deduction') {
+            totalEarned -= tx.amount;
+            availableCommissions -= tx.amount;
+          }
+        });
+      }
+
+      const affiliateWithdrawals = allWithdrawals.filter(w => w.affiliateId.toString() === affiliate._id.toString());
+      let totalDeductions = 0;
+      affiliateWithdrawals.forEach(w => {
+        if (w.status === 'completed' || w.status === 'pending') {
+          totalDeductions += w.amount;
+        }
+      });
+
+      const withdrawableBalance = Math.max(0, availableCommissions - totalDeductions);
+
+      return {
+        ...affiliate.toObject(),
+        walletBalance: totalEarned,
+        withdrawableBalance
+      };
+    });
+
+    res.json(affiliatesWithBalances);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -204,17 +248,120 @@ export const deleteAffiliate = async (req, res) => {
   }
 };
 
-export const addSettlement = async (req, res) => {
+export const addManualWalletTransaction = async (req, res) => {
   try {
-    const { amount, notes } = req.body;
+    const { type, amount, notes } = req.body;
+    
+    if (!['manual_addition', 'manual_deduction'].includes(type)) {
+      return res.status(400).json({ message: 'Invalid transaction type' });
+    }
+
     const affiliate = await Affiliate.findById(req.params.id);
     if (affiliate) {
-      affiliate.settlements.push({ amount, notes });
+      affiliate.walletTransactions.push({ type, amount, notes });
       await affiliate.save();
       res.json(affiliate);
     } else {
       res.status(404).json({ message: 'Affiliate not found' });
     }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const addManualAffiliateReferral = async (req, res) => {
+  try {
+    const { name, email, plan, isPaid, commissionAmount } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required for manual referral' });
+    }
+
+    const affiliate = await Affiliate.findById(req.params.id);
+    if (!affiliate) {
+      return res.status(404).json({ message: 'Affiliate not found' });
+    }
+
+    affiliate.affiliatedUsers.push({
+      manualName: name,
+      manualEmail: email,
+      plan: plan || 'none',
+      joinedAt: Date.now()
+    });
+
+    if (isPaid === false && Number(commissionAmount) > 0) {
+      affiliate.walletTransactions.push({
+        type: 'manual_addition',
+        amount: Number(commissionAmount),
+        notes: `Manual referral commission: ${name}`
+      });
+    }
+
+    await affiliate.save();
+    res.json(affiliate);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const removeAffiliateReferral = async (req, res) => {
+  try {
+    const affiliate = await Affiliate.findById(req.params.id);
+    if (!affiliate) {
+      return res.status(404).json({ message: 'Affiliate not found' });
+    }
+
+    const referralIndex = affiliate.affiliatedUsers.findIndex(r => r._id.toString() === req.params.referralId);
+    if (referralIndex === -1) {
+      return res.status(404).json({ message: 'Referral not found in this affiliate' });
+    }
+
+    affiliate.affiliatedUsers.splice(referralIndex, 1);
+    await affiliate.save();
+    res.json(affiliate);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const getWithdrawalRequests = async (req, res) => {
+  try {
+    const withdrawals = await WithdrawalRequest.find().populate('affiliateId', 'name email promoCode').sort({ requestedAt: -1 });
+    res.json(withdrawals);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const processWithdrawalRequest = async (req, res) => {
+  try {
+    const { status, rejectReason } = req.body;
+    
+    if (!['completed', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    if (status === 'rejected' && !rejectReason) {
+      return res.status(400).json({ message: 'Reject reason is required when rejecting a withdrawal request' });
+    }
+
+    const withdrawal = await WithdrawalRequest.findById(req.params.id);
+    if (!withdrawal) {
+      return res.status(404).json({ message: 'Withdrawal request not found' });
+    }
+
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ message: 'Withdrawal request is already processed' });
+    }
+
+    withdrawal.status = status;
+    withdrawal.processedAt = Date.now();
+    if (status === 'rejected') {
+      withdrawal.rejectReason = rejectReason;
+    }
+
+    await withdrawal.save();
+    res.json(withdrawal);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

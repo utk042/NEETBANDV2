@@ -44,6 +44,8 @@ const affiliateSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
       },
+      manualName: String,
+      manualEmail: String,
       joinedAt: {
         type: Date,
         default: Date.now,
@@ -51,12 +53,33 @@ const affiliateSchema = new mongoose.Schema({
       plan: String
     }
   ],
-  settlements: [
+  commissionType: {
+    type: String,
+    enum: ['fixed', 'percentage'],
+    default: 'fixed'
+  },
+  commissionValue: {
+    type: Number,
+    default: 0
+  },
+  walletTransactions: [
     {
-      amount: Number,
+      type: {
+        type: String,
+        enum: ['commission', 'manual_addition', 'manual_deduction'],
+        required: true
+      },
+      amount: {
+        type: Number,
+        required: true
+      },
       date: {
         type: Date,
         default: Date.now,
+      },
+      sourceUserId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
       },
       notes: String,
     }

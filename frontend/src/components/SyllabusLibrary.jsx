@@ -120,7 +120,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   role="listbox" 
                   className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  {['All', 'Class 11', 'Class 12', 'Class 10', 'Dropper'].map((cls) => (
+                  {['All', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
                     <li
                       key={cls}
                       role="option"
@@ -210,8 +210,8 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
         {/* Table Container Box */}
         <div data-gsap="track-table" className="bg-surface-container-lowest rounded-3xl border border-primary/20 shadow-[var(--shadow-floating-card)] relative z-10 overflow-hidden flex flex-col">
           
-          {/* Integrated Top Player Banner (Primary Color Redesign) */}
-          <div className="bg-primary text-on-primary py-5 px-5 md:py-7 md:px-8 relative select-none overflow-hidden border-b border-[var(--border-nav-layout)] transition-colors duration-300">
+          {/* Integrated Top Player Banner (Secondary Color on Light Mode, Primary Color on Dark Mode) */}
+          <div className="bg-secondary dark:bg-primary text-on-secondary dark:text-on-primary py-5 px-5 md:py-7 md:px-8 relative select-none overflow-hidden border-b border-[var(--border-nav-layout)] transition-colors duration-300">
             {/* Deep Dynamic Spotlights & Texture */}            {/* Subtle noise overlay */}
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
             
@@ -225,10 +225,10 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   </div>
                   
                   <div className="flex flex-col min-w-0 justify-center">
-                    <span className="text-lg md:text-2xl font-headline-lg font-bold leading-tight tracking-tight truncate text-on-primary">
+                    <span className="text-lg md:text-2xl font-headline-lg font-bold leading-tight tracking-tight truncate text-on-secondary dark:text-on-primary">
                       {`0${tracks.findIndex(t => t.id === displayTrack.id) + 1} ${displayTrack.title}`}
                     </span>
-                    <span className="text-xs md:text-base font-medium text-on-primary/80 truncate mt-0.5">
+                    <span className="text-xs md:text-base font-medium text-on-secondary/80 dark:text-on-primary/80 truncate mt-0.5">
                       {displayTrack.chapter}
                     </span>
                   </div>
@@ -238,10 +238,10 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 <div className="flex items-center gap-3">
                   {/* Desktop Only Badges */}
                   <div className="hidden lg:flex items-center gap-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm border border-white/10 text-[10px] md:text-xs font-bold tracking-widest text-on-primary uppercase shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
+                    <span className="px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm border border-white/10 text-[10px] md:text-xs font-bold tracking-widest text-on-secondary dark:text-on-primary uppercase shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
                       {tracks.length} TRACKS
                     </span>
-                    <span className="text-[11px] md:text-xs font-semibold tracking-wider text-on-primary/60 uppercase">
+                    <span className="text-[11px] md:text-xs font-semibold tracking-wider text-on-secondary/60 dark:text-on-primary/60 uppercase">
                       24 MIN.
                     </span>
                   </div>
@@ -249,13 +249,13 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   {/* Mobile Only Play Button */}
                   <button 
                     onClick={() => onTrackSelect(displayTrack)}
-                    className="lg:hidden w-11 h-11 rounded-full border border-white/30 flex items-center justify-center text-on-primary hover:bg-white/20 transition-all duration-300 flex-shrink-0 bg-white/10 backdrop-blur-md shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                    className="lg:hidden w-11 h-11 rounded-full border border-white/30 flex items-center justify-center text-on-secondary dark:text-on-primary hover:bg-white/20 transition-all duration-300 flex-shrink-0 bg-white/10 backdrop-blur-md shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? (
-                      <IconPlayerPauseFilled size={22} className="text-on-primary" aria-hidden="true" />
+                      <IconPlayerPauseFilled size={22} className="text-on-secondary dark:text-on-primary" aria-hidden="true" />
                     ) : (
-                      <IconPlayerPlayFilled size={22} className="text-on-primary translate-x-[1px]" aria-hidden="true" />
+                      <IconPlayerPlayFilled size={22} className="text-on-secondary dark:text-on-primary translate-x-[1px]" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -269,20 +269,20 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   {/* Desktop Play Button */}
                   <button 
                     onClick={() => onTrackSelect(displayTrack)}
-                    className="hidden lg:flex w-14 h-14 rounded-full border border-white/30 items-center justify-center text-on-primary hover:scale-105 hover:bg-white/20 transition-all duration-300 flex-shrink-0 bg-white/10 backdrop-blur-md shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 relative overflow-hidden group"
+                    className="hidden lg:flex w-14 h-14 rounded-full border border-white/30 items-center justify-center text-on-secondary dark:text-on-primary hover:scale-105 hover:bg-white/20 transition-all duration-300 flex-shrink-0 bg-white/10 backdrop-blur-md shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 relative overflow-hidden group"
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                     {isPlaying ? (
-                      <IconPlayerPauseFilled size={28} className="text-on-primary relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" aria-hidden="true" />
+                      <IconPlayerPauseFilled size={28} className="text-on-secondary dark:text-on-primary relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" aria-hidden="true" />
                     ) : (
-                      <IconPlayerPlayFilled size={28} className="text-on-primary relative z-10 translate-x-[2px]" aria-hidden="true" />
+                      <IconPlayerPlayFilled size={28} className="text-on-secondary dark:text-on-primary relative z-10 translate-x-[2px]" aria-hidden="true" />
                     )}
                   </button>
                   
                   {/* Waveform Scrubber */}
                   <div className="flex-1 flex items-center gap-3 min-w-0">
-                    <span className="text-[11px] font-mono font-medium text-on-primary/70 tracking-wider">{formatTime(currentSeconds)}</span>
+                    <span className="text-[11px] font-mono font-medium text-on-secondary/70 dark:text-on-primary/70 tracking-wider">{formatTime(currentSeconds)}</span>
                     
                     <div className="flex-1 h-8 md:h-11 flex items-end justify-center gap-[1.5px] overflow-hidden relative cursor-pointer group">
                       {/* Interactive hover area for scrubber */}
@@ -293,7 +293,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                           <div 
                             key={i} 
                             className={`w-[2px] rounded-t-sm flex-shrink-0 transition-colors duration-300 ${
-                              isActive ? 'bg-on-primary' : 'bg-on-primary/30'
+                              isActive ? 'bg-on-secondary dark:bg-on-primary' : 'bg-on-secondary/30 dark:bg-on-primary/30'
                             } ${isPlaying && isActive ? 'syl-wave-active' : ''}`}
                             style={{ 
                               height: `${h * 0.85}%`,
@@ -306,47 +306,47 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                       })}
                     </div>
                     
-                    <span className="text-[11px] font-mono font-medium text-on-primary/70 tracking-wider">
+                    <span className="text-[11px] font-mono font-medium text-on-secondary/70 dark:text-on-primary/70 tracking-wider">
                       -{formatTime(Math.max(0, totalSeconds - currentSeconds))}
                     </span>
                   </div>
                 </div>
 
                 {/* Sub-controls */}
-                <div className="flex items-center justify-between lg:justify-end gap-4 lg:gap-5 text-on-primary/70 w-full lg:w-auto z-10 relative">
+                <div className="flex items-center justify-between lg:justify-end gap-4 lg:gap-5 text-on-secondary/70 dark:text-on-primary/70 w-full lg:w-auto z-10 relative">
                   <div className="flex items-center gap-4 md:gap-5">
                     <button 
                       onClick={() => onSeek?.(Math.max(0, currentSeconds - 10))}
-                      className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
+                      className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
                       aria-label="Replay 10s"
                     >
                       <IconRotate2 size={20} aria-hidden="true" />
                     </button>
                     <button 
                       onClick={() => onSeek?.(Math.min(totalSeconds, currentSeconds + 30))}
-                      className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
+                      className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" 
                       aria-label="Forward 30s"
                     >
                       <IconRotate size={20} aria-hidden="true" />
                     </button>
                     <button 
                       onClick={() => setIsShuffled(!isShuffled)}
-                      className={`${isShuffled ? 'text-on-primary' : 'text-on-primary/50 hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
+                      className={`${isShuffled ? 'text-on-secondary dark:text-on-primary' : 'text-on-secondary/50 hover:text-on-secondary dark:text-on-primary/50 dark:hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
                       aria-label="Shuffle"
                     >
                       <IconArrowsShuffle size={20} aria-hidden="true" />
                     </button>
                     <button 
                       onClick={cycleRepeat}
-                      className={`${repeatMode !== 'none' ? 'text-on-primary' : 'text-on-primary/50 hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
+                      className={`${repeatMode !== 'none' ? 'text-on-secondary dark:text-on-primary' : 'text-on-secondary/50 hover:text-on-secondary dark:text-on-primary/50 dark:hover:text-on-primary'} hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center`} 
                       aria-label={`Repeat (current mode: ${repeatMode})`}
                     >
                       <IconRepeat size={20} aria-hidden="true" />
                     </button>
-                    <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Queue"><IconPlaylist size={20} aria-hidden="true" /></button>
+                    <button className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Queue"><IconPlaylist size={20} aria-hidden="true" /></button>
                   </div>
-                  <div className="hidden lg:block w-px h-4 bg-on-primary/20"></div>
-                  <button className="hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Volume"><IconVolume size={20} aria-hidden="true" /></button>
+                  <div className="hidden lg:block w-px h-4 bg-on-secondary/20 dark:bg-on-primary/20"></div>
+                  <button className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Volume"><IconVolume size={20} aria-hidden="true" /></button>
                 </div>
               </div>
             </div>

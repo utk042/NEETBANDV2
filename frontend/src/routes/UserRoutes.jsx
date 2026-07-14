@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Features from '../components/Features';
@@ -36,6 +36,9 @@ const Checkout = lazyWithRetry(() => import('../components/Checkout'));
 import NotFound from '../components/NotFound';
 import TermsAndConditions from '../components/TermsAndConditions';
 import DataPolicy from '../components/DataPolicy';
+import RefundPolicy from '../components/RefundPolicy';
+const BookOfferPreview = lazyWithRetry(() => import('../components/Offers/BookOfferPreview'));
+const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -71,6 +74,9 @@ export default function UserRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPage = location.pathname === '/' ? 'home' : location.pathname.split('/')[1] || 'home';
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const isCourseItemView = pathSegments[0] === 'course' && pathSegments.length > 2;
+  const hideHeader = ['login', 'checkout'].includes(currentPage) || isCourseItemView;
 
   // Player state from context
   const {
@@ -83,35 +89,6 @@ export default function UserRoutes() {
   } = usePlayer();
 
   const [lmsCourses, setLmsCourses] = useState([]);
-  
-  const [activeCourse, setActiveCourse] = useState(() => {
-    try {
-      const stored = localStorage.getItem('neetband_active_course');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  useEffect(() => {
-    if (activeCourse) {
-      localStorage.setItem('neetband_active_course', JSON.stringify(activeCourse));
-    } else {
-      localStorage.removeItem('neetband_active_course');
-    }
-  }, [activeCourse]);
-
-  useEffect(() => {
-    if (activeCourse && lmsCourses.length > 0) {
-      const fresh = lmsCourses.find(c => c._id === activeCourse._id);
-      if (fresh) {
-        setActiveCourse(fresh);
-      }
-    }
-  }, [lmsCourses]);
-
-  const [coursePlayerView, setCoursePlayerView] = useState('overview');
-
   const [isLoading, setIsLoading] = useState(true);
   useScrollAnimations(!isLoading);
 
@@ -177,7 +154,7 @@ export default function UserRoutes() {
     <>
       {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
       
-      {!['login', 'checkout'].includes(currentPage) && !(currentPage === 'course-player' && coursePlayerView === 'lesson') && (
+      {!hideHeader && (
         <Header 
           theme={theme} 
           toggleTheme={toggleTheme} 
@@ -213,22 +190,33 @@ export default function UserRoutes() {
               </ProtectedRoute>
             } />
             
+            <Route path="/offers/book" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Offers" loginRoute="/login">
+                <BookOfferPreview />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/offers/eye-checkup" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Offers" loginRoute="/login">
+                <EyeCheckupOffer />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/favourites" element={<div className="pt-32 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} /></div>} />
 
             <Route path="/course" element={<LibraryPage tracks={globalTracks} lmsCourses={lmsCourses} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} onCourseSelect={async (course) => {
                 try {
                   const freshCourses = await getCourses();
                   setLmsCourses(freshCourses);
-                  const freshCourse = freshCourses.find(c => c._id === course._id);
-                  setActiveCourse(freshCourse || course);
                 } catch (err) {
                   console.error("Failed to fetch fresh course details:", err);
-                  setActiveCourse(course);
                 }
-                navigate('/course-player');
+                navigate(`/course/${course._id}`);
               }} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onUpgradeClick={handleUpgradeClick} queue={queue} setQueue={setQueue} handleNext={handleNext} handlePrev={handlePrev} handleSeek={handleSeek} />} />
 
-            <Route path="/course-player" element={<CoursePlayer course={activeCourse} onBack={() => navigate('/course')} onViewChange={setCoursePlayerView} navigate={navigate} currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
+            <Route path="/course/:courseId" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
+            <Route path="/course/:courseId/:itemType/:lessonIdx/:itemIdx" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
+            <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub /></div>} />
             <Route path="/library" element={<SongLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} />} />
@@ -239,6 +227,7 @@ export default function UserRoutes() {
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/privacy" element={<DataPolicy />} />
+            <Route path="/refund" element={<RefundPolicy />} />
 
             <Route path="/login" element={<LoginSignup onLoginSuccess={(sessionUser) => {
                 login(sessionUser);
@@ -264,7 +253,7 @@ export default function UserRoutes() {
         </React.Suspense>
       </main>
 
-      {['home', 'blog', 'about', 'contact', 'terms', 'privacy'].includes(currentPage) && (
+      {['home', 'blog', 'about', 'contact', 'terms', 'privacy', 'refund'].includes(currentPage) && (
         <div className={currentPage !== 'home' ? 'hidden md:block' : ''}>
           <Footer navigate={navigate} />
         </div>

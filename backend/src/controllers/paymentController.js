@@ -82,7 +82,31 @@ export const verifyPayment = async (req, res) => {
           if (!user.affiliatePartner) {
             user.affiliatePartner = affiliate._id;
             affiliate.affiliatedUsers.push({ userId: user._id, plan });
-            // Earnings calculation is now handled manually by admins via settlements
+            
+            // Auto-calculate commission
+            let amountPaid = plan === 'scale_plan' ? 999 : 299;
+            if (affiliate.discountEnabled) {
+              const discountVal = affiliate.discountValue || 10;
+              amountPaid = amountPaid * (1 - discountVal / 100);
+            }
+
+            let commissionAmount = 0;
+            if (affiliate.commissionType === 'percentage') {
+              commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
+            } else {
+              // Fixed amount
+              commissionAmount = affiliate.commissionValue || 0;
+            }
+
+            if (commissionAmount > 0) {
+              affiliate.walletTransactions.push({
+                type: 'commission',
+                amount: Math.round(commissionAmount), // Round to nearest rupee
+                sourceUserId: user._id,
+                notes: `Commission for referring user (Plan: ${plan})`
+              });
+            }
+
             await affiliate.save();
           }
         }

@@ -97,7 +97,7 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
       />
 
       {/* Modal Card */}
-      <div className="relative bg-surface p-6 md:p-8 rounded-3xl w-full max-w-md border border-outline-variant/30 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-200 text-on-surface">
+      <div className="relative bg-surface p-6 md:p-8 rounded-3xl w-full max-w-md border border-outline-variant/30 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-200 text-on-surface max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button 
           onClick={onClose} 

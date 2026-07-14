@@ -13,9 +13,11 @@ import {
   IconLayoutDashboard,
   IconArrowRight,
   IconCopy,
-  IconCheck
+  IconCheck,
+  IconWallet,
+  IconBuildingBank
 } from '@tabler/icons-react';
-import { getAffiliateDashboard, updateAffiliateProfile } from '../../services/api';
+import { getAffiliateDashboard, updateAffiliateProfile, requestAffiliateWithdrawal } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import EditProfileModal from '../Common/EditProfileModal';
 
@@ -33,20 +35,27 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  
+  // Withdrawal Modal State
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('Bank Transfer');
+  const [paymentDetails, setPaymentDetails] = useState('');
+  const [isSubmittingWithdrawal, setIsSubmittingWithdrawal] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getAffiliateDashboard();
+      setDashboardData(data);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getAffiliateDashboard();
-        setDashboardData(data);
-      } catch (err) {
-        setError(err.message || 'Failed to fetch dashboard data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     if (user && user.isLoggedIn) {
       fetchData();
     } else {
@@ -83,6 +92,38 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
     }
   };
 
+  const submitWithdrawal = async (e) => {
+    e.preventDefault();
+    if (!withdrawAmount || isNaN(withdrawAmount) || Number(withdrawAmount) <= 0) {
+      return toast.error("Please enter a valid amount");
+    }
+    if (Number(withdrawAmount) > dashboardData?.stats?.withdrawableBalance) {
+      return toast.error("Amount exceeds withdrawable balance");
+    }
+    if (!paymentDetails.trim()) {
+      return toast.error("Please provide payment details");
+    }
+
+    try {
+      setIsSubmittingWithdrawal(true);
+      await requestAffiliateWithdrawal({
+        amount: Number(withdrawAmount),
+        paymentMode,
+        paymentDetails
+      });
+      toast.success("Withdrawal request submitted successfully!");
+      setIsWithdrawModalOpen(false);
+      setWithdrawAmount('');
+      setPaymentDetails('');
+      // Refresh dashboard data
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message || "Failed to submit withdrawal request");
+    } finally {
+      setIsSubmittingWithdrawal(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -112,7 +153,9 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
   }
 
   const affiliatedUsers = dashboardData?.affiliatedUsers || [];
-  const settlements = dashboardData?.settlements || [];
+  const walletTransactions = dashboardData?.walletTransactions || [];
+  const withdrawals = dashboardData?.withdrawals || [];
+  const stats = dashboardData?.stats || { totalEarned: 0, pendingBalance: 0, withdrawableBalance: 0, totalWithdrawn: 0 };
 
   return (
     <div className="fixed inset-0 w-full bg-background overflow-hidden font-sans text-on-background z-modal flex transition-colors duration-300">
@@ -196,14 +239,14 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
           </button>
 
           <button
-            onClick={() => changeTab('settlements')}
+            onClick={() => changeTab('wallet')}
             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
-              activeTab === 'settlements' 
+              activeTab === 'wallet' 
                 ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
                 : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
             }`}
           >
-            <IconReceipt size={20} stroke={2.5} /> Settlements
+            <IconWallet size={20} stroke={2.5} /> Wallet & Payouts
           </button>
         </nav>
 
@@ -283,34 +326,50 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* Earnings card */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Total Earnings */}
                 <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300">
                   <div className="relative z-10">
-                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Total Earnings</p>
-                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">₹{dashboardData?.earnings || 0}</h2>
-                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Paid and pending payouts</p>
-                    <button onClick={() => changeTab('settlements')} className="text-emerald-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                      View Settlements <IconArrowRight size={16} />
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Total Earned</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">₹{stats.totalEarned}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Total commission generated over time</p>
+                    <button onClick={() => changeTab('wallet')} className="text-primary font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                      View Ledger <IconArrowRight size={16} />
                     </button>
                   </div>
-                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-emerald-500/20">
-                    <IconCurrencyRupee size={24} className="text-emerald-500 md:w-6 md:h-6" />
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-primary/20">
+                    <IconCurrencyRupee size={24} className="text-primary md:w-6 md:h-6" />
                   </div>
                 </div>
 
-                {/* Referrals card */}
+                {/* Pending Balance */}
                 <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300">
                   <div className="relative z-10">
-                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Total Referrals</p>
-                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{affiliatedUsers.length}</h2>
-                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Users registered with your code</p>
-                    <button onClick={() => changeTab('referrals')} className="text-blue-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                      View Referrals <IconArrowRight size={16} />
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Pending Balance</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">₹{stats.pendingBalance}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Held for 7-day refund policy</p>
+                  </div>
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-amber-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-amber-500/20">
+                    <IconReceipt size={24} className="text-amber-500 md:w-6 md:h-6" />
+                  </div>
+                </div>
+
+                {/* Withdrawable Balance */}
+                <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300 border-emerald-500/30">
+                  <div className="relative z-10">
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Withdrawable Balance</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight text-emerald-600 dark:text-emerald-400">₹{stats.withdrawableBalance}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Available to withdraw to bank</p>
+                    <button 
+                      onClick={() => setIsWithdrawModalOpen(true)}
+                      disabled={stats.withdrawableBalance <= 0}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-xs md:text-sm px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Request Withdrawal
                     </button>
                   </div>
-                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-blue-500/20">
-                    <IconUsers size={24} className="text-blue-500 md:w-6 md:h-6" />
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-emerald-500/20">
+                    <IconBuildingBank size={24} className="text-emerald-500 md:w-6 md:h-6" />
                   </div>
                 </div>
               </div>
@@ -341,8 +400,11 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
                       <tbody className="divide-y divide-outline-variant/20">
                         {affiliatedUsers.map((item, idx) => (
                           <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
-                            <td className="p-4 font-medium text-on-surface">{item.userId?.name || 'Unknown User'}</td>
-                            <td className="p-4 text-on-surface-variant">{item.userId?.email || 'No email'}</td>
+                            <td className="p-4 font-medium text-on-surface">
+                              {item.userId?.name || item.manualName || 'Unknown User'}
+                              {!item.userId && <span className="text-[10px] bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded ml-2 font-bold inline-block">MANUAL</span>}
+                            </td>
+                            <td className="p-4 text-on-surface-variant">{item.userId?.email || item.manualEmail || 'No email'}</td>
                             <td className="p-4">
                               <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
                                 {item.plan === 'scale_plan' ? 'Scale Plan' : 'Premium Scholar'}
@@ -361,45 +423,104 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
             </div>
           )}
 
-          {activeTab === 'settlements' && (
+          {activeTab === 'wallet' && (
             <div className="max-w-6xl mx-auto pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-[24px] md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Settlement History</h1>
-              <p className="text-on-surface-variant text-[14px] md:text-[15px] mb-6 md:mb-8">History of payments processed for your referrals.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
+                <div>
+                  <h1 className="text-[24px] md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Wallet & Payouts</h1>
+                  <p className="text-on-surface-variant text-[14px] md:text-[15px]">Track your commission ledger and withdrawal history.</p>
+                </div>
+                <button 
+                  onClick={() => setIsWithdrawModalOpen(true)}
+                  disabled={stats.withdrawableBalance <= 0}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <IconBuildingBank size={20} /> Request Withdrawal (₹{stats.withdrawableBalance})
+                </button>
+              </div>
 
-              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
-                {settlements.length === 0 ? (
-                  <div className="p-8 text-center text-on-surface-variant">
-                    <p>No settlements yet.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-outline-variant/30 text-on-surface-variant font-semibold text-sm">
-                          <th className="p-4">Amount</th>
-                          <th className="p-4">Notes</th>
-                          <th className="p-4">Settlement Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/20">
-                        {settlements.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
-                            <td className="p-4 font-bold text-green-600 flex items-center gap-0.5">
-                              <IconCurrencyRupee size={16} />
-                              {item.amount}
-                            </td>
-                            <td className="p-4 text-on-surface-variant max-w-xs truncate" title={item.notes}>
-                              {item.notes}
-                            </td>
-                            <td className="p-4 text-on-surface-variant">
-                              {new Date(item.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </td>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Wallet Ledger */}
+                <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-6 transition-colors duration-300">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><IconWallet size={20} className="text-primary" /> Wallet Ledger</h3>
+                  {walletTransactions.length === 0 ? (
+                    <div className="p-8 text-center text-on-surface-variant">
+                      <p>No transactions yet.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 bg-surface z-10">
+                          <tr className="border-b border-outline-variant/30 text-on-surface-variant font-semibold text-sm">
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Type</th>
+                            <th className="p-3">Amount</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody className="divide-y divide-outline-variant/20">
+                          {[...walletTransactions].reverse().map((item, idx) => (
+                            <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
+                              <td className="p-3 text-on-surface-variant text-sm whitespace-nowrap">
+                                {new Date(item.date).toLocaleDateString()}
+                              </td>
+                              <td className="p-3 text-sm">
+                                {item.type === 'commission' && <span className="text-emerald-500">Commission</span>}
+                                {item.type === 'manual_addition' && <span className="text-emerald-500">Manual Addition</span>}
+                                {item.type === 'manual_deduction' && <span className="text-error">Manual Deduction</span>}
+                                <div className="text-xs text-on-surface-variant truncate max-w-[150px]" title={item.notes}>{item.notes}</div>
+                              </td>
+                              <td className={`p-3 font-bold ${item.type === 'manual_deduction' ? 'text-error' : 'text-emerald-500'}`}>
+                                {item.type === 'manual_deduction' ? '-' : '+'}₹{item.amount}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Withdrawals */}
+                <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-6 transition-colors duration-300">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><IconReceipt size={20} className="text-blue-500" /> Withdrawal Requests</h3>
+                  {withdrawals.length === 0 ? (
+                    <div className="p-8 text-center text-on-surface-variant">
+                      <p>No withdrawals requested.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 bg-surface z-10">
+                          <tr className="border-b border-outline-variant/30 text-on-surface-variant font-semibold text-sm">
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Amount</th>
+                            <th className="p-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-outline-variant/20">
+                          {[...withdrawals].reverse().map((item, idx) => (
+                            <tr key={idx} className="hover:bg-surface-variant/20 transition-colors">
+                              <td className="p-3 text-on-surface-variant text-sm whitespace-nowrap">
+                                {new Date(item.requestedAt).toLocaleDateString()}
+                              </td>
+                              <td className="p-3 font-bold text-on-surface">
+                                ₹{item.amount}
+                              </td>
+                              <td className="p-3">
+                                {item.status === 'pending' && <span className="bg-amber-500/20 text-amber-600 px-2 py-1 rounded text-xs font-bold uppercase">Pending</span>}
+                                {item.status === 'completed' && <span className="bg-emerald-500/20 text-emerald-600 px-2 py-1 rounded text-xs font-bold uppercase">Completed</span>}
+                                {item.status === 'rejected' && <span className="bg-error/20 text-error px-2 py-1 rounded text-xs font-bold uppercase">Rejected</span>}
+                                {item.status === 'rejected' && item.rejectReason && (
+                                  <div className="text-xs text-error mt-1 max-w-[120px] truncate" title={item.rejectReason}>{item.rejectReason}</div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -414,6 +535,74 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
         currentUser={user} 
         onSave={onUserUpdate} 
       />
+
+      {/* Request Withdrawal Modal */}
+      {isWithdrawModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in">
+          <div className="bg-surface rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl relative border border-outline-variant/20 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setIsWithdrawModalOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface p-2 bg-surface-variant/50 rounded-full transition-colors"
+            >
+              <IconX size={20} />
+            </button>
+            <h2 className="text-2xl font-bold mb-2">Request Withdrawal</h2>
+            <p className="text-on-surface-variant text-sm mb-6">Available Balance: <span className="font-bold text-emerald-500">₹{stats.withdrawableBalance}</span></p>
+
+            <form onSubmit={submitWithdrawal} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-on-surface">Amount (₹)</label>
+                <input 
+                  type="number"
+                  required
+                  min="1"
+                  max={stats.withdrawableBalance}
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  placeholder="Enter amount to withdraw"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-on-surface">Payment Mode</label>
+                <select 
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="UPI">UPI</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-on-surface">Payment Details</label>
+                <textarea 
+                  required
+                  rows="3"
+                  value={paymentDetails}
+                  onChange={(e) => setPaymentDetails(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"
+                  placeholder={paymentMode === 'UPI' ? "Enter your UPI ID (e.g., yourname@okaxis)" : "Enter Account Number, IFSC Code, Account Name"}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSubmittingWithdrawal}
+                className="mt-2 w-full bg-primary hover:bg-primary/90 text-on-primary py-3 rounded-xl font-bold transition-all disabled:opacity-70 flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+              >
+                {isSubmittingWithdrawal ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  "Submit Request"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

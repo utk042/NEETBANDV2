@@ -1,16 +1,153 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getSongs, createSong, updateSong, deleteSong, uploadFile } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
+
+const WaveformSlider = ({ positions, onChange, audioUrl }) => {
+  const trackRef = useRef(null);
+  const [draggingIdx, setDraggingIdx] = useState(null);
+  const [realBars, setRealBars] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const positionsRef = useRef(positions);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    positionsRef.current = positions;
+    onChangeRef.current = onChange;
+  }, [positions, onChange]);
+
+  useEffect(() => {
+    if (!audioUrl) {
+      setRealBars([]);
+      return;
+    }
+    
+    let isCancelled = false;
+    const generateWaveform = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        if (isCancelled) return;
+        
+        const channelData = audioBuffer.getChannelData(0);
+        const numBars = 50;
+        const blockSize = Math.floor(channelData.length / numBars);
+        const rawBars = [];
+        
+        for (let i = 0; i < numBars; i++) {
+          let sum = 0;
+          const startIdx = i * blockSize;
+          for (let j = 0; j < blockSize; j++) {
+            sum += Math.abs(channelData[startIdx + j]);
+          }
+          rawBars.push(sum / blockSize);
+        }
+        
+        const max = Math.max(...rawBars);
+        const normalized = rawBars.map(n => max ? Math.max(10, (n / max) * 100) : 10);
+        setRealBars(normalized);
+      } catch (err) {
+        console.error("Waveform generation failed, falling back to dummy", err);
+        // Fallback to random
+        const fallback = [];
+        for(let i = 0; i < 50; i++) fallback.push(Math.max(20, Math.sin(i * 0.5) * 40 + Math.random() * 40 + 20));
+        setRealBars(fallback);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    generateWaveform();
+    return () => { isCancelled = true; };
+  }, [audioUrl]);
+
+  const waveformBars = realBars.length > 0 ? realBars : Array.from({length: 50}).fill(10);
+
+  const handlePointerDown = (e, idx) => {
+    e.preventDefault();
+    setDraggingIdx(idx);
+  };
+
+  useEffect(() => {
+    const handlePointerMove = (e) => {
+      if (draggingIdx === null || !trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      let pct = ((e.clientX - rect.left) / rect.width) * 100;
+      pct = Math.max(0, Math.min(100, Math.round(pct)));
+      
+      const newPos = [...positionsRef.current];
+      newPos[draggingIdx] = pct;
+      onChangeRef.current(newPos);
+    };
+
+    const handlePointerUp = () => {
+      setDraggingIdx(null);
+    };
+
+    if (draggingIdx !== null) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    }
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [draggingIdx]);
+
+  return (
+    <div className="relative w-full h-20 mt-4 mb-8 touch-none group" ref={trackRef}>
+      {/* Fake waveform background */}
+      <div className={`absolute inset-0 flex items-center justify-between pointer-events-none gap-0.5 transition-opacity ${isLoading ? 'opacity-30 animate-pulse' : 'opacity-60'}`}>
+        {waveformBars.map((height, i) => (
+          <div key={i} className="flex-1 bg-outline-variant/60 rounded-full transition-all duration-300" style={{ height: `${height}%` }} />
+        ))}
+      </div>
+      
+      {/* Track line */}
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-outline-variant/50 -translate-y-1/2 rounded-full pointer-events-none" />
+      
+      {/* Markers */}
+      {positions.map((pos, idx) => (
+        <div
+          key={idx}
+          onPointerDown={(e) => handlePointerDown(e, idx)}
+          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full shadow-lg border-2 border-surface cursor-grab active:cursor-grabbing hover:scale-125 transition-transform z-10 flex items-center justify-center ${draggingIdx === idx ? 'bg-white scale-125 ring-4 ring-primary/30' : 'bg-primary'}`}
+          style={{ left: `${pos}%` }}
+        >
+          <div className={`absolute -top-8 text-[11px] font-bold px-2 py-1 rounded-md shadow-sm transition-opacity ${draggingIdx === idx ? 'bg-primary text-on-primary opacity-100' : 'bg-surface text-on-surface-variant opacity-0'}`}>
+            {pos}%
+          </div>
+          <div className={`absolute -bottom-7 text-[11px] font-bold transition-opacity ${draggingIdx === idx ? 'opacity-0' : 'opacity-100 text-primary'}`}>
+            {pos}%
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function ManageSongs() {
   const { toast, confirm } = useDialog();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90]
   });
   const [editingSongId, setEditingSongId] = useState(null);
+
+  const existingSubjects = useMemo(() => {
+    const subjects = songs.map(s => s.subject).filter(Boolean);
+    return [...new Set(subjects)].sort();
+  }, [songs]);
+
+  const existingClasses = useMemo(() => {
+    const classes = songs.map(s => s.class).filter(Boolean);
+    return [...new Set(classes)].sort();
+  }, [songs]);
 
   const handleFileUpload = async (e, field, folderType) => {
     const file = e.target.files?.[0];
@@ -39,7 +176,7 @@ export default function ManageSongs() {
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
-    setFormData({ title: '', class: '', subject: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true });
+    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
   };
@@ -49,11 +186,15 @@ export default function ManageSongs() {
       title: song.title || '',
       class: song.class || '',
       subject: song.subject || '',
+      chapter: song.chapter || '',
+      chapterNumber: song.chapterNumber || '',
       audioUrl: song.audioUrl || '',
       thumbnailUrl: song.thumbnailUrl || '',
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
-      isPremium: song.isPremium !== false
+      isPremium: song.isPremium !== false,
+      watermarkUrl: song.watermarkUrl || '',
+      watermarkPositions: song.watermarkPositions || [20, 50, 90]
     });
     setEditingSongId(song._id);
     setIsAddSongModalOpen(true);
@@ -95,7 +236,7 @@ export default function ManageSongs() {
         await createSong(formData);
         toast.success("Song added successfully");
       }
-      setFormData({ title: '', class: '', subject: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true });
+      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -106,6 +247,58 @@ export default function ManageSongs() {
 
   const inputClass = "w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-on-surface placeholder:text-on-surface-variant/40";
   const labelClass = "text-sm font-bold text-on-surface-variant mb-1.5 ml-1 uppercase tracking-wide text-[11px]";
+
+  // Watermark Preview Logic
+  const [previewing, setPreviewing] = useState(false);
+  const audioRef = useRef(null);
+  const watermarkAudioRef = useRef(null);
+
+  const handlePreview = () => {
+    if (!formData.audioUrl) return toast.error("Please add an audio URL first");
+    if (!formData.watermarkUrl) return toast.error("Please upload an audio watermark first");
+    
+    if (previewing) {
+      if (audioRef.current) audioRef.current.pause();
+      if (watermarkAudioRef.current) watermarkAudioRef.current.pause();
+      setPreviewing(false);
+      return;
+    }
+    
+    setPreviewing(true);
+    audioRef.current = new Audio(formData.audioUrl);
+    watermarkAudioRef.current = new Audio(formData.watermarkUrl);
+    
+    audioRef.current.play();
+    
+    let lastPlayedPos = -1;
+    audioRef.current.ontimeupdate = () => {
+      if (!audioRef.current) return;
+      const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+      
+      const pos = formData.watermarkPositions.find(p => pct >= p && pct < p + 5);
+      if (pos && pos !== lastPlayedPos) {
+        lastPlayedPos = pos;
+        audioRef.current.volume = 0.2; // dip volume
+        watermarkAudioRef.current.currentTime = 0;
+        watermarkAudioRef.current.play();
+      }
+    };
+    
+    watermarkAudioRef.current.onended = () => {
+      if (audioRef.current) audioRef.current.volume = 1;
+    };
+    
+    audioRef.current.onended = () => {
+      setPreviewing(false);
+    };
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) audioRef.current.pause();
+      if (watermarkAudioRef.current) watermarkAudioRef.current.pause();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -132,6 +325,7 @@ export default function ManageSongs() {
                   <th className="p-4 font-semibold text-on-surface-variant">Title</th>
                   <th className="p-4 font-semibold text-on-surface-variant">Class</th>
                   <th className="p-4 font-semibold text-on-surface-variant">Subject</th>
+                  <th className="p-4 font-semibold text-on-surface-variant">Chapter</th>
                   <th className="p-4 font-semibold text-on-surface-variant">Type</th>
                   <th className="p-4 font-semibold text-on-surface-variant text-center">Plays</th>
                   <th className="p-4 font-semibold text-on-surface-variant text-right">Actions</th>
@@ -143,6 +337,9 @@ export default function ManageSongs() {
                     <td className="p-4 font-medium text-on-surface">{song.title}</td>
                     <td className="p-4 text-on-surface-variant">{song.class || '-'}</td>
                     <td className="p-4 text-on-surface-variant">{song.subject || '-'}</td>
+                    <td className="p-4 text-on-surface-variant">
+                      {song.chapter ? `${song.chapter} ${song.chapterNumber ? `(Ch ${song.chapterNumber})` : ''}` : '-'}
+                    </td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${song.isPremium ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                         {song.isPremium ? 'Premium' : 'Free'}
@@ -181,8 +378,8 @@ export default function ManageSongs() {
       {/* Add Song Modal */}
       {isAddSongModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal-high flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
-          <div className="bg-surface w-full max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
+          <div className="bg-surface w-full max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] min-h-0 animate-in zoom-in-95 duration-200">
+            <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-outline-variant/30">
               <div>
                 <h3 className="text-xl font-bold tracking-tight text-on-surface">{editingSongId ? 'Edit Song' : 'Add New Song'}</h3>
                 <p className="text-on-surface-variant text-xs mt-1">{editingSongId ? 'Update details of the song.' : 'Upload a new track to the LMS library.'}</p>
@@ -195,61 +392,127 @@ export default function ManageSongs() {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto">
-              <form id="add-song-form" onSubmit={handleSubmit}>
+            <div className="flex-1 p-6 overflow-y-auto">
+              <form id="add-song-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col md:col-span-2">
                     <label className={labelClass}>Song Title</label>
                     <input type="text" required placeholder="e.g. The Cell Cycle Rap" className={inputClass} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Class / Grade <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                    <input type="text" placeholder="e.g. Class 11" className={inputClass} value={formData.class} onChange={e => setFormData({...formData, class: e.target.value})} />
+                    <input type="text" list="existing-classes" placeholder="e.g. Class 11" className={inputClass} value={formData.class} onChange={e => setFormData({...formData, class: e.target.value})} />
+                    <datalist id="existing-classes">
+                      {existingClasses.map(c => <option key={c} value={c} />)}
+                    </datalist>
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Subject <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                    <input type="text" placeholder="e.g. Biology" className={inputClass} value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} />
+                    <input type="text" list="existing-subjects" placeholder="e.g. Biology" className={inputClass} value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} />
+                    <datalist id="existing-subjects">
+                      {existingSubjects.map(s => <option key={s} value={s} />)}
+                    </datalist>
                   </div>
+                  <div className="flex flex-col">
+                    <label className={labelClass}>Chapter Name <span className="opacity-60 lowercase font-normal">(optional)</span></label>
+                    <input type="text" placeholder="e.g. Genetics & Evolution" className={inputClass} value={formData.chapter} onChange={e => setFormData({...formData, chapter: e.target.value})} />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className={labelClass}>Chapter Number <span className="opacity-60 lowercase font-normal">(for access logic)</span></label>
+                    <input type="number" placeholder="e.g. 1" className={inputClass} value={formData.chapterNumber} onChange={e => setFormData({...formData, chapterNumber: e.target.value === '' ? '' : Number(e.target.value)})} />
+                  </div>
+                </div>
 
-                  <div className="flex flex-col md:col-span-2 mt-2">
+                <div className="flex flex-col mt-2">
                     <div className="flex items-center gap-2 mb-4">
                       <IconLink size={18} className="text-on-surface-variant" />
                       <h4 className="font-bold text-on-surface">Media URLs</h4>
                       <div className="h-px bg-outline-variant/30 flex-1 ml-2"></div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                      <div className="flex flex-col">
-                        <label className={labelClass}>Audio File URL</label>
-                        <input type="url" required placeholder="https://..." className={inputClass} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
+                  <div className="grid grid-cols-1 gap-y-4 mt-4">
+                    <div className="flex flex-col">
+                      <label className={labelClass}>Audio File URL</label>
+                      <div className="relative">
+                        <input type="url" required placeholder="https://..." className={`${inputClass} pr-24`} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
+                        <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                          <IconUpload size={12} stroke={2.5} /> Upload
+                          <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
+                        </label>
                       </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                       <div className="flex flex-col">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className={`${labelClass} mb-0`}>Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                          <label className="text-xs font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
-                            <IconUpload size={14} /> Upload Image
+                        <label className={labelClass}>Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
+                        <div className="relative">
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
+                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                            <IconUpload size={12} stroke={2.5} /> Upload
                             <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
                           </label>
                         </div>
-                        <input type="url" placeholder="https://..." className={inputClass} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
                       </div>
                       <div className="flex flex-col">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className={`${labelClass} mb-0`}>Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                          <label className="text-xs font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
-                            <IconUpload size={14} /> Upload Lyrics
+                        <label className={labelClass}>Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
+                        <div className="relative">
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
+                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                            <IconUpload size={12} stroke={2.5} /> Upload
                             <input type="file" className="hidden" accept=".ttml,.txt,.lrc" onChange={e => handleFileUpload(e, 'lyricsUrl', 'songs/lyrics')} />
                           </label>
                         </div>
-                        <input type="url" placeholder="https://..." className={inputClass} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
                       </div>
                       <div className="flex flex-col">
                         <label className={labelClass}>Duration (seconds) <span className="opacity-60 lowercase font-normal">(auto-fetched)</span></label>
                         <input type="number" placeholder="Auto-calculated..." className={inputClass} value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} />
                       </div>
                     </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col mt-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <IconMusic size={18} className="text-on-surface-variant" />
+                      <h4 className="font-bold text-on-surface">Audio Watermark / Ads</h4>
+                      <div className="h-px bg-outline-variant/30 flex-1 ml-2"></div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-y-4">
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Watermark Audio URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
+                        <div className="relative">
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
+                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                            <IconUpload size={12} stroke={2.5} /> Upload
+                            <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Positions (% of song length)</label>
+                        <WaveformSlider 
+                          audioUrl={formData.audioUrl}
+                          positions={formData.watermarkPositions}
+                          onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
+                        />
+                      </div>
+                      
+                      
+                      {formData.watermarkUrl && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={handlePreview}
+                            className="bg-surface-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
+                          >
+                            <IconMusic size={16} /> {previewing ? 'Stop Preview' : 'Preview Song with Watermark'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="col-span-1 md:col-span-2 mt-2">
+                  <div className="mt-2">
                     <label className="flex items-center justify-between md:justify-start cursor-pointer group w-full md:w-auto md:inline-flex md:gap-6 p-4 rounded-xl border border-outline-variant/40 bg-surface-variant/20 hover:bg-surface-variant/40 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${formData.isPremium ? 'bg-amber-500/10 text-amber-500' : 'bg-outline-variant/20 text-on-surface-variant'}`}>
@@ -266,11 +529,10 @@ export default function ManageSongs() {
                       <input type="checkbox" className="sr-only" checked={formData.isPremium} onChange={e => setFormData({...formData, isPremium: e.target.checked})} />
                     </label>
                   </div>
-                </div>
               </form>
             </div>
             
-            <div className="p-6 border-t border-outline-variant/30 bg-surface-container-lowest/50 rounded-b-2xl flex justify-end gap-3">
+            <div className="flex-shrink-0 p-6 border-t border-outline-variant/30 bg-surface-container-lowest/50 rounded-b-2xl flex justify-end gap-3">
               <button 
                 onClick={() => setIsAddSongModalOpen(false)}
                 className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors"

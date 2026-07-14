@@ -5,7 +5,7 @@ import {
   getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent 
 } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette } from '@tabler/icons-react';
+import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff } from '@tabler/icons-react';
 import CourseDesigner from './CourseDesigner';
 
 export default function ManageLMS({ subTab = 'courses', user }) {
@@ -23,6 +23,8 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [designingCourse, setDesigningCourse] = useState(null);
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   useEffect(() => {
     if (subTab === 'courses') {
@@ -33,6 +35,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   }, [subTab]);
 
   useEffect(() => {
+    if (loading) return;
     const params = new URLSearchParams(window.location.search);
     if (designingCourse) {
       params.set('courseId', designingCourse._id);
@@ -41,7 +44,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     }
     const newRelativePathQuery = window.location.pathname + '?' + params.toString();
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [designingCourse]);
+  }, [designingCourse, loading]);
 
   const fetchCourses = async () => {
     try {
@@ -319,7 +322,16 @@ export default function ManageLMS({ subTab = 'courses', user }) {
                     </div>
                     <div className="flex flex-col">
                       <label className={labelClass}>Password</label>
-                      <input type="password" required placeholder="Enter password" className={inputClass} value={studentFormData.password} onChange={e => setStudentFormData({...studentFormData, password: e.target.value})} />
+                      <div className="relative">
+                        <input type={showAddPassword ? "text" : "password"} required placeholder="Enter password" className={inputClass} value={studentFormData.password} onChange={e => setStudentFormData({...studentFormData, password: e.target.value})} />
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPassword(!showAddPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                        >
+                          {showAddPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     {isAdminsTab ? (
                       <div className="flex flex-col">
@@ -399,7 +411,16 @@ export default function ManageLMS({ subTab = 'courses', user }) {
                     </div>
                     <div className="flex flex-col">
                       <label className={labelClass}>Password (leave blank to keep current)</label>
-                      <input type="password" placeholder="Enter new password" className={inputClass} value={studentFormData.password} onChange={e => setStudentFormData({...studentFormData, password: e.target.value})} />
+                      <div className="relative">
+                        <input type={showEditPassword ? "text" : "password"} placeholder="Enter new password" className={inputClass} value={studentFormData.password} onChange={e => setStudentFormData({...studentFormData, password: e.target.value})} />
+                        <button
+                          type="button"
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                        >
+                          {showEditPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     {isAdminsTab ? (
                       <div className="flex flex-col">

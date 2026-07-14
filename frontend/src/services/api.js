@@ -217,6 +217,12 @@ export const getCourses = async () => {
   return res.json();
 };
 
+export const getCourseById = async (id) => {
+  const res = await fetch(`${API_URL}/lms/courses/${id}`, { headers: getHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
 export const createCourse = async (courseData) => {
   const res = await fetch(`${API_URL}/lms/courses`, {
     method: 'POST',
@@ -369,6 +375,21 @@ export const uploadFile = async (file, type = 'others') => {
   return res.json(); // returns { url: '/uploads/...' }
 };
 
+export const parseDocumentFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_URL}/upload/parse`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('lms_token')}`
+    },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // returns { text: '...' }
+};
+
 // --- PAYMENTS ---
 export const createPaymentOrder = async (plan, discountCode) => {
   const res = await fetch(`${API_URL}/payments/order`, {
@@ -491,13 +512,70 @@ export const deleteAdminAffiliate = async (id) => {
   return res.json();
 };
 
-export const addAdminAffiliateSettlement = async (id, settlementData) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}/settlements`, {
+export const addAdminAffiliateWalletTransaction = async (id, transactionData) => {
+  const res = await fetch(`${API_URL}/admin/affiliates/${id}/wallet`, {
     method: 'POST',
     headers: getLmsHeaders(),
-    body: JSON.stringify(settlementData),
+    body: JSON.stringify(transactionData),
   });
   if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const addAdminAffiliateReferral = async (id, referralData) => {
+  const res = await fetch(`${API_URL}/admin/affiliates/${id}/referrals`, {
+    method: 'POST',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(referralData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const removeAdminAffiliateReferral = async (id, referralId) => {
+  const res = await fetch(`${API_URL}/admin/affiliates/${id}/referrals/${referralId}`, {
+    method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getAdminWithdrawals = async () => {
+  const res = await fetch(`${API_URL}/admin/withdrawals`, { headers: getLmsHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const processAdminWithdrawal = async (id, statusData) => {
+  const res = await fetch(`${API_URL}/admin/withdrawals/${id}`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(statusData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const requestAffiliateWithdrawal = async (withdrawalData) => {
+  const token = localStorage.getItem('affiliate_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_URL}/affiliates/withdrawals`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(withdrawalData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to request withdrawal');
+    } catch {
+      throw new Error(errText || 'Failed to request withdrawal');
+    }
+  }
   return res.json();
 };
 

@@ -16,8 +16,8 @@ export default function PWAInstallPrompt() {
   useEffect(() => {
     // Don't show if already installed (running in standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) return;
-    // Don't show if previously dismissed in this session
-    if (sessionStorage.getItem('pwa-prompt-dismissed')) return;
+    // Don't show if previously dismissed
+    if (localStorage.getItem('pwa-prompt-dismissed')) return;
 
     const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(isIOSDevice);
@@ -50,7 +50,7 @@ export default function PWAInstallPrompt() {
   const handleDismiss = () => {
     setShowBanner(false);
     setDismissed(true);
-    sessionStorage.setItem('pwa-prompt-dismissed', '1');
+    localStorage.setItem('pwa-prompt-dismissed', '1');
   };
 
   if (!showBanner || dismissed) return null;

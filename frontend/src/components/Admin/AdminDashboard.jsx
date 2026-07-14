@@ -11,6 +11,8 @@ import ManageContactMessages from './ManageContactMessages';
 import ManageNewsScroll from './ManageNewsScroll';
 import SongAnalyticsDashboard from './SongAnalyticsDashboard';
 import ManageNewsletter from './ManageNewsletter';
+import ManageBookOrders from './ManageBookOrders';
+import ManageEyeCheckups from './ManageEyeCheckups';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -37,9 +39,11 @@ import {
   IconBrandBlogger,
   IconMessageCircle,
   IconAffiliate,
+  IconBuildingBank,
   IconMail,
   IconChartBar,
-  IconMailOpened
+  IconMailOpened,
+  IconEye
 } from '@tabler/icons-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -315,6 +319,28 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           >
             <IconMailOpened size={20} stroke={2.5} /> Newsletter
           </button>
+
+          <button
+            onClick={() => changeTab('book-orders')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'book-orders' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconBook size={20} stroke={2.5} /> Book Orders
+          </button>
+
+          <button
+            onClick={() => changeTab('eye-checkups')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'eye-checkups' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconEye size={20} stroke={2.5} /> Eye Checkups
+          </button>
         </nav>
 
         {/* Logout Section */}
@@ -589,6 +615,22 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             <div className="max-w-6xl mx-auto pb-8">
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <ManageNewsletter />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'book-orders' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageBookOrders />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'eye-checkups' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageEyeCheckups />
               </div>
             </div>
           )}

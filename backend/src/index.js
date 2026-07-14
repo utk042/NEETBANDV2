@@ -13,6 +13,7 @@ import affiliateRoutes from './routes/affiliateRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import offerRoutes from './routes/offerRoutes.js';
 import { getAds } from './controllers/songController.js';
 
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/affiliates', affiliateRoutes);
 app.use('/contact', contactRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/newsletter', newsletterRoutes);
+app.use('/api/offers', offerRoutes);
 
 console.log("Admin routes mounted to /admin");
 

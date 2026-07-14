@@ -16,7 +16,8 @@ import {
   getLessonContent, updateLessonContent,
   getLessonQuiz, updateLessonQuiz,
   getLessonQa, updateLessonQa,
-  uploadFile
+  uploadFile,
+  parseDocumentFile
 } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 
@@ -73,34 +74,44 @@ function QuizEditor({ questions = [], onChange }) {
       if (lines.length === 0) continue;
       
       const questionText = lines[0];
-      const options = [];
+      let options = [];
       let correctIndex = 0;
+      let correctText = '';
       let explanationText = '';
+      let qType = ''; // Defaults to empty, will auto-detect
       
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
         
-        const optMatch = line.match(/^(?:\d+|\w)\s*[\)\.\-]\s*(.*)/i);
+        // Parse Type
+        const typeMatch = line.match(/^Type:\s*(.*)/i);
+        if (typeMatch) {
+          const typeVal = typeMatch[1].trim().toLowerCase();
+          if (typeVal.includes('tf') || typeVal.includes('t/f') || typeVal.includes('true')) {
+            qType = 'true_false';
+          } else if (typeVal.includes('blank') || typeVal.includes('fill')) {
+            qType = 'fill_in_the_blanks';
+          } else {
+            qType = 'mcq';
+          }
+          continue;
+        }
+
+        // Parse Options
+        const optMatch = line.match(/^(?:\d+|\w)\s*[\)\.\-]\s*(.*)/i) || line.match(/^[\-\*]\s*(.*)/i);
         if (optMatch) {
           options.push(optMatch[1].trim());
           continue;
         }
         
+        // Parse Correct
         const correctMatch = line.match(/^Correct:\s*(.*)/i);
         if (correctMatch) {
-          const ansVal = correctMatch[1].trim();
-          const numVal = parseInt(ansVal, 10);
-          if (!isNaN(numVal)) {
-            correctIndex = numVal - 1;
-          } else if (ansVal.length === 1) {
-            const code = ansVal.toLowerCase().charCodeAt(0);
-            if (code >= 97 && code <= 122) {
-              correctIndex = code - 97;
-            }
-          }
+          correctText = correctMatch[1].trim();
           continue;
         }
         
+        // Parse Explanation
         const expMatch = line.match(/^Explanation:\s*(.*)/i);
         if (expMatch) {
           explanationText = expMatch[1].trim();
@@ -108,21 +119,69 @@ function QuizEditor({ questions = [], onChange }) {
         }
       }
       
-      if (options.length === 0 && lines.length > 1) {
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (!line.startsWith('Correct:') && !line.startsWith('Explanation:')) {
-            options.push(line);
+      // Auto-detect type if not explicitly set
+      if (!qType) {
+        const hasTrue = options.some(o => o.toLowerCase() === 'true');
+        const hasFalse = options.some(o => o.toLowerCase() === 'false');
+        if (options.length === 2 && hasTrue && hasFalse) {
+          qType = 'true_false';
+        } else if (options.length === 0 && correctText) {
+          qType = 'fill_in_the_blanks';
+        } else {
+          qType = 'mcq';
+        }
+      }
+
+      // Configure fields based on type
+      if (qType === 'true_false') {
+        options = ['True', 'False'];
+        const ansLower = correctText.toLowerCase();
+        if (ansLower === 'true' || ansLower === 't' || ansLower === '1' || ansLower === 'correct') {
+          correctIndex = 0;
+        } else if (ansLower === 'false' || ansLower === 'f' || ansLower === '2') {
+          correctIndex = 1;
+        } else {
+          const numVal = parseInt(correctText, 10);
+          correctIndex = (!isNaN(numVal) && numVal === 2) ? 1 : 0;
+        }
+      } else if (qType === 'fill_in_the_blanks') {
+        options = [];
+      } else {
+        // MCQ type
+        if (options.length === 0 && lines.length > 1) {
+          // Fallback parsing if options don't start with numbers/bullets
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            if (!line.startsWith('Correct:') && !line.startsWith('Explanation:') && !line.startsWith('Type:')) {
+              options.push(line);
+            }
           }
         }
+        if (options.length === 0) {
+          options = ['', '', '', ''];
+        }
+        
+        // Map correct index
+        const numVal = parseInt(correctText, 10);
+        if (!isNaN(numVal)) {
+          correctIndex = numVal - 1;
+        } else if (correctText.length === 1) {
+          const code = correctText.toLowerCase().charCodeAt(0);
+          if (code >= 97 && code <= 122) {
+            correctIndex = code - 97;
+          }
+        }
+        correctIndex = Math.max(0, Math.min(options.length - 1, correctIndex));
       }
       
       if (questionText) {
         parsedQs.push({
           _id: tempId(),
+          type: qType,
           question: questionText,
-          options: options.length > 0 ? options : ['', '', '', ''],
-          correctIndex: Math.max(0, Math.min(options.length - 1, correctIndex)),
+          options,
+          correctIndex,
+          correctText: qType === 'fill_in_the_blanks' ? correctText : '',
           explanation: explanationText
         });
       }
@@ -133,7 +192,7 @@ function QuizEditor({ questions = [], onChange }) {
       setRawText('');
       setShowRawPaste(false);
     } else {
-      toast.error("No questions matched. Please follow the format:\nQ: [Question]\n1) Option 1\n2) Option 2\nCorrect: 1");
+      toast.error("No questions matched. Please follow the format:\nQ: [Question]\nType: [MCQ/TF/Blanks]\nCorrect: [Answer]");
     }
   };
 
@@ -172,6 +231,14 @@ function QuizEditor({ questions = [], onChange }) {
     onChange(qs);
   };
 
+  const moveQ = (idx, direction) => {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= questions.length) return;
+    const arr = [...questions];
+    [arr[idx], arr[targetIdx]] = [arr[targetIdx], arr[idx]];
+    onChange(arr);
+  };
+
   const removeQ = (idx) => onChange(questions.filter((_, i) => i !== idx));
 
   return (
@@ -179,8 +246,26 @@ function QuizEditor({ questions = [], onChange }) {
       {questions.map((q, qIdx) => (
         <div key={q._id || qIdx} className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
           <div className="flex items-start gap-2">
-            <div className="flex flex-col gap-2 shrink-0">
-              <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md text-center mt-1">Q{qIdx + 1}</span>
+            <div className="flex flex-col gap-2 shrink-0 items-center">
+              <div className="flex flex-col gap-0.5 opacity-40">
+                <button
+                  type="button"
+                  onClick={() => moveQ(qIdx, -1)}
+                  disabled={qIdx === 0}
+                  className="disabled:opacity-20 hover:opacity-100 transition-opacity text-amber-400"
+                >
+                  <IconChevronUp size={12} stroke={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveQ(qIdx, 1)}
+                  disabled={qIdx === questions.length - 1}
+                  className="disabled:opacity-20 hover:opacity-100 transition-opacity text-amber-400"
+                >
+                  <IconChevronDown size={12} stroke={2.5} />
+                </button>
+              </div>
+              <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md text-center">Q{qIdx + 1}</span>
               <select
                 value={q.type || 'mcq'}
                 onChange={(e) => {
@@ -196,11 +281,11 @@ function QuizEditor({ questions = [], onChange }) {
                   }
                   updateQ(qIdx, patch);
                 }}
-                className="text-[10px] font-bold bg-surface border border-outline-variant/30 text-on-surface rounded-md px-1 py-1 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                className="text-[10px] font-extrabold bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer appearance-none pr-5.5 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2523fbbf24%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:7px_7px] bg-[position:right_5px_center] bg-no-repeat"
               >
-                <option value="mcq">MCQ</option>
-                <option value="true_false">T / F</option>
-                <option value="fill_in_the_blanks">Blanks</option>
+                <option value="mcq" className="bg-surface text-on-surface font-semibold">MCQ</option>
+                <option value="true_false" className="bg-surface text-on-surface font-semibold">T / F</option>
+                <option value="fill_in_the_blanks" className="bg-surface text-on-surface font-semibold">Blanks</option>
               </select>
             </div>
             <textarea
@@ -310,16 +395,26 @@ function QuizEditor({ questions = [], onChange }) {
       {showRawPaste && (
         <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-3">
           <div>
-            <p className="text-xs font-bold text-amber-400">Import MCQ Questions (Raw Paste)</p>
+            <p className="text-xs font-bold text-amber-400">Import Mixed Questions (Raw Paste)</p>
             <p className="text-[10px] text-on-surface-variant mt-0.5 leading-relaxed">
-              Use this pattern to paste multiple questions at once:<br/>
-              <span className="font-mono text-amber-300/80 block mt-1 bg-background/50 p-2 rounded text-[10px]">
+              Paste questions of different types (MCQ, True/False, Fill in the Blanks) at once:<br/>
+              <span className="font-mono text-amber-300/80 block mt-1 bg-background/50 p-2.5 rounded text-[10px] space-y-2">
                 Q: Which model describes a plum pudding?<br/>
+                Type: MCQ<br/>
                 1) Rutherford Model<br/>
                 2) Bohr Model<br/>
                 3) Thomson Model<br/>
                 Correct: 3<br/>
                 Explanation: Plum pudding is Thomson.<br/>
+                <br/>
+                Q: Light travels faster than sound.<br/>
+                Type: T/F<br/>
+                Correct: True<br/>
+                <br/>
+                Q: The capital of India is _______.<br/>
+                Type: Blanks<br/>
+                Correct: New Delhi<br/>
+                Explanation: Capital was shifted in 1911.
               </span>
             </p>
           </div>
@@ -383,12 +478,37 @@ function QaEditor({ qas = [], onChange }) {
   const addPair = () => onChange([...qas, { _id: tempId(), question: '', answer: '' }]);
   const updatePair = (idx, patch) => onChange(qas.map((p, i) => i === idx ? { ...p, ...patch } : p));
   const removePair = (idx) => onChange(qas.filter((_, i) => i !== idx));
+  const movePair = (idx, direction) => {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= qas.length) return;
+    const arr = [...qas];
+    [arr[idx], arr[targetIdx]] = [arr[targetIdx], arr[idx]];
+    onChange(arr);
+  };
 
   return (
     <div className="space-y-3">
       {qas.map((pair, idx) => (
         <div key={pair._id || idx} className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-2">
           <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-0.5 opacity-40 shrink-0">
+              <button
+                type="button"
+                onClick={() => movePair(idx, -1)}
+                disabled={idx === 0}
+                className="disabled:opacity-20 hover:opacity-100 transition-opacity text-violet-400"
+              >
+                <IconChevronUp size={12} stroke={2.5} />
+              </button>
+              <button
+                type="button"
+                onClick={() => movePair(idx, 1)}
+                disabled={idx === qas.length - 1}
+                className="disabled:opacity-20 hover:opacity-100 transition-opacity text-violet-400"
+              >
+                <IconChevronDown size={12} stroke={2.5} />
+              </button>
+            </div>
             <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest shrink-0 w-5">Q</span>
             <input
               type="text"
@@ -477,9 +597,212 @@ function QaEditor({ qas = [], onChange }) {
   );
 }
 
-function LessonItemCard({ item, index, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) {
+function htmlToMarkdown(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  function traverse(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    }
+    
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return '';
+    }
+    
+    const tagName = node.tagName.toLowerCase();
+    let childrenContent = '';
+    for (const child of node.childNodes) {
+      childrenContent += traverse(child);
+    }
+    
+    switch (tagName) {
+      case 'h1':
+        return `\n\n# ${childrenContent.trim()}\n\n`;
+      case 'h2':
+        return `\n\n## ${childrenContent.trim()}\n\n`;
+      case 'h3':
+        return `\n\n### ${childrenContent.trim()}\n\n`;
+      case 'h4':
+        return `\n\n#### ${childrenContent.trim()}\n\n`;
+      case 'h5':
+        return `\n\n##### ${childrenContent.trim()}\n\n`;
+      case 'h6':
+        return `\n\n###### ${childrenContent.trim()}\n\n`;
+      case 'p':
+        return `\n\n${childrenContent.trim()}\n\n`;
+      case 'strong':
+      case 'b':
+        return `**${childrenContent}**`;
+      case 'em':
+      case 'i':
+        return `*${childrenContent}*`;
+      case 'u':
+        return `_${childrenContent}_`;
+      case 'a':
+        const href = node.getAttribute('href') || '';
+        return `[${childrenContent}](${href})`;
+      case 'ul':
+        return `\n\n${childrenContent}\n\n`;
+      case 'ol':
+        return `\n\n${childrenContent}\n\n`;
+      case 'li':
+        const parentTag = node.parentNode ? node.parentNode.tagName.toLowerCase() : '';
+        if (parentTag === 'ol') {
+          const siblings = Array.from(node.parentNode.children);
+          const index = siblings.indexOf(node) + 1;
+          return `${index}. ${childrenContent.trim()}\n`;
+        }
+        return `- ${childrenContent.trim()}\n`;
+      case 'br':
+        return '\n';
+      case 'div':
+      case 'span':
+        const style = node.getAttribute('style') || '';
+        if (style.includes('font-weight: bold') || style.includes('font-weight: 700')) {
+          childrenContent = `**${childrenContent}**`;
+        }
+        if (style.includes('font-style: italic')) {
+          childrenContent = `*${childrenContent}*`;
+        }
+        if (tagName === 'div') {
+          return `\n${childrenContent}\n`;
+        }
+        return childrenContent;
+      default:
+        return childrenContent;
+    }
+  }
+  
+  let markdown = traverse(doc.body);
+  
+  // Clean up excess newlines
+  markdown = markdown
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+    
+  return markdown;
+}
+
+function cleanDocumentText(text) {
+  if (!text) return '';
+  
+  // Convert unicode bullets and ensure spacing for markdown lists
+  let formatted = text.replace(/^[ \t]*[•▪◦⚫][ \t]*/gm, '- ');
+  formatted = formatted.replace(/^[ \t]*-[ \t]*/gm, '- ');
+  
+  // Format single newlines into double newlines where appropriate (e.g. headers, list boundaries)
+  // to avoid everything running together in markdown
+  const paragraphs = formatted.split(/\n\s*\n/);
+  const cleanedParagraphs = paragraphs.map(p => {
+    const trimmed = p.trim();
+    if (
+      trimmed.startsWith('-') || 
+      trimmed.startsWith('*') || 
+      trimmed.match(/^\d+\./) || 
+      trimmed.startsWith('#')
+    ) {
+      return p;
+    }
+    
+    const lines = p.split(/\r?\n/);
+    if (lines.length > 1) {
+      let reconstructed = '';
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+        
+        if (!line) continue;
+        
+        const isHeader = line.length < 60 && !line.endsWith('.') && !line.endsWith(',') && !line.endsWith(';') && !line.endsWith(':') && !line.endsWith('?') && !line.endsWith('!');
+        const isNextHeader = nextLine && nextLine.length < 60 && !nextLine.endsWith('.') && !nextLine.endsWith(',') && !nextLine.endsWith(';') && !nextLine.endsWith(':') && !nextLine.endsWith('?') && !nextLine.endsWith('!');
+        const isNextList = nextLine.startsWith('-') || nextLine.startsWith('*') || !!nextLine.match(/^\d+\./);
+        
+        if (isHeader || isNextHeader || isNextList || line.startsWith('-') || line.startsWith('*')) {
+          reconstructed += line + '\n\n';
+        } else {
+          reconstructed += line + ' ';
+        }
+      }
+      return reconstructed.trim();
+    }
+    return p;
+  });
+  
+  return cleanedParagraphs.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) {
   const [expanded, setExpanded] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [autoConvertHtml, setAutoConvertHtml] = useState(true);
+  const [isParsingFile, setIsParsingFile] = useState(false);
+
+  const typeIndex = React.useMemo(() => {
+    if (!items || !item) return index + 1;
+    let count = 0;
+    const getCategory = (t) => {
+      if (t === 'notes' || t === 'lesson' || t === 'reading') return 'notes';
+      return t;
+    };
+    const itemCategory = getCategory(item.type);
+    for (let i = 0; i < items.length; i++) {
+      if (getCategory(items[i].type) === itemCategory) {
+        count++;
+      }
+      if (items[i] === item || (items[i]._id && items[i]._id === item._id)) {
+        break;
+      }
+    }
+    return count;
+  }, [items, item, index]);
+
+  const handlePaste = (e) => {
+    const htmlData = e.clipboardData.getData('text/html');
+    const plainText = e.clipboardData.getData('text/plain');
+    
+    if (autoConvertHtml && htmlData) {
+      e.preventDefault();
+      let markdown = htmlToMarkdown(htmlData);
+      // Normalize any unicode bullets in generated markdown
+      markdown = markdown.replace(/^[ \t]*[•▪◦⚫][ \t]*/gm, '- ');
+      
+      const textarea = e.target;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentValue = item.content || '';
+      const newValue = currentValue.substring(0, start) + markdown + currentValue.substring(end);
+      onUpdate({ content: newValue });
+      setTimeout(() => {
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
+      }, 0);
+    } else if (plainText) {
+      // Intercept plain text paste to convert unicode bullets and format
+      const hasUnicodeBullets = /^[ \t]*[•▪◦⚫]/m.test(plainText);
+      if (hasUnicodeBullets) {
+        e.preventDefault();
+        const formattedText = cleanDocumentText(plainText);
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const currentValue = item.content || '';
+        const newValue = currentValue.substring(0, start) + formattedText + currentValue.substring(end);
+        onUpdate({ content: newValue });
+        setTimeout(() => {
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = start + formattedText.length;
+        }, 0);
+      }
+    }
+  };
+
+  const handleCleanPdfWraps = () => {
+    const currentValue = item.content || '';
+    if (!currentValue.trim()) return;
+    onUpdate({ content: cleanDocumentText(currentValue) });
+  };
+
   const typeInfo = LESSON_TYPES.find(t => t.value === item.type) || LESSON_TYPES[0];
   const Icon = typeInfo.icon;
 
@@ -521,7 +844,7 @@ function LessonItemCard({ item, index, onUpdate, onDelete, onMoveUp, onMoveDown,
           </button>
         </div>
         <div className="w-6 h-6 rounded-md bg-surface-variant flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-on-surface-variant">{index + 1}</span>
+          <span className="text-[10px] font-bold text-on-surface-variant">{typeIndex}</span>
         </div>
         <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md border text-[10px] font-bold shrink-0 ${typeInfo.bg} ${typeInfo.color}`}>
           <Icon size={11} stroke={2.5} />
@@ -529,9 +852,15 @@ function LessonItemCard({ item, index, onUpdate, onDelete, onMoveUp, onMoveDown,
         </div>
         <input
           type="text"
-          placeholder="Item Name (e.g. Quick Notes, Quiz 1)"
+          placeholder={
+            item.type === 'quiz'
+              ? `Quiz ${typeIndex}`
+              : item.type === 'qa'
+              ? `Q&A ${typeIndex}`
+              : `Notes ${typeIndex}`
+          }
           className="flex-1 min-w-0 bg-transparent text-xs font-semibold text-on-surface outline-none border-b border-transparent focus:border-primary/50 pb-0.5"
-          value={item.title}
+          value={item.title || ''}
           onChange={e => onUpdate({ title: e.target.value })}
         />
         <div className="flex items-center gap-1 shrink-0">
@@ -595,14 +924,95 @@ function LessonItemCard({ item, index, onUpdate, onDelete, onMoveUp, onMoveDown,
               </div>
 
               {(item.type === 'notes' || item.type === 'lesson' || item.type === 'reading') && (
-                <div>
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-emerald-400 mb-1.5 block">Notes / Content</label>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Notes / Content</label>
+                    <div className="flex items-center gap-2">
+                      {/* Auto-convert Toggle */}
+                      <label className="flex items-center gap-1 text-[10px] text-on-surface-variant cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={autoConvertHtml}
+                          onChange={(e) => setAutoConvertHtml(e.target.checked)}
+                          className="rounded border-outline-variant/40 text-emerald-500 focus:ring-emerald-500/20 bg-background w-3 h-3"
+                        />
+                        <span>Auto-Format Paste</span>
+                      </label>
+
+                      {/* Clean PDF Wraps Button */}
+                      <button
+                        type="button"
+                        onClick={handleCleanPdfWraps}
+                        className="px-2 py-0.5 rounded bg-surface border border-outline-variant/20 hover:border-outline-variant/50 text-[10px] font-bold text-on-surface-variant hover:text-on-surface transition-all"
+                        title="Fix mid-sentence line breaks from PDF copy-paste"
+                      >
+                        Clean PDF Wraps
+                      </button>
+
+                      {/* Upload Document Button */}
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById(`doc-upload-${item._id}`).click()}
+                        disabled={isParsingFile}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 transition-all disabled:opacity-50"
+                      >
+                        {isParsingFile ? (
+                          <>
+                            <IconLoader2 size={10} className="animate-spin" />
+                            <span>Parsing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconCloudUpload size={10} />
+                            <span>Upload Document</span>
+                          </>
+                        )}
+                      </button>
+                      <input
+                        id={`doc-upload-${item._id}`}
+                        type="file"
+                        accept=".pdf,.docx,.txt,.md"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setIsParsingFile(true);
+                          try {
+                            const res = await parseDocumentFile(file);
+                            if (res.text) {
+                              const cleanedText = cleanDocumentText(res.text);
+                              const textarea = document.getElementById(`textarea-${item._id}`);
+                              if (textarea) {
+                                // Insert parsed text at cursor
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const currentValue = item.content || '';
+                                const newValue = currentValue.substring(0, start) + cleanedText + currentValue.substring(end);
+                                onUpdate({ content: newValue });
+                              } else {
+                                onUpdate({ content: (item.content || '') + '\n\n' + cleanedText });
+                              }
+                            }
+                          } catch (err) {
+                            console.error('File parsing failed:', err);
+                            alert('Failed to parse file: ' + err.message);
+                          } finally {
+                            setIsParsingFile(false);
+                            e.target.value = ''; // Reset input
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
                   <textarea
+                    id={`textarea-${item._id}`}
                     rows={6}
                     placeholder="Enter lesson notes, markdown, or key summary points..."
                     className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40 resize-y font-mono leading-relaxed"
                     value={item.content || ''}
                     onChange={e => onUpdate({ content: e.target.value })}
+                    onPaste={handlePaste}
+                    disabled={isParsingFile}
                   />
                 </div>
               )}
@@ -698,6 +1108,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
           {editing ? (
             <input
               autoFocus
+              placeholder={`Chapter ${index + 1}`}
               className="w-full bg-transparent text-sm font-semibold text-on-surface outline-none border-b border-primary/50 pb-0.5"
               value={lesson.title}
               onChange={e => onUpdate({ title: e.target.value })}
@@ -709,7 +1120,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
               onClick={() => setEditing(true)}
               className="w-full text-left text-sm font-semibold text-on-surface truncate hover:text-primary transition-colors"
             >
-              {lesson.title || <span className="text-on-surface-variant italic">Untitled Lesson Heading</span>}
+              {lesson.title || <span className="text-on-surface-variant/40 italic">Chapter {index + 1}</span>}
             </button>
           )}
           {items.length > 0 && (
@@ -777,6 +1188,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
                   key={item._id || idx}
                   item={item}
                   index={idx}
+                  items={items}
                   onUpdate={patch => updateItem(idx, patch)}
                   onDelete={() => deleteItem(idx)}
                   onMoveUp={() => moveItem(idx, -1)}
@@ -920,7 +1332,8 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
         lessons: cleanLessons,
       });
 
-      // Now save details for all items inside all lessons
+      // Now save details for all items inside all lessons in parallel
+      const savePromises = [];
       const updatedLessons = updated?.lessons || [];
       for (let lIdx = 0; lIdx < updatedLessons.length; lIdx++) {
         const cleanL = updatedLessons[lIdx];
@@ -936,7 +1349,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
               const isNewItem = !localItem._id || String(localItem._id).startsWith('temp_') || String(localItem._id).startsWith('tmp_');
               
               if (cleanItem.type === 'notes' && (localItem.content !== undefined || isNewItem)) {
-                await updateLessonContent(cleanItem._id, localItem.content || '');
+                savePromises.push(updateLessonContent(cleanItem._id, localItem.content || ''));
               } else if (cleanItem.type === 'quiz' && (localItem.questions !== undefined || isNewItem)) {
                 const cleanQs = (localItem.questions || []).map(q => {
                   const { _id: qid, ...qrest } = q;
@@ -944,7 +1357,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                   if (qid && !String(qid).startsWith('tmp_') && !String(qid).startsWith('temp_')) cq._id = qid;
                   return cq;
                 });
-                await updateLessonQuiz(cleanItem._id, cleanQs);
+                savePromises.push(updateLessonQuiz(cleanItem._id, cleanQs));
               } else if (cleanItem.type === 'qa' && (localItem.qas !== undefined || isNewItem)) {
                 const cleanQas = (localItem.qas || []).map(p => {
                   const { _id: pid, ...prest } = p;
@@ -952,11 +1365,15 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                   if (pid && !String(pid).startsWith('tmp_') && !String(pid).startsWith('temp_')) cp._id = pid;
                   return cp;
                 });
-                await updateLessonQa(cleanItem._id, cleanQas);
+                savePromises.push(updateLessonQa(cleanItem._id, cleanQas));
               }
             }
           }
         }
+      }
+
+      if (savePromises.length > 0) {
+        await Promise.all(savePromises);
       }
 
       // Update local state with real DB IDs but keep our content!
@@ -1129,7 +1546,6 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
             {[
               { id: 'curriculum', label: 'Curriculum', icon: IconBook2 },
               { id: 'settings', label: 'Course Settings', icon: IconSparkles },
-              { id: 'preview', label: 'Student Preview', icon: IconDeviceLaptop },
             ].map(tab => {
               const TIcon = tab.icon;
               return (
@@ -1335,225 +1751,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
             </div>
           )}
 
-          {/* ── Student Preview Tab ── */}
-          {activeTab === 'preview' && (
-            <div className="p-6 md:p-8">
-              {/* Banner */}
-              <div className="flex items-center gap-3 mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <IconDeviceLaptop size={18} className="text-amber-400 shrink-0" stroke={2} />
-                <p className="text-sm text-amber-300 font-medium">
-                  Live preview — updates as you edit. Save &amp; publish to make this visible to students.
-                </p>
-              </div>
 
-              {/* ── Simulated student course page ── */}
-              <div className="rounded-2xl overflow-hidden border border-white/[0.06] bg-[#12151f] shadow-2xl max-w-3xl">
-
-                {/* Hero Banner */}
-                <div
-                  className="relative px-8 pt-10 pb-8 overflow-hidden"
-                  style={{
-                    background: `linear-gradient(135deg, ${meta.coverColor}35 0%, ${meta.coverColor}10 60%, transparent 100%)`,
-                    borderBottom: `1px solid ${meta.coverColor}30`,
-                  }}
-                >
-                  <div
-                    className="absolute -top-12 -right-12 w-56 h-56 rounded-full blur-3xl opacity-20 pointer-events-none"
-                    style={{ background: meta.coverColor }}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 h-px opacity-30"
-                    style={{ background: `linear-gradient(90deg, transparent, ${meta.coverColor}, transparent)` }}
-                  />
-
-                  <div className="relative z-10 flex items-start gap-5">
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
-                      style={{ background: `linear-gradient(135deg, ${meta.coverColor}ee, ${meta.coverColor}99)` }}
-                    >
-                      <IconBook2 size={28} stroke={1.5} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-2 mb-2">
-                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: meta.coverColor }}>
-                          {meta.subject || 'Subject'}
-                        </span>
-                        <span className="text-on-surface-variant/30">·</span>
-                        <span className="text-[11px] text-on-surface-variant/60">{meta.class || 'Class'}</span>
-                        <div className="ml-auto">
-                          {meta.isPublished ? (
-                            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                              <IconEye size={11} stroke={2.5} /> Published
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-surface-variant/60 text-on-surface-variant border border-outline-variant/30">
-                              <IconEyeOff size={11} stroke={2.5} /> Draft
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <h1 className="text-2xl font-bold text-white leading-tight mb-2">
-                        {meta.title || <span className="opacity-40 italic">Untitled Course</span>}
-                      </h1>
-                      {meta.summary ? (
-                        <p className="text-sm text-on-surface-variant leading-relaxed max-w-xl">{meta.summary}</p>
-                      ) : (
-                        <p className="text-sm text-on-surface-variant/30 italic">No summary added yet — add one in Course Settings.</p>
-                      )}
-
-                      {lessons.length > 0 && (
-                        <div className="flex items-center flex-wrap gap-5 mt-4 pt-4 border-t border-white/[0.06]">
-                          <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                            <IconBook2 size={13} stroke={2} />
-                            <span className="font-semibold text-on-surface">{lessons.length}</span> lesson{lessons.length !== 1 ? 's' : ''}
-                          </div>
-                          {premiumCount > 0 && (
-                            <div className="flex items-center gap-1.5 text-xs text-amber-400">
-                              <IconCrown size={13} stroke={2} />
-                              <span className="font-semibold">{premiumCount}</span> premium
-                            </div>
-                          )}
-                          {typeBreakdown.map(t => {
-                            const TIcon = t.icon;
-                            return (
-                              <div key={t.value} className={`flex items-center gap-1.5 text-xs ${t.color}`}>
-                                <TIcon size={13} stroke={2} />
-                                <span className="font-semibold">{t.count}</span> {t.label.toLowerCase()}{t.count !== 1 ? 's' : ''}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lesson list */}
-                <div className="px-6 py-5">
-                  {lessons.length === 0 ? (
-                    <div className="text-center py-14">
-                      <div className="w-14 h-14 rounded-2xl bg-surface-container border border-outline-variant/20 flex items-center justify-center mx-auto mb-4">
-                        <IconPlayerPlay size={24} stroke={1} className="text-on-surface-variant/40" />
-                      </div>
-                      <p className="text-sm font-semibold text-on-surface-variant">No content yet</p>
-                      <p className="text-xs text-on-surface-variant/50 mt-1">Add lessons in the Curriculum tab to see them here.</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">
-                        Course Content · {totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}
-                      </p>
-                      <div className="space-y-6">
-                        {lessons.map((lesson, lessonIdx) => (
-                          <div key={lesson._id || lessonIdx} className="space-y-3">
-                            {/* Lesson Title Row */}
-                            <div className="flex items-center gap-2 px-1">
-                              <div className="w-6 h-6 rounded-md bg-surface-variant flex items-center justify-center text-xs font-bold text-on-surface-variant shrink-0">
-                                {lessonIdx + 1}
-                              </div>
-                              <h3 className="text-sm font-bold text-on-surface truncate">
-                                {lesson.title || <span className="italic opacity-40">Untitled Lesson</span>}
-                              </h3>
-                              {lesson.isPremium && (
-                                <IconCrown size={14} className="text-amber-400 shrink-0 ml-1" />
-                              )}
-                            </div>
-
-                            {/* Items List */}
-                            <div className="space-y-2 pl-3 ml-3 border-l-2 border-outline-variant/10">
-                              {(lesson.items || []).length === 0 ? (
-                                <p className="text-xs text-on-surface-variant/50 italic py-2">No content items yet.</p>
-                              ) : (
-                                lesson.items.map((item, itemIdx) => {
-                                  const typeInfo = LESSON_TYPES.find(t => t.value === item.type) || LESSON_TYPES[0];
-                                  const LIcon = typeInfo.icon;
-                                  const locked = item.isPremium;
-
-                                  return (
-                                    <div
-                                      key={item._id || itemIdx}
-                                      className={`group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
-                                        locked
-                                          ? 'bg-amber-500/5 border-amber-500/15'
-                                          : 'bg-surface-container-lowest/60 border-white/[0.04] hover:bg-surface-container hover:border-white/[0.08]'
-                                      }`}
-                                    >
-                                      {/* Type icon */}
-                                      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${typeInfo.bg}`}>
-                                        <LIcon size={15} stroke={2} className={typeInfo.color} />
-                                      </div>
-
-                                      {/* Content */}
-                                      <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-semibold truncate leading-tight ${locked ? 'text-on-surface-variant' : 'text-on-surface'}`}>
-                                          {item.title || <span className="italic opacity-40">Untitled {typeInfo.label}</span>}
-                                        </p>
-                                        {(item.description || item.duration) && (
-                                          <p className="text-xs text-on-surface-variant mt-0.5 truncate">
-                                            {item.description}
-                                            {item.description && item.duration && <span className="mx-1.5 opacity-30">·</span>}
-                                            {item.duration && <span className="font-medium">{item.duration}</span>}
-                                          </p>
-                                        )}
-                                      </div>
-
-                                      {/* Right badges */}
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <span className={`hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeInfo.bg} ${typeInfo.color}`}>
-                                          {typeInfo.label}
-                                        </span>
-                                        {locked ? (
-                                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/25 text-amber-400">
-                                            <IconCrown size={11} stroke={2.5} />
-                                          </span>
-                                        ) : (
-                                          <div
-                                            className="w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                            style={{ background: meta.coverColor + '22' }}
-                                          >
-                                            <IconPlayerPlay size={13} stroke={2.5} style={{ color: meta.coverColor }} />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Enroll CTA Footer */}
-                <div
-                  className="px-6 py-5 border-t flex items-center justify-between gap-4"
-                  style={{ borderColor: `${meta.coverColor}20`, background: `${meta.coverColor}08` }}
-                >
-                  <div>
-                    <p className="text-sm font-bold text-on-surface">
-                      {meta.isPublished ? 'Ready to learn?' : 'Not yet published'}
-                    </p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                      {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
-                      {premiumCount > 0 ? ` · ${premiumCount} require premium` : ' · all free'}
-                    </p>
-                  </div>
-                  <button
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold text-white shrink-0 transition-all hover:brightness-110 active:scale-[0.98] shadow-lg"
-                    style={{ background: meta.coverColor, boxShadow: `0 4px 20px ${meta.coverColor}55` }}
-                  >
-                    {meta.isPublished ? 'Start Learning' : 'Publish First'}
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-xs text-on-surface-variant/40 mt-4 text-center">
-                Preview updates live. Students see this exact layout once the course is published.
-              </p>
-            </div>
-          )}
         </main>
       </div>
     </div>

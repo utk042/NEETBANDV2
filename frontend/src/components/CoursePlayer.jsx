@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -27,14 +27,14 @@ import {
   IconAtom,
   IconFlask,
 } from '@tabler/icons-react';
-import { getLessonContent, getLessonQuiz, getLessonQa } from '../services/api';
+import { getLessonContent, getLessonQuiz, getLessonQa, getCourseById } from '../services/api';
 
 const TYPE_META = {
   notes: { label: 'Notes',   Icon: IconFileText,        color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
   song:  { label: 'Song',    Icon: IconMusic,           color: 'text-purple-400',  bg: 'bg-purple-500/10 border-purple-500/20' },
   quiz:  { label: 'Quiz',    Icon: IconHelp,            color: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/20' },
   video: { label: 'Video',   Icon: IconVideo,           color: 'text-rose-400',    bg: 'bg-rose-500/10 border-rose-500/20' },
-  qa:    { label: 'Q&A',     Icon: IconMessageQuestion, color: 'text-violet-400',  bg: 'bg-violet-500/10 border-violet-500/20' },
+  qa:    { label: 'Flashcards', Icon: IconMessageQuestion, color: 'text-violet-400',  bg: 'bg-violet-500/10 border-violet-500/20' },
 };
 
 const SUBJECTS = [
@@ -69,6 +69,24 @@ function MathMarkdownContent({ content }) {
     }
   }, [content]);
 
+  const processedContent = React.useMemo(() => {
+    if (!content) return '';
+    // 1. Convert unicode bullets at start of lines to markdown bullets
+    let formatted = content.replace(/^[ \t]*[•▪◦⚫][ \t]*/gm, '- ');
+    
+    // 2. Append two spaces to lines to preserve single newlines as line breaks
+    return formatted
+      .split('\n')
+      .map(line => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
+          return line;
+        }
+        return line + '  ';
+      })
+      .join('\n');
+  }, [content]);
+
   return (
     <div ref={containerRef} className="prose max-w-none text-on-surface-variant text-sm leading-relaxed space-y-4 markdown-body">
       <ReactMarkdown 
@@ -96,7 +114,7 @@ function MathMarkdownContent({ content }) {
           blockquote: ({node, ...props}) => <blockquote className="pl-4 mb-2 border-l-2 border-primary/40 text-on-surface-variant/90 text-sm leading-relaxed" {...props} />
         }}
       >
-        {content || ''}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
@@ -150,12 +168,40 @@ function AudioAdPlayer({ item, user }) {
   );
 }
 
-export default function CoursePlayer({ course, onBack, onViewChange, currentTrack, user, onUpgradeClick }) {
+export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const navigate = useNavigate();
-  const [selectedLessonIdx, setSelectedLessonIdx] = useState(null);
-  const [selectedItemIdx, setSelectedItemIdx] = useState(null);
+  const { courseId, itemType, lessonIdx: lessonIdxParam, itemIdx: itemIdxParam } = useParams();
+
+  const [course, setCourse] = useState(null);
+  const [courseLoading, setCourseLoading] = useState(true);
+
+  useEffect(() => {
+    if (!courseId) return;
+    setCourseLoading(true);
+    getCourseById(courseId)
+      .then(data => {
+        setCourse(data);
+      })
+      .catch(err => {
+        console.error("Failed to fetch course:", err);
+      })
+      .finally(() => {
+        setCourseLoading(false);
+      });
+  }, [courseId]);
+
+  const selectedLessonIdx = lessonIdxParam !== undefined ? parseInt(lessonIdxParam, 10) - 1 : null;
+  const selectedItemIdx = itemIdxParam !== undefined ? parseInt(itemIdxParam, 10) - 1 : null;
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
+
+  const getSlugType = (type) => {
+    if (type === 'qa') return 'flashcards';
+    return type;
+  };
+
+  const handleBack = () => navigate('/course');
 
   const bottomClass = currentTrack ? 'bottom-[152px] md:bottom-24' : 'bottom-20 md:bottom-24';
 
@@ -194,13 +240,67 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
   const [currentQuizQuestionIdx, setCurrentQuizQuestionIdx] = useState(0);
   const [markedForReview, setMarkedForReview] = useState({});
 
+  // ── Flashcard state ──
+  const [flashcardIdx, setFlashcardIdx] = useState(0);
+  const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+
   useEffect(() => {
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(0);
     setCurrentQuizQuestionIdx(0);
     setMarkedForReview({});
+    setFlashcardIdx(0);
+    setFlashcardFlipped(false);
   }, [selectedLessonIdx, selectedItemIdx]);
+
+  const renderPaletteButtons = () => {
+    if (!activeDetails?.questions) return null;
+    return activeDetails.questions.map((_, qIdx) => {
+      const isActive = qIdx === currentQuizQuestionIdx;
+      const isAnswered = quizAnswers[qIdx] !== undefined && quizAnswers[qIdx] !== '';
+      const isMarked = markedForReview[qIdx];
+      
+      let circleStyle = 'bg-surface-container/50 border-outline-variant/30 text-on-surface-variant hover:border-outline-variant';
+      if (isAnswered) {
+        circleStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold';
+      }
+      if (isMarked) {
+        circleStyle = 'bg-purple-500/10 border-purple-500/30 text-purple-400 font-bold';
+      }
+      if (quizSubmitted) {
+        const qObj = activeDetails.questions[qIdx];
+        let correct = false;
+        if (qObj.type === 'fill_in_the_blanks') {
+          const userAns = (quizAnswers[qIdx] || '').toString().trim().toLowerCase();
+          const correctAns = (qObj.correctText || '').toString().trim().toLowerCase();
+          correct = userAns === correctAns && correctAns !== '';
+        } else {
+          correct = quizAnswers[qIdx] === qObj.correctIndex;
+        }
+
+        if (correct) {
+          circleStyle = 'bg-emerald-500 text-black font-extrabold border-emerald-600';
+        } else if (quizAnswers[qIdx] !== undefined && quizAnswers[qIdx] !== '') {
+          circleStyle = 'bg-rose-500 text-white font-extrabold border-rose-600';
+        } else {
+          circleStyle = 'bg-surface-container/30 border-outline-variant/10 text-on-surface-variant/30';
+        }
+      }
+
+      return (
+        <button
+          key={qIdx}
+          onClick={() => setCurrentQuizQuestionIdx(qIdx)}
+          className={`w-9 h-9 rounded-lg border text-[11px] font-bold transition-all duration-150 flex items-center justify-center ${circleStyle} ${
+            isActive ? 'ring-2 ring-amber-500' : ''
+          }`}
+        >
+          {qIdx + 1}
+        </button>
+      );
+    });
+  };
 
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeDetails, setActiveDetails] = useState(null);
@@ -310,6 +410,14 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
   const prevItem = getPreviousItem();
   const nextItem = getNextItem();
 
+  if (courseLoading || !course) {
+    return (
+      <div className="min-h-[60vh] w-full flex items-center justify-center bg-surface">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
+      </div>
+    );
+  }
+
   // ── OVERVIEW ──────────────────────────────────────────────
   if (selectedLessonIdx === null || selectedItemIdx === null) {
     return (
@@ -319,10 +427,10 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
       >
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <aside className="hidden lg:flex flex-col w-72 xl:w-80 border-r border-outline/10 bg-surface-container-low shrink-0 overflow-y-auto pb-56">
+          <aside className="hidden lg:flex flex-col w-72 xl:w-80 border-r border-outline/10 bg-surface-container-low shrink-0 overflow-y-auto pb-28">
             <div className="p-5">
               <button
-                onClick={onBack}
+                onClick={handleBack}
                 className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-5"
               >
                 <IconArrowLeft size={16} /> Back to Courses
@@ -368,21 +476,21 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
 
           {/* Main */}
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-5 lg:px-10 py-8 pb-56">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-10 py-5 sm:py-8 pb-32 sm:pb-40">
               {/* Mobile back */}
               <button
-                onClick={onBack}
+                onClick={handleBack}
                 className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-4 lg:hidden"
               >
                 <IconArrowLeft size={16} /> Back to Courses
               </button>
 
               {/* Header */}
-              <div className="mb-6">
-                <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: coverColor }}>
+              <div className="mb-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: coverColor }}>
                   {course?.subject} · {course?.class}
                 </p>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-on-surface leading-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-on-surface leading-tight">
                   {course?.title || 'Course Curriculum'}
                 </h1>
                 {course?.summary && (
@@ -394,8 +502,11 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
               {lessons.length > 0 && lessons[0].items?.length > 0 && (
                 <button
                   onClick={() => {
-                    setSelectedLessonIdx(0);
-                    setSelectedItemIdx(0);
+                    const firstLesson = lessons[0];
+                    const firstItem = firstLesson?.items?.[0];
+                    if (firstItem) {
+                      navigate(`/course/${course._id}/${getSlugType(firstItem.type)}/1/1`);
+                    }
                   }}
                   className="group flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white mb-8 transition-all hover:brightness-110 active:scale-[0.98] shadow-lg"
                   style={{ background: coverColor, boxShadow: `0 4px 20px ${coverColor}44` }}
@@ -482,8 +593,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                                 ) : (
                                   <button
                                     onClick={() => {
-                                      setSelectedLessonIdx(lessonIdx);
-                                      setSelectedItemIdx(itemIdx);
+                                      navigate(`/course/${course._id}/${getSlugType(item.type)}/${lessonIdx + 1}/${itemIdx + 1}`);
                                     }}
                                     className="px-4 py-1.5 rounded-lg text-xs font-extrabold bg-[#16362f] text-emerald-400 border border-emerald-500/20 hover:brightness-110 active:scale-[0.97] transition-all shrink-0"
                                   >
@@ -527,8 +637,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
       <div className="h-14 bg-surface-container-high border-b border-outline/10 flex items-center shrink-0 shadow-sm z-40">
         <button
           onClick={() => {
-            setSelectedLessonIdx(null);
-            setSelectedItemIdx(null);
+            navigate(`/course/${course._id}`);
           }}
           className="h-full px-4 flex items-center gap-2 hover:bg-surface-container-highest transition-colors border-r border-outline/10"
         >
@@ -549,8 +658,11 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
           <button
             onClick={() => {
               if (prevItem) {
-                setSelectedLessonIdx(prevItem.lessonIdx);
-                setSelectedItemIdx(prevItem.itemIdx);
+                const prevLesson = lessons[prevItem.lessonIdx];
+                const prevItemObj = prevLesson?.items?.[prevItem.itemIdx];
+                if (prevItemObj) {
+                  navigate(`/course/${course._id}/${getSlugType(prevItemObj.type)}/${prevItem.lessonIdx + 1}/${prevItem.itemIdx + 1}`);
+                }
               }
             }}
             disabled={!prevItem}
@@ -561,11 +673,13 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
           <button
             onClick={() => {
               if (nextItem) {
-                setSelectedLessonIdx(nextItem.lessonIdx);
-                setSelectedItemIdx(nextItem.itemIdx);
+                const nextLesson = lessons[nextItem.lessonIdx];
+                const nextItemObj = nextLesson?.items?.[nextItem.itemIdx];
+                if (nextItemObj) {
+                  navigate(`/course/${course._id}/${getSlugType(nextItemObj.type)}/${nextItem.lessonIdx + 1}/${nextItem.itemIdx + 1}`);
+                }
               } else {
-                setSelectedLessonIdx(null);
-                setSelectedItemIdx(null);
+                navigate(`/course/${course._id}`);
               }
             }}
             className="h-full px-4 flex items-center gap-2 bg-primary text-on-primary hover:brightness-105 transition-all font-semibold text-sm"
@@ -602,7 +716,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
             <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Course Contents</p>
             <p className="text-xs text-on-surface-variant/60 mt-0.5">{lessons.length} lessons · {totalItemsCount} items</p>
           </div>
-          <div className="flex-1 overflow-y-auto pb-56 divide-y divide-outline/5">
+          <div className="flex-1 overflow-y-auto pb-28 divide-y divide-outline/5">
             {lessons.map((l, lIdx) => {
               const items = l.items || [];
               const isCurrentLesson = lIdx === selectedLessonIdx;
@@ -626,8 +740,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                         <button
                           key={subItem._id || itemIdx}
                           onClick={() => {
-                            setSelectedLessonIdx(lIdx);
-                            setSelectedItemIdx(itemIdx);
+                            navigate(`/course/${course._id}/${getSlugType(subItem.type)}/${lIdx + 1}/${itemIdx + 1}`);
                             setIsSidebarOpen(false);
                           }}
                           className={`w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs transition-all border rounded-lg ${
@@ -666,17 +779,19 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
         )}
 
         {/* Item content area */}
-        <main data-gsap="player-main" className="flex-1 overflow-y-auto bg-surface p-6 sm:p-10 pb-56">
-          <div className="max-w-3xl mx-auto">
+        <main data-gsap="player-main" className="flex-1 overflow-y-auto bg-surface p-4 sm:p-6 lg:p-10 pb-32 sm:pb-40">
+          <div className="max-w-3xl mx-auto w-full">
+
             {/* Active item header */}
-            <div className="flex items-center gap-3 mb-6 pb-5 border-b border-outline/10">
-              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${meta.bg}`}>
-                <LIcon size={20} stroke={1.5} className={meta.color} />
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-outline/10">
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${meta.bg}`}>
+                <LIcon size={18} stroke={1.5} className={meta.color} />
               </div>
               <div>
-                <p className={`text-[11px] font-bold uppercase tracking-widest ${meta.color}`}>{meta.label}</p>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface leading-tight">{item?.title}</h1>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${meta.color}`}>{meta.label}</p>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-on-surface leading-tight">{item?.title}</h1>
               </div>
+
               {lesson?.isPremium && (
                 <span className="ml-auto flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
                   <IconCrown size={13} stroke={2} /> Premium
@@ -736,7 +851,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                     ) : (
                       <div className="flex flex-col lg:flex-row gap-6 items-start">
                         {/* Left Side: Question Pane */}
-                        <div className="flex-1 w-full space-y-5">
+                        <div className="flex-1 w-full space-y-4">
                           {/* Quiz Summary Banner */}
                           {quizSubmitted && (
                             <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center">
@@ -759,12 +874,17 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                             </div>
                           )}
 
+                          {/* Mobile Question Palette (just numbers, minimal style) */}
+                          <div className="flex flex-wrap gap-3 lg:hidden">
+                            {renderPaletteButtons()}
+                          </div>
+
                           {/* Active Question Box */}
                           {(() => {
                             const q = activeDetails.questions[currentQuizQuestionIdx];
                             const selectedOpt = quizAnswers[currentQuizQuestionIdx];
                             return (
-                              <div className="p-6 rounded-2xl border border-outline/10 bg-surface-container-low/50 space-y-4">
+                              <div className="p-4 sm:p-6 rounded-2xl border border-outline/10 bg-surface-container-low/50 space-y-4">
                                 <div className="flex items-center justify-between border-b border-outline/5 pb-3">
                                   <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full font-mono">
                                     Question {currentQuizQuestionIdx + 1} of {activeDetails.questions.length}
@@ -855,8 +975,8 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                           })()}
 
                           {/* Control Buttons row */}
-                          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                            <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                               {!quizSubmitted && (
                                 <>
                                   <button
@@ -866,7 +986,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                                         [currentQuizQuestionIdx]: !prev[currentQuizQuestionIdx]
                                       }));
                                     }}
-                                    className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                    className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
                                       markedForReview[currentQuizQuestionIdx]
                                         ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
                                         : 'border-outline-variant/30 text-on-surface-variant hover:border-outline-variant hover:text-on-surface'
@@ -884,7 +1004,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                                       });
                                     }}
                                       disabled={quizAnswers[currentQuizQuestionIdx] === undefined || quizAnswers[currentQuizQuestionIdx] === ''}
-                                      className="px-3 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:border-outline-variant hover:text-on-surface text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                      className="px-3 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:border-outline-variant hover:text-on-surface text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                                     >
                                       Clear Response
                                     </button>
@@ -892,11 +1012,11 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                               )}
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
                               <button
                                 onClick={() => setCurrentQuizQuestionIdx(prev => Math.max(0, prev - 1))}
                                 disabled={currentQuizQuestionIdx === 0}
-                                className="px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:border-outline-variant hover:text-on-surface text-xs font-bold flex items-center gap-1 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:border-outline-variant hover:text-on-surface text-xs font-bold flex items-center gap-1 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                               >
                                 <IconArrowLeft size={14} /> Prev
                               </button>
@@ -904,7 +1024,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                               {currentQuizQuestionIdx < activeDetails.questions.length - 1 ? (
                                 <button
                                   onClick={() => setCurrentQuizQuestionIdx(prev => prev + 1)}
-                                  className="px-4 py-2 rounded-xl bg-surface-variant hover:bg-surface-container-highest text-on-surface text-xs font-bold flex items-center gap-1 transition-all"
+                                  className="px-4 py-2 rounded-xl bg-surface-variant hover:bg-surface-container-highest text-on-surface text-xs font-bold flex items-center gap-1 transition-all shrink-0"
                                 >
                                   Next <IconArrowRight size={14} />
                                 </button>
@@ -924,7 +1044,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                                     setQuizScore(score);
                                     setQuizSubmitted(true);
                                   }}
-                                  className="px-4 py-2 rounded-xl bg-amber-500 text-black text-xs font-extrabold flex items-center gap-1 hover:brightness-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(201,162,39,0.2)]"
+                                  className="px-4 py-2 rounded-xl bg-amber-500 text-black text-xs font-extrabold flex items-center gap-1 hover:brightness-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(201,162,39,0.2)] shrink-0"
                                 >
                                   <IconSend size={14} /> Submit Quiz
                                 </button>
@@ -933,8 +1053,8 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                           </div>
                         </div>
 
-                        {/* Right Side: Question Palette Panel */}
-                        <div className="w-full lg:w-56 shrink-0 rounded-2xl border border-outline/10 bg-surface-container-low/30 p-4 space-y-4">
+                        {/* Right Side: Question Palette Panel (desktop only) */}
+                        <div className="hidden lg:block w-full lg:w-56 shrink-0 rounded-2xl border border-outline/10 bg-surface-container-low/30 p-4 space-y-4">
                           <div className="flex items-center justify-between border-b border-outline/5 pb-2">
                             <span className="text-xs font-extrabold text-on-surface uppercase tracking-wider">Question Palette</span>
                             <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
@@ -942,51 +1062,8 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-5 gap-2">
-                            {activeDetails.questions.map((_, qIdx) => {
-                              const isActive = qIdx === currentQuizQuestionIdx;
-                              const isAnswered = quizAnswers[qIdx] !== undefined && quizAnswers[qIdx] !== '';
-                              const isMarked = markedForReview[qIdx];
-                              
-                              let circleStyle = 'bg-surface-container/50 border-outline-variant/30 text-on-surface-variant hover:border-outline-variant';
-                              if (isAnswered) {
-                                circleStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold';
-                              }
-                              if (isMarked) {
-                                circleStyle = 'bg-purple-500/10 border-purple-500/30 text-purple-400 font-bold';
-                              }
-                              if (quizSubmitted) {
-                                const qObj = activeDetails.questions[qIdx];
-                                let correct = false;
-                                if (qObj.type === 'fill_in_the_blanks') {
-                                  const userAns = (quizAnswers[qIdx] || '').toString().trim().toLowerCase();
-                                  const correctAns = (qObj.correctText || '').toString().trim().toLowerCase();
-                                  correct = userAns === correctAns && correctAns !== '';
-                                } else {
-                                  correct = quizAnswers[qIdx] === qObj.correctIndex;
-                                }
-
-                                if (correct) {
-                                  circleStyle = 'bg-emerald-500 text-black font-extrabold border-emerald-600';
-                                } else if (quizAnswers[qIdx] !== undefined && quizAnswers[qIdx] !== '') {
-                                  circleStyle = 'bg-rose-500 text-white font-extrabold border-rose-600';
-                                } else {
-                                  circleStyle = 'bg-surface-container/30 border-outline-variant/10 text-on-surface-variant/30';
-                                }
-                              }
-
-                              return (
-                                <button
-                                  key={qIdx}
-                                  onClick={() => setCurrentQuizQuestionIdx(qIdx)}
-                                  className={`w-9 h-9 rounded-lg border text-[11px] font-bold transition-all duration-150 flex items-center justify-center ${circleStyle} ${
-                                    isActive ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-background' : ''
-                                  }`}
-                                >
-                                  {qIdx + 1}
-                                </button>
-                              );
-                            })}
+                          <div className="grid grid-cols-5 gap-3">
+                            {renderPaletteButtons()}
                           </div>
                         </div>
                       </div>
@@ -994,30 +1071,196 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                   </div>
                 )}
 
-                {/* ── Q&A RENDER ── */}
+                {/* ── Q&A FLASHCARD RENDER ── */}
                 {item?.type === 'qa' && (
-                  <div className="space-y-4">
+                  <div>
                     {(!activeDetails?.qas || activeDetails.qas.length === 0) ? (
                       <div className="text-center py-10 border border-dashed border-outline/20 rounded-xl">
                         <IconAlertCircle className="mx-auto text-on-surface-variant/40 mb-2" size={24} />
-                        <p className="text-sm text-on-surface-variant">This Q&A has no content yet.</p>
+                        <p className="text-sm text-on-surface-variant">This Q&amp;A has no content yet.</p>
                       </div>
-                    ) : (
-                      activeDetails.qas.map((pair, idx) => (
-                        <div key={pair._id || idx} className="p-5 rounded-xl border border-outline/10 bg-surface-container/30 space-y-2">
-                          <p className="text-sm font-bold text-on-surface flex items-start gap-2">
-                            <span className="text-violet-400 font-mono shrink-0">Q.</span>
-                            <span>{pair.question}</span>
-                          </p>
-                          <p className="text-sm text-on-surface-variant leading-relaxed flex items-start gap-2 pl-4 border-l border-outline/20">
-                            <span className="text-emerald-400 font-mono shrink-0">A.</span>
-                            <span>{pair.answer}</span>
+                    ) : (() => {
+                      const qas = activeDetails.qas;
+                      const total = qas.length;
+                      const pair = qas[flashcardIdx];
+                      const goNext = (e) => {
+                        e?.stopPropagation();
+                        setFlashcardFlipped(false);
+                        setTimeout(() => setFlashcardIdx(i => Math.min(i + 1, total - 1)), 100);
+                      };
+                      const goPrev = (e) => {
+                        e?.stopPropagation();
+                        setFlashcardFlipped(false);
+                        setTimeout(() => setFlashcardIdx(i => Math.max(i - 1, 0)), 100);
+                      };
+                      return (
+                        <div
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowRight') goNext();
+                            else if (e.key === 'ArrowLeft') goPrev();
+                            else if (e.key === ' ') { e.preventDefault(); setFlashcardFlipped(f => !f); }
+                          }}
+                          tabIndex={0}
+                          className="outline-none"
+                          aria-label="Flashcard viewer"
+                        >
+                          {/* Segmented progress bar */}
+                          <div className="flex gap-1 mb-5" aria-hidden="true">
+                            {qas.map((_, i) => (
+                              <button
+                                key={i}
+                                className={`fc-seg${i === flashcardIdx ? ' active' : i < flashcardIdx ? ' done' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); setFlashcardFlipped(false); setFlashcardIdx(i); }}
+                                tabIndex={-1}
+                                aria-label={`Card ${i + 1}`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Card */}
+                          <div className="flashcard-scene">
+                            <div
+                              className={`flashcard-card${flashcardFlipped ? ' is-flipped' : ''}`}
+                              onClick={() => setFlashcardFlipped(f => !f)}
+                              role="button"
+                              aria-pressed={flashcardFlipped}
+                              aria-label={flashcardFlipped ? 'Showing answer — tap to see question' : 'Showing question — tap to reveal answer'}
+                            >
+                              {/* FRONT — Question */}
+                              <div
+                                className="flashcard-face border-l-2"
+                                style={{
+                                  background: 'rgb(var(--color-surface-container) / 0.6)',
+                                  border: '1px solid rgb(var(--color-outline) / 0.1)',
+                                  borderLeftColor: 'rgb(139 92 246)',
+                                  borderLeftWidth: '3px',
+                                }}
+                              >
+                                {/* Flip state chip — top right */}
+                                <span style={{
+                                  position: 'absolute', top: '14px', right: '14px',
+                                  fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em',
+                                  color: 'rgb(139 92 246)', opacity: 0.7,
+                                  padding: '2px 8px', borderRadius: '9999px',
+                                  border: '1px solid rgb(139 92 246 / 0.2)',
+                                  background: 'rgb(139 92 246 / 0.07)',
+                                  textTransform: 'uppercase',
+                                }}>Q</span>
+
+                                <p style={{
+                                  fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)',
+                                  fontWeight: 600,
+                                  color: 'rgb(var(--color-on-surface))',
+                                  lineHeight: 1.55,
+                                  paddingRight: '2rem',
+                                }}>
+                                  {pair.question}
+                                </p>
+
+                                <span style={{
+                                  marginTop: '1.25rem',
+                                  fontSize: '11px',
+                                  color: 'rgb(var(--color-on-surface-variant) / 0.35)',
+                                  letterSpacing: '0.02em',
+                                }}>
+                                  Tap to reveal answer
+                                </span>
+                              </div>
+
+                              {/* BACK — Answer */}
+                              <div
+                                className="flashcard-face"
+                                style={{
+                                  background: 'rgb(var(--color-surface-container) / 0.6)',
+                                  border: '1px solid rgb(var(--color-outline) / 0.1)',
+                                  borderLeftColor: 'rgb(16 185 129)',
+                                  borderLeftWidth: '3px',
+                                  transform: 'rotateY(180deg)',
+                                  backfaceVisibility: 'hidden',
+                                  WebkitBackfaceVisibility: 'hidden',
+                                }}
+                              >
+                                <span style={{
+                                  position: 'absolute', top: '14px', right: '14px',
+                                  fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em',
+                                  color: 'rgb(16 185 129)', opacity: 0.7,
+                                  padding: '2px 8px', borderRadius: '9999px',
+                                  border: '1px solid rgb(16 185 129 / 0.2)',
+                                  background: 'rgb(16 185 129 / 0.07)',
+                                  textTransform: 'uppercase',
+                                }}>A</span>
+
+                                <p style={{
+                                  fontSize: 'clamp(0.875rem, 2.2vw, 1rem)',
+                                  color: 'rgb(var(--color-on-surface-variant))',
+                                  lineHeight: 1.7,
+                                  paddingRight: '2rem',
+                                }}>
+                                  {pair.answer}
+                                </p>
+
+                                <span style={{
+                                  marginTop: '1.25rem',
+                                  fontSize: '11px',
+                                  color: 'rgb(var(--color-on-surface-variant) / 0.35)',
+                                  letterSpacing: '0.02em',
+                                }}>
+                                  Tap to see question
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Navigation */}
+                          <div className="flex items-center justify-between mt-4">
+                            <button
+                              onClick={goPrev}
+                              disabled={flashcardIdx === 0}
+                              className="w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-95"
+                              style={{
+                                background: 'rgb(var(--color-surface-container) / 0.5)',
+                                border: '1px solid rgb(var(--color-outline) / 0.12)',
+                                color: flashcardIdx === 0
+                                  ? 'rgb(var(--color-on-surface-variant) / 0.2)'
+                                  : 'rgb(var(--color-on-surface-variant) / 0.7)',
+                                cursor: flashcardIdx === 0 ? 'not-allowed' : 'pointer',
+                              }}
+                              aria-label="Previous card"
+                            >
+                              <IconArrowLeft size={15} stroke={1.75} />
+                            </button>
+
+                            <span className="text-xs font-mono text-on-surface-variant/40 tabular-nums">
+                              {flashcardIdx + 1} / {total}
+                            </span>
+
+                            <button
+                              onClick={goNext}
+                              disabled={flashcardIdx === total - 1}
+                              className="w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-95"
+                              style={{
+                                background: 'rgb(var(--color-surface-container) / 0.5)',
+                                border: '1px solid rgb(var(--color-outline) / 0.12)',
+                                color: flashcardIdx === total - 1
+                                  ? 'rgb(var(--color-on-surface-variant) / 0.2)'
+                                  : 'rgb(var(--color-on-surface-variant) / 0.7)',
+                                cursor: flashcardIdx === total - 1 ? 'not-allowed' : 'pointer',
+                              }}
+                              aria-label="Next card"
+                            >
+                              <IconArrowRight size={15} stroke={1.75} />
+                            </button>
+                          </div>
+
+                          <p className="hidden sm:block text-center text-[10px] text-on-surface-variant/25 mt-3 font-mono tracking-wide">
+                            ← → to navigate · space to flip
                           </p>
                         </div>
-                      ))
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
+
 
                 {/* ── NOTES / TEXT RENDER ── */}
                 {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && activeDetails?.content && (
@@ -1030,7 +1273,7 @@ export default function CoursePlayer({ course, onBack, onViewChange, currentTrac
                 )}
 
                 {/* Empty state */}
-                {!item?.videoUrl && item?.type !== 'video' && !activeDetails?.content && (!activeDetails?.questions || activeDetails.questions.length === 0) && (!activeDetails?.qas || activeDetails.qas.length === 0) && (
+                {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && !activeDetails?.content && (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div
                       className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"

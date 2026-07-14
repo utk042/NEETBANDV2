@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, recordSongRepeat, recordSongShare } from '../services/api';
+import { useDialog } from './DialogContext';
+import SharePopup from '../components/Common/SharePopup';
 
 const PlayerContext = createContext(null);
 
@@ -27,9 +29,13 @@ export function PlayerProvider({ children, user }) {
   const [isPlayingAd, setIsPlayingAd] = useState(false);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const adQueueRef = useRef(null); // pending song to play after ads
+  const [showSharePopup, setShowSharePopup] = useState(false);
+  const [playedWatermarks, setPlayedWatermarks] = useState([]);
+  const { confirm } = useDialog();
 
   const audioRef = useRef(null); // main audio element (in DOM via PlayerProvider render)
   const adAudioRef = useRef(null); // ad audio element
+  const watermarkAudioRef = useRef(null); // watermark audio element
   const pipVideoRef = useRef(null); // hidden video for PIP
   const canvasRef = useRef(null); // canvas for album art
   const animFrameRef = useRef(null);
@@ -111,7 +117,37 @@ export function PlayerProvider({ children, user }) {
         recordSongDropOff(currentTrack._id || currentTrack.id, segment).catch(() => {});
       }
     }
-  }, [currentTrack]);
+
+    // Guest user restriction (only 1 free song, max 20%)
+    if (!user?.isLoggedIn && pct >= 0.2 && currentTrack.chapterNumber !== 1) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      confirm("Login Required", "You need to login to access more", {
+        showCancel: false,
+        confirmText: 'Login',
+        confirmClass: 'bg-primary hover:bg-primary/95'
+      }).then(res => {
+        if (res) window.location.href = '/login';
+      });
+      return;
+    }
+
+    // Watermark/Ads logic for free users
+    if (!user?.isPremium && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
+      const pct100 = pct * 100;
+      const pos = currentTrack.watermarkPositions.find(p => pct100 >= p && pct100 < p + 2); // Trigger within a small window
+      if (pos !== undefined && !playedWatermarks.includes(pos)) {
+        setPlayedWatermarks(prev => [...prev, pos]);
+        if (watermarkAudioRef.current) {
+          audioRef.current.volume = 0.2; // Dip main volume
+          watermarkAudioRef.current.src = currentTrack.watermarkUrl;
+          watermarkAudioRef.current.currentTime = 0;
+          watermarkAudioRef.current.play().catch(e => console.error(e));
+          setShowSharePopup(true);
+        }
+      }
+    }
+  }, [currentTrack, user, playedWatermarks, confirm]);
 
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) setDuration(audioRef.current.duration);
@@ -119,6 +155,24 @@ export function PlayerProvider({ children, user }) {
 
   // Play ad sequence then the actual track
   const playWithAds = useCallback(async (track) => {
+    // Guest Limit check
+    if (!user?.isLoggedIn && track.chapterNumber !== 1) {
+      const guestPlayed = localStorage.getItem('guest_played_song_id');
+      const trackId = track._id || track.id;
+      if (guestPlayed && guestPlayed !== trackId) {
+        confirm("Login Required", "You need to login to access more", {
+          showCancel: false,
+          confirmText: 'Login',
+          confirmClass: 'bg-primary hover:bg-primary/95'
+        }).then(res => {
+          if (res) window.location.href = '/login';
+        });
+        return;
+      } else {
+        localStorage.setItem('guest_played_song_id', trackId);
+      }
+    }
+
     const isPremium = user?.isPremium;
     if (isPremium || adAudioUrls.length === 0 || !track.audioUrl) {
       // No ads — play directly
@@ -134,7 +188,7 @@ export function PlayerProvider({ children, user }) {
     setCurrentAdIndex(0);
     setIsPlayingAd(true);
     setIsPlaying(false);
-  }, [adAudioUrls, user]);
+  }, [adAudioUrls, user, confirm]);
 
   // Handle ad ended
   const handleAdEnded = useCallback(() => {
@@ -299,6 +353,7 @@ export function PlayerProvider({ children, user }) {
     audioRef.current.src = currentTrack.audioUrl;
     audioRef.current.load();
     lastDropOffSegment.current = -1;
+    setPlayedWatermarks([]); // reset played watermarks
     if (isPlaying) {
       audioRef.current.play().catch(() => setIsPlaying(false));
     }
@@ -350,6 +405,14 @@ export function PlayerProvider({ children, user }) {
         preload="metadata"
         style={{ display: 'none' }}
       />
+      <audio
+        ref={watermarkAudioRef}
+        onEnded={() => {
+          if (audioRef.current && !isMuted) audioRef.current.volume = volume;
+        }}
+        preload="auto"
+        style={{ display: 'none' }}
+      />
       {/* Hidden video + canvas for PIP */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       <video ref={pipVideoRef} style={{ display: 'none' }} muted playsInline />
@@ -373,6 +436,12 @@ export function PlayerProvider({ children, user }) {
           Ad {currentAdIndex + 1} of {adAudioUrls.length} — Song plays after
         </div>
       )}
+      <SharePopup 
+        isOpen={showSharePopup} 
+        onClose={() => setShowSharePopup(false)} 
+        shareUrl={window.location.href}
+        title={currentTrack?.title}
+      />
       {children}
     </PlayerContext.Provider>
   );

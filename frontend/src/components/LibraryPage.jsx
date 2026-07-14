@@ -49,7 +49,7 @@ const SUBJECTS = [
   },
 ];
 
-const CLASSES = ['All', 'Class 11', 'Class 12', 'Class 10', 'Dropper'];
+const CLASSES = ['All', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'];
 
 const getSubjectIcon = (subjectName) => {
   const sub = SUBJECTS.find(s => s.id.toLowerCase() === (subjectName || '').toLowerCase());
@@ -165,7 +165,6 @@ export default function LibraryPage({
 
   // Catalog dropdown filter state
   const [selectedCatalogSubject, setSelectedCatalogSubject] = useState('All');
-  const [selectedCatalogChapter, setSelectedCatalogChapter] = useState('All');
   const [openCatalogDropdown, setOpenCatalogDropdown] = useState(null);
   const catalogDropdownRef = useRef(null);
 
@@ -179,45 +178,18 @@ export default function LibraryPage({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const catalogChaptersList = React.useMemo(() => {
-    const chapters = new Set();
-    tracks.forEach(track => {
-      if (!track.chapter) return;
-      const classMatch = !selectedGrade || track.grade === selectedGrade || track.class === selectedGrade;
-      const subjectMatch = selectedCatalogSubject === 'All' || track.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
-      if (classMatch && subjectMatch) chapters.add(track.chapter);
-    });
-    return ['All', ...Array.from(chapters)];
-  }, [tracks, selectedGrade, selectedCatalogSubject]);
-
-  /* ── filtered library tracks (for the track listing below courses) ── */
-  const filteredLibraryTracks = React.useMemo(() => {
-    return tracks.filter(track => {
-      const classMatch = !selectedGrade || track.grade === selectedGrade || track.class === selectedGrade;
-      const subjectMatch = selectedCatalogSubject === 'All' || track.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
-      const chapterMatch = selectedCatalogChapter === 'All' || track.chapter === selectedCatalogChapter;
+  /* ── filtered LMS courses (applying Class, Subject, and Search filters) ── */
+  const filteredCourses = React.useMemo(() => {
+    return lmsCourses.filter(course => {
+      const classMatch = !selectedGrade || course.class === selectedGrade;
+      const subjectMatch = selectedCatalogSubject === 'All' || course.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
       const searchMatch = !catalogSearch.trim() || 
-        track.title.toLowerCase().includes(catalogSearch.trim().toLowerCase()) ||
-        (track.chapter && track.chapter.toLowerCase().includes(catalogSearch.trim().toLowerCase())) ||
-        (track.subject && track.subject.toLowerCase().includes(catalogSearch.trim().toLowerCase()));
-      return classMatch && subjectMatch && chapterMatch && searchMatch;
+        course.title.toLowerCase().includes(catalogSearch.trim().toLowerCase()) ||
+        (course.summary && course.summary.toLowerCase().includes(catalogSearch.trim().toLowerCase())) ||
+        (course.subject && course.subject.toLowerCase().includes(catalogSearch.trim().toLowerCase()));
+      return classMatch && subjectMatch && searchMatch;
     });
-  }, [tracks, selectedGrade, selectedCatalogSubject, selectedCatalogChapter, catalogSearch]);
-
-  /* ── catalog search results ── */
-  const catalogResults = catalogSearch.trim()
-    ? tracks.filter((t) => {
-        const gradeMatch = !selectedGrade || t.grade === selectedGrade || t.classLevel === selectedGrade;
-        const subjectMatch = selectedCatalogSubject === 'All' || t.subject?.toLowerCase() === selectedCatalogSubject.toLowerCase();
-        const chapterMatch = selectedCatalogChapter === 'All' || t.chapter === selectedCatalogChapter;
-        const q = catalogSearch.trim().toLowerCase();
-        const textMatch =
-          t.title.toLowerCase().includes(q) ||
-          (t.chapter && t.chapter.toLowerCase().includes(q)) ||
-          (t.subject && t.subject.toLowerCase().includes(q));
-        return gradeMatch && subjectMatch && chapterMatch && textMatch;
-      })
-    : [];
+  }, [lmsCourses, selectedGrade, selectedCatalogSubject, catalogSearch]);
 
   /* ── subject detail tracks ── */
   const subjectTracks = tracks.filter((t) => {
@@ -267,22 +239,20 @@ export default function LibraryPage({
                 return (
                   <button
                     key={cls}
-                    onClick={() => { setSelectedGrade(cls === 'All' ? null : cls); setSelectedCatalogSubject('All'); setSelectedCatalogChapter('All'); }}
+                    onClick={() => { setSelectedGrade(cls === 'All' ? null : cls); setSelectedCatalogSubject('All'); }}
                     className={`shrink-0 px-5 py-2 rounded-full font-mono text-xs font-semibold border transition-all duration-200 ${
                       active
                         ? 'bg-primary text-on-primary border-primary shadow-sm'
                         : 'bg-surface-container text-on-surface-variant border-outline/10 hover:border-primary/30 hover:text-on-surface'
                     }`}
                   >
-                    {cls === 'Dropper' ? (
-                      <span className="flex items-center gap-1.5"><IconRefresh size={12} /> Dropper</span>
-                    ) : cls}
+                    {cls}
                   </button>
                 );
               })}
             </nav>
 
-            {/* Subject & Chapter dropdown filters */}
+            {/* Subject dropdown filter */}
             <div ref={catalogDropdownRef} className="flex flex-wrap gap-3 relative z-30">
               {/* Subject Dropdown */}
               <div className="relative">
@@ -307,45 +277,11 @@ export default function LibraryPage({
                         role="option"
                         aria-selected={selectedCatalogSubject === sub}
                         tabIndex={0}
-                        onClick={() => { setSelectedCatalogSubject(sub); setSelectedCatalogChapter('All'); setOpenCatalogDropdown(null); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedCatalogSubject(sub); setSelectedCatalogChapter('All'); setOpenCatalogDropdown(null); } }}
+                        onClick={() => { setSelectedCatalogSubject(sub); setOpenCatalogDropdown(null); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedCatalogSubject(sub); setOpenCatalogDropdown(null); } }}
                         className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedCatalogSubject === sub ? 'text-primary font-bold bg-primary/5' : ''}`}
                       >
                         {sub}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Chapter Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setOpenCatalogDropdown(openCatalogDropdown === 'chapter' ? null : 'chapter')}
-                  aria-haspopup="listbox"
-                  aria-expanded={openCatalogDropdown === 'chapter'}
-                  aria-label="Select Chapter"
-                  className={`px-5 py-2.5 rounded-full border font-mono text-xs font-semibold flex items-center gap-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedCatalogChapter !== 'All' ? 'border-primary/50 text-primary bg-primary/10' : 'border-outline/10 text-on-surface-variant bg-surface-container hover:border-primary/30 hover:text-on-surface'}`}
-                >
-                  {selectedCatalogChapter === 'All' ? 'All Chapters' : selectedCatalogChapter}
-                  <IconChevronDown size={14} className={`transition-transform duration-200 ${openCatalogDropdown === 'chapter' ? 'rotate-180' : ''}`} />
-                </button>
-                {openCatalogDropdown === 'chapter' && (
-                  <ul
-                    role="listbox"
-                    className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
-                  >
-                    {catalogChaptersList.map((chap) => (
-                      <li
-                        key={chap}
-                        role="option"
-                        aria-selected={selectedCatalogChapter === chap}
-                        tabIndex={0}
-                        onClick={() => { setSelectedCatalogChapter(chap); setOpenCatalogDropdown(null); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedCatalogChapter(chap); setOpenCatalogDropdown(null); } }}
-                        className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedCatalogChapter === chap ? 'text-primary font-bold bg-primary/5' : ''}`}
-                      >
-                        {chap}
                       </li>
                     ))}
                   </ul>
@@ -358,8 +294,8 @@ export default function LibraryPage({
               <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" size={16} />
               <input
                 type="text"
-                placeholder="Search all chapters across subjects..."
-                aria-label="Search all chapters"
+                placeholder="Search all courses..."
+                aria-label="Search all courses"
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
                 className="w-full bg-surface-container border border-outline/10 rounded-2xl py-3 pl-11 pr-10 text-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
@@ -379,201 +315,127 @@ export default function LibraryPage({
           {/* ── Divider ── */}
           <div className="h-px bg-outline/10" />
 
-          {/* ── Body: search results OR subject cards ── */}
-          {catalogSearch.trim() ? (
-            /* Search results */
-            <section className="flex flex-col gap-4">
-              <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                {catalogResults.length} result{catalogResults.length !== 1 ? 's' : ''} for &ldquo;{catalogSearch}&rdquo;
-              </p>
+          {/* ── Body: Courses grid ── */}
+          <section className="flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest font-mono">
+                Available Courses
+              </h2>
+              <span className="text-xs font-mono text-on-surface-variant">
+                {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''}
+              </span>
+            </div>
 
-              {catalogResults.length > 0 ? (
-                <div className="flex flex-col gap-1">
-                  {catalogResults.map((track, idx) => {
-                    const subCfg = SUBJECTS.find((s) => s.id === track.subject);
-                    return (
-                      <TrackRow
-                        key={track.id}
-                        track={track}
-                        idx={idx}
-                        isCurrent={currentTrack?.id === track.id}
-                        isTrackPlaying={currentTrack?.id === track.id && isPlaying}
-                        isFavorited={favoritedTrackIds.includes(track.id)}
-                        accentText={subCfg?.accentText || 'text-primary'}
-                        onPlay={() => { setSelectedSubject(track.subject); onTrackSelect(track); }}
-                        onFavorite={() => onToggleFavorite && onToggleFavorite(track.id)}
-                      />
-                    );
-                  })}
+            {filteredCourses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline/20 rounded-2xl bg-surface-container-lowest/10">
+                <div className="w-16 h-16 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4 text-on-surface-variant/40">
+                  <IconBook2 size={28} />
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4">
-                    <IconSearch size={24} className="text-on-surface-variant/40" />
-                  </div>
-                  <p className="text-sm text-on-surface-variant font-semibold">No chapters found</p>
-                  <p className="text-xs text-on-surface-variant/60 mt-1">{selectedGrade} · &ldquo;{catalogSearch}&rdquo;</p>
-                </div>
-              )}
-            </section>
-          ) : (
-            /* Course cards from LMS */
-            <section className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest font-mono">
-                  Available Courses
-                </h2>
-                <span className="text-xs font-mono text-on-surface-variant">
-                  {lmsCourses.filter(c => !selectedGrade || c.class === selectedGrade).length} courses
-                </span>
+                <p className="text-sm font-semibold text-on-surface-variant">No courses found</p>
+                <p className="text-xs text-on-surface-variant/60 mt-1">Try adjusting your filters or search term.</p>
+                {(selectedGrade || selectedCatalogSubject !== 'All' || catalogSearch.trim()) && (
+                  <button
+                    onClick={() => {
+                      setSelectedGrade(null);
+                      setSelectedCatalogSubject('All');
+                      setCatalogSearch('');
+                    }}
+                    className="mt-4 text-xs font-bold text-primary hover:opacity-85 transition-opacity cursor-pointer"
+                  >
+                    Reset all filters
+                  </button>
+                )}
               </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCourses.map((course) => {
+                  const color = course.coverColor || '#ecc246';
+                  const lessonCount = course.lessons?.length || 0;
+                  const totalItemsCount = course.lessons?.reduce((acc, l) => acc + (l.items?.length || 0), 0) || 0;
+                  const SubjectIcon = getSubjectIcon(course.subject);
+                  return (
+                    <div
+                      key={course._id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onCourseSelect && onCourseSelect(course)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onCourseSelect && onCourseSelect(course); }}
+                      className="group relative p-1.5 rounded-[2rem] bg-surface-container-lowest/40 border border-outline/5 hover:border-outline/20 transition-all duration-500 cursor-pointer hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 active:scale-[0.98] flex flex-col"
+                    >
+                      <div
+                        className="flex flex-col flex-1 p-6 rounded-[calc(2rem-0.375rem)] border border-outline/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] group-hover:border-primary/20 transition-all duration-500 overflow-hidden relative z-10"
+                        style={{
+                          background: 'linear-gradient(180deg, rgb(var(--color-surface-container-low) / 0.4) 0%, rgb(var(--color-surface-container-lowest) / 0.8) 100%)'
+                        }}
+                      >
+                        {/* Thumbnail */}
+                        {course.thumbnail && (
+                          <div className="h-32 -mx-6 -mt-6 mb-5 overflow-hidden relative border-b border-outline/5 shrink-0">
+                            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent" />
+                          </div>
+                        )}
 
-              {lmsCourses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline/20 rounded-2xl">
-                  <div className="w-16 h-16 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4">
-                    <IconBook2 size={28} className="text-on-surface-variant/40" />
-                  </div>
-                  <p className="text-sm font-semibold text-on-surface-variant">No courses yet</p>
-                  <p className="text-xs text-on-surface-variant/60 mt-1">Courses added in the admin panel will appear here.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {lmsCourses
-                    .filter(c => !selectedGrade || c.class === selectedGrade)
-                    .map((course) => {
-                      const color = course.coverColor || '#ecc246';
-                      const lessonCount = course.lessons?.length || 0;
-                      const totalItemsCount = course.lessons?.reduce((acc, l) => acc + (l.items?.length || 0), 0) || 0;
-                      const SubjectIcon = getSubjectIcon(course.subject);
-                      return (
-                        <div
-                          key={course._id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => onCourseSelect && onCourseSelect(course)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onCourseSelect && onCourseSelect(course); }}
-                          className="group relative p-1.5 rounded-[2rem] bg-surface-container-lowest/40 border border-outline/5 hover:border-outline/20 transition-all duration-500 cursor-pointer hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 active:scale-[0.98] flex flex-col"
-                        >
+                        {/* Icon + badge row */}
+                        <div className="flex items-center justify-between mb-4">
                           <div
-                            className="flex flex-col flex-1 p-6 rounded-[calc(2rem-0.375rem)] border border-outline/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] group-hover:border-primary/20 transition-all duration-500 overflow-hidden relative z-10"
-                            style={{
-                              background: 'linear-gradient(180deg, rgb(var(--color-surface-container-low) / 0.4) 0%, rgb(var(--color-surface-container-lowest) / 0.8) 100%)'
-                            }}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 border border-outline/10 text-on-surface-variant group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all duration-500"
                           >
-                            {/* Thumbnail */}
-                            {course.thumbnail && (
-                              <div className="h-32 -mx-6 -mt-6 mb-5 overflow-hidden relative border-b border-outline/5 shrink-0">
-                                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent" />
-                              </div>
+                            <SubjectIcon size={20} stroke={1.5} />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {course.isPremium && (
+                              <span className="flex items-center gap-0.5 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <IconCrown size={10} className="fill-current" /> Premium
+                              </span>
                             )}
-
-                            {/* Icon + badge row */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 border border-outline/10 text-on-surface-variant group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all duration-500"
-                              >
-                                <SubjectIcon size={20} stroke={1.5} />
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                {course.isPremium && (
-                                  <span className="flex items-center gap-0.5 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                    <IconCrown size={10} className="fill-current" /> Premium
-                                  </span>
-                                )}
-                                {course.isPublished ? (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Live</span>
-                                ) : (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-variant/60 text-on-surface-variant border border-outline/20">Draft</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Meta */}
-                            <p
-                              className="text-[10.5px] font-semibold uppercase tracking-[0.18em] mb-1.5 transition-colors duration-300"
-                              style={{ color: `${color}cc` }}
-                            >
-                              {course.subject}
-                            </p>
-                            <h3 className="text-base font-bold text-on-surface leading-snug mb-1 group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                              {course.title}
-                            </h3>
-                            <p className="text-xs text-on-surface-variant/80 mb-4">{course.class}</p>
-
-                            {course.summary && (
-                              <p className="text-xs text-on-surface-variant/60 leading-relaxed line-clamp-2 mb-4">{course.summary}</p>
+                            {course.isPublished ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Live</span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-variant/60 text-on-surface-variant border border-outline/20">Draft</span>
                             )}
-
-                            {/* Footer */}
-                            <div className="mt-auto pt-4 border-t border-outline/5 flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-xs text-on-surface-variant/80 font-medium">
-                                <IconBook2 size={14} stroke={1.5} className="text-on-surface-variant/60" />
-                                <span>{lessonCount} lesson{lessonCount !== 1 ? 's' : ''}</span>
-                                <span className="text-outline/30">•</span>
-                                <span>{totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}</span>
-                              </div>
-                              <div
-                                className="flex items-center gap-1 text-xs font-bold translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300"
-                                style={{ color }}
-                              >
-                                <span>Open</span>
-                                <IconArrowRight size={14} stroke={2} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-                              </div>
-                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                </div>
-              )}
-            </section>
-          )}
 
-          {/* ── Study Tracks listing (filtered by Subject & Chapter) ── */}
-          {!catalogSearch.trim() && (
-            <section className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest font-mono">
-                  Study Tracks
-                </h2>
-                <span className="text-xs font-mono text-on-surface-variant">
-                  {filteredLibraryTracks.length} track{filteredLibraryTracks.length !== 1 ? 's' : ''}
-                </span>
+                        {/* Meta */}
+                        <p
+                          className="text-[10.5px] font-semibold uppercase tracking-[0.18em] mb-1.5 transition-colors duration-300"
+                          style={{ color: `${color}cc` }}
+                        >
+                          {course.subject}
+                        </p>
+                        <h3 className="text-base font-bold text-on-surface leading-snug mb-1 group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                          {course.title}
+                        </h3>
+                        <p className="text-xs text-on-surface-variant/80 mb-4">{course.class}</p>
+
+                        {course.summary && (
+                          <p className="text-xs text-on-surface-variant/60 leading-relaxed line-clamp-2 mb-4">{course.summary}</p>
+                        )}
+
+                        {/* Footer */}
+                        <div className="mt-auto pt-4 border-t border-outline/5 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs text-on-surface-variant/80 font-medium">
+                            <IconBook2 size={14} stroke={1.5} className="text-on-surface-variant/60" />
+                            <span>{lessonCount} lesson{lessonCount !== 1 ? 's' : ''}</span>
+                            <span className="text-outline/30">•</span>
+                            <span>{totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div
+                            className="flex items-center gap-1 text-xs font-bold translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300"
+                            style={{ color }}
+                          >
+                            <span>Open</span>
+                            <IconArrowRight size={14} stroke={2} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              {filteredLibraryTracks.length > 0 ? (
-                <div className="flex flex-col gap-1">
-                  {filteredLibraryTracks.map((track, idx) => {
-                    const subCfg = SUBJECTS.find((s) => s.id === track.subject);
-                    return (
-                      <TrackRow
-                        key={track.id}
-                        track={track}
-                        idx={idx}
-                        isCurrent={currentTrack?.id === track.id}
-                        isTrackPlaying={currentTrack?.id === track.id && isPlaying}
-                        isFavorited={favoritedTrackIds.includes(track.id)}
-                        accentText={subCfg?.accentText || 'text-primary'}
-                        onPlay={() => onTrackSelect(track)}
-                        onFavorite={() => onToggleFavorite && onToggleFavorite(track.id)}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4">
-                    <IconSearch size={24} className="text-on-surface-variant/40" />
-                  </div>
-                  <p className="text-sm text-on-surface-variant font-semibold">No tracks found</p>
-                  <p className="text-xs text-on-surface-variant/60 mt-1">
-                    {selectedGrade || 'All Classes'} · {selectedCatalogSubject} · {selectedCatalogChapter}
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
+            )}
+          </section>
 
         </div>
       </div>
