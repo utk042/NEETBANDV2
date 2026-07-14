@@ -37,7 +37,6 @@ import NotFound from '../components/NotFound';
 import TermsAndConditions from '../components/TermsAndConditions';
 import DataPolicy from '../components/DataPolicy';
 import RefundPolicy from '../components/RefundPolicy';
-const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
 const BookOfferPreview = lazyWithRetry(() => import('../components/Offers/BookOfferPreview'));
 const BookCheckout = lazyWithRetry(() => import('../components/Offers/BookCheckout'));
 const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));

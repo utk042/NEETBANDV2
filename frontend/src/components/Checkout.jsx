@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { IconChevronLeft, IconTag, IconCreditCard } from '@tabler/icons-react';
-import { createPaymentOrder, verifyPayment } from '../services/api';
+import { createPaymentOrder, verifyPayment, verifyPromo } from '../services/api';
 
 export default function Checkout({ user, navigate, onCheckoutSuccess }) {
   const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -31,18 +33,54 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
     });
   };
 
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    try {
+      setPromoMessage({ text: 'Verifying...', type: 'info' });
+      const res = await verifyPromo(promoCode.trim());
+      if (res.valid) {
+        setAppliedPromo({
+          code: promoCode.trim(),
+          type: res.discountType,
+          value: res.discountValue
+        });
+        setPromoMessage({ text: 'Promo code applied successfully!', type: 'success' });
+      } else {
+        setAppliedPromo(null);
+        setPromoMessage({ text: 'Invalid or inactive promo code', type: 'error' });
+      }
+    } catch (err) {
+      setAppliedPromo(null);
+      setPromoMessage({ text: 'Error verifying promo code', type: 'error' });
+    }
+  };
+
+  const calculateTotal = () => {
+    let total = 299;
+    if (appliedPromo) {
+      if (appliedPromo.type === 'percentage') {
+        total = total * (1 - appliedPromo.value / 100);
+      } else {
+        total = Math.max(0, total - appliedPromo.value);
+      }
+    }
+    return Math.floor(total);
+  };
+
   const handlePurchase = async () => {
     try {
       setIsLoading(true);
       setError('');
       
-      const order = await createPaymentOrder('premium_scholar', promoCode);
+      const finalDiscountCode = appliedPromo ? appliedPromo.code : '';
+      const order = await createPaymentOrder('premium_scholar', finalDiscountCode);
       if (order.id.startsWith('order_mock_')) {
         const verificationData = {
           razorpay_order_id: order.id,
           razorpay_payment_id: 'pay_mock_' + Date.now(),
           razorpay_signature: 'mock_signature',
-          plan: 'premium_scholar'
+          plan: 'premium_scholar',
+          discountCode: finalDiscountCode
         };
         const verifyRes = await verifyPayment(verificationData);
         if (onCheckoutSuccess) {
@@ -67,7 +105,8 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              plan: 'premium_scholar'
+              plan: 'premium_scholar',
+              discountCode: finalDiscountCode
             };
             const verifyRes = await verifyPayment(verificationData);
             if (onCheckoutSuccess) {
@@ -138,10 +177,18 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
               onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
               className="flex-1 px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
             />
-            <button className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap">
+            <button 
+              onClick={handleApplyPromo}
+              className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap"
+            >
               Apply
             </button>
           </div>
+          {promoMessage.text && (
+            <p className={`text-sm mt-2 font-medium ${promoMessage.type === 'error' ? 'text-error' : promoMessage.type === 'success' ? 'text-green-500' : 'text-on-surface-variant'}`}>
+              {promoMessage.text}
+            </p>
+          )}
         </div>
 
 
@@ -178,11 +225,19 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
             <span className="text-on-surface-variant">Subtotal:</span>
             <span className="font-semibold text-on-surface text-right">₹299</span>
           </div>
+          {appliedPromo && (
+            <div className="flex justify-between items-center text-green-500">
+              <span>Discount ({appliedPromo.code}):</span>
+              <span className="font-semibold text-right">
+                -₹{299 - calculateTotal()}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between items-center text-xl font-bold text-on-surface border-t border-outline-variant/30 pt-6">
           <span>Total Amount:</span>
-          <span>₹299</span>
+          <span>₹{calculateTotal()}</span>
         </div>
       </div>
         </div>
