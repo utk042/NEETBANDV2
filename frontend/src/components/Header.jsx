@@ -219,7 +219,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container to-surface opacity-95 pointer-events-none"></div> 
         
         {/* Animated Links */}
-        <div className={`flex flex-col items-center gap-6 pt-10 overflow-y-auto max-h-screen transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+        <div className={`flex flex-col items-center gap-6 py-10 w-full overflow-y-auto max-h-screen transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
           <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Library</a>
           <a onClick={(e) => handleNav(e, 'feed')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'feed' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Feed</a>
@@ -242,18 +242,18 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
               Log In
             </a>
           )}
-        </div>
 
-        {/* Decorative Bottom Elements */}
-        <div className={`absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-6 z-10 transition-all duration-700 delay-300 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <button 
-            onClick={toggleTheme}
-            className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2.5 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
-            aria-label="Toggle Theme"
-          >
-            <IconMoon size={28} className="block dark:hidden" aria-hidden="true" />
-            <IconSun size={28} className="block hidden dark:block" aria-hidden="true" />
-          </button>
+          {/* Decorative Bottom Elements */}
+          <div className="flex items-center gap-6 mt-4 z-10">
+            <button 
+              onClick={toggleTheme}
+              className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2.5 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
+              aria-label="Toggle Theme"
+            >
+              <IconMoon size={28} className="block dark:hidden" aria-hidden="true" />
+              <IconSun size={28} className="block hidden dark:block" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </>

@@ -959,7 +959,7 @@ function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMo
                         {isParsingFile ? (
                           <>
                             <IconLoader2 size={10} className="animate-spin" />
-                            <span>Parsing...</span>
+                            <span>Uploading...</span>
                           </>
                         ) : (
                           <>
@@ -971,31 +971,29 @@ function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMo
                       <input
                         id={`doc-upload-${item._id}`}
                         type="file"
-                        accept=".pdf,.docx,.txt,.md"
+                        accept=".pdf,.doc,.docx"
                         className="hidden"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           setIsParsingFile(true);
                           try {
-                            const res = await parseDocumentFile(file);
-                            if (res.text) {
-                              const cleanedText = cleanDocumentText(res.text);
-                              const textarea = document.getElementById(`textarea-${item._id}`);
-                              if (textarea) {
-                                // Insert parsed text at cursor
-                                const start = textarea.selectionStart;
-                                const end = textarea.selectionEnd;
-                                const currentValue = item.content || '';
-                                const newValue = currentValue.substring(0, start) + cleanedText + currentValue.substring(end);
-                                onUpdate({ content: newValue });
-                              } else {
-                                onUpdate({ content: (item.content || '') + '\n\n' + cleanedText });
-                              }
+                            const res = await uploadFile(file, 'document');
+                            if (res.url) {
+                              let type = 'link';
+                              if (file.name.toLowerCase().endsWith('.pdf')) type = 'pdf';
+                              if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) type = 'doc';
+                              
+                              // Convert relative to absolute URL so the full link is used and visible
+                              const finalUrl = res.url.startsWith('/') 
+                                ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${res.url}` 
+                                : res.url;
+                                
+                              onUpdate({ fileUrl: finalUrl, fileType: type });
                             }
                           } catch (err) {
-                            console.error('File parsing failed:', err);
-                            alert('Failed to parse file: ' + err.message);
+                            console.error('File upload failed:', err);
+                            toast.error('Failed to upload file: ' + err.message);
                           } finally {
                             setIsParsingFile(false);
                             e.target.value = ''; // Reset input
@@ -1004,16 +1002,62 @@ function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMo
                       />
                     </div>
                   </div>
-                  <textarea
-                    id={`textarea-${item._id}`}
-                    rows={6}
-                    placeholder="Enter lesson notes, markdown, or key summary points..."
-                    className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40 resize-y font-mono leading-relaxed"
-                    value={item.content || ''}
-                    onChange={e => onUpdate({ content: e.target.value })}
-                    onPaste={handlePaste}
-                    disabled={isParsingFile}
-                  />
+
+                  {item.fileUrl ? (
+                    <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl relative group">
+                      <button
+                        onClick={() => onUpdate({ fileUrl: '', fileType: 'link' })}
+                        className="absolute top-2 right-2 p-1 bg-red-500/10 text-red-400 rounded-md transition-opacity hover:bg-red-500/20"
+                        title="Remove attached document"
+                      >
+                        <IconTrash size={14} />
+                      </button>
+                      <p className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase mb-3">Document Loaded as Notes</p>
+                      <div className="flex gap-2 items-center mb-3 pr-8">
+                        <input
+                          type="text"
+                          placeholder="Document link..."
+                          className="flex-1 px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                          value={item.fileUrl || ''}
+                          onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
+                        />
+                        <select
+                          value={item.fileType || 'link'}
+                          onChange={e => onUpdate({ fileType: e.target.value })}
+                          className="px-2 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        >
+                          <option value="link">Auto (Link)</option>
+                          <option value="pdf">PDF File</option>
+                          <option value="doc">Word Doc</option>
+                        </select>
+                      </div>
+                      <a href={item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-500 hover:underline">
+                        Open in new tab to preview
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      <textarea
+                        id={`textarea-${item._id}`}
+                        rows={6}
+                        placeholder="Enter lesson notes, markdown, or key summary points..."
+                        className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40 resize-y font-mono leading-relaxed"
+                        value={item.content || ''}
+                        onChange={e => onUpdate({ content: e.target.value })}
+                        onPaste={handlePaste}
+                        disabled={isParsingFile}
+                      />
+                      <div className="flex gap-2 items-center mt-2">
+                        <input
+                          type="text"
+                          placeholder="Or paste a public document link here (e.g. https://.../file.pdf)"
+                          className="flex-1 px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40"
+                          value={item.fileUrl || ''}
+                          onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               {item.type === 'quiz' && (
@@ -1088,7 +1132,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
 
   return (
     <div className={`rounded-2xl border transition-all duration-200 ${expanded ? 'border-primary/40 bg-surface-container' : 'border-outline-variant/25 bg-surface-container-lowest hover:border-outline-variant/50'}`}>
-      <div className="flex items-center gap-3 p-4">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4">
         <div className="flex flex-col gap-0.5 shrink-0 opacity-40">
           <button onClick={onMoveUp} disabled={isFirst} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
             <IconChevronUp size={14} stroke={2.5} />
@@ -1108,7 +1152,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
           {editing ? (
             <input
               autoFocus
-              placeholder={`Chapter ${index + 1}`}
+              placeholder={`Lesson ${index + 1}`}
               className="w-full bg-transparent text-sm font-semibold text-on-surface outline-none border-b border-primary/50 pb-0.5"
               value={lesson.title}
               onChange={e => onUpdate({ title: e.target.value })}
@@ -1120,7 +1164,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
               onClick={() => setEditing(true)}
               className="w-full text-left text-sm font-semibold text-on-surface truncate hover:text-primary transition-colors"
             >
-              {lesson.title || <span className="text-on-surface-variant/40 italic">Chapter {index + 1}</span>}
+              {lesson.title || <span className="text-on-surface-variant/40 italic">Lesson {index + 1}</span>}
             </button>
           )}
           {items.length > 0 && (
@@ -1129,7 +1173,7 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors text-on-surface-variant hover:text-on-surface"
@@ -1290,16 +1334,16 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   };
 
   const handleSave = async () => {
-    // Validate — every lesson must have a title
-    const untitled = lessons.findIndex(l => !l.title?.trim());
-    if (untitled !== -1) {
-      toast.error(`Lesson Heading ${untitled + 1} has no title. Please add a title before saving.`);
-      return;
-    }
+    // Auto-fill untitled lessons with 'Lesson X'
+    const cleanLessonsWithTitles = lessons.map((l, i) => ({
+      ...l,
+      title: l.title?.trim() || `Lesson ${i + 1}`
+    }));
+    
     setSaving(true);
     try {
       // Clean lessons outline to save
-      const cleanLessons = lessons.map((l, i) => {
+      const cleanLessons = cleanLessonsWithTitles.map((l, i) => {
         const cleanItems = (l.items || []).map((item, idx) => {
           const itemClean = {
             title: item.title?.trim() || `${LESSON_TYPES.find(t => t.value === item.type)?.label || 'Item'} ${idx + 1}`,
@@ -1307,6 +1351,8 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
             duration: item.duration || '',
             order: idx,
             isPremium: !!item.isPremium,
+            fileUrl: item.fileUrl || '',
+            fileType: item.fileType || '',
           };
           if (item._id && !String(item._id).startsWith('temp_') && !String(item._id).startsWith('tmp_')) {
             itemClean._id = item._id;
@@ -1419,9 +1465,9 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   }).filter(t => t.count > 0);
 
   return (
-    <div className="fixed inset-0 z-modal-highest flex flex-col bg-[#0f1117] animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-modal-highest flex flex-col bg-surface animate-in fade-in duration-200">
       {/* ─── Top Bar ─── */}
-      <header className="shrink-0 flex items-center justify-between px-5 md:px-8 h-16 border-b border-white/[0.07] bg-[#0f1117]/95 backdrop-blur">
+      <header className="shrink-0 flex items-center justify-between px-5 md:px-8 h-16 border-b border-outline-variant/20 bg-surface/95 backdrop-blur">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -1437,7 +1483,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Publish toggle */}
           <button
             onClick={() => setMeta(m => ({ ...m, isPublished: !m.isPublished }))}
@@ -1542,7 +1588,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
         {/* ─── Main Editor ─── */}
         <main className="flex-1 overflow-y-auto">
           {/* Tab nav */}
-          <div className="sticky top-0 z-10 bg-[#0f1117]/90 backdrop-blur border-b border-white/[0.07] px-6 md:px-8 flex gap-1">
+          <div className="sticky top-0 z-10 bg-surface/90 backdrop-blur border-b border-outline-variant/20 px-4 sm:px-6 md:px-8 flex gap-1 overflow-x-auto hide-scrollbar">
             {[
               { id: 'curriculum', label: 'Curriculum', icon: IconBook2 },
               { id: 'settings', label: 'Course Settings', icon: IconSparkles },

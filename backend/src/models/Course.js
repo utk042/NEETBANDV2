@@ -6,6 +6,8 @@ const lessonItemSchema = new mongoose.Schema({
   duration: { type: String },
   videoUrl: { type: String },
   audioUrl: { type: String },
+  fileUrl:  { type: String },
+  fileType: { type: String },
   order:    { type: Number, default: 0 },
   isPremium: { type: Boolean, default: false },
 }, { _id: true });

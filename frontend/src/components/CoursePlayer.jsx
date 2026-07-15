@@ -28,6 +28,7 @@ import {
   IconFlask,
 } from '@tabler/icons-react';
 import { getLessonContent, getLessonQuiz, getLessonQa, getCourseById } from '../services/api';
+import DocumentViewer from './Common/DocumentViewer';
 
 const TYPE_META = {
   notes: { label: 'Notes',   Icon: IconFileText,        color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
@@ -1263,8 +1264,21 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
 
                 {/* ── NOTES / TEXT RENDER ── */}
-                {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && activeDetails?.content && (
-                  <MathMarkdownContent content={activeDetails.content} />
+                {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && (
+                  <div className="space-y-6">
+                    {activeDetails?.content && (
+                      <MathMarkdownContent content={activeDetails.content} />
+                    )}
+                    {item?.fileUrl && (
+                      <div className="w-full mt-8">
+                        <DocumentViewer 
+                          fileUrl={item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl} 
+                          fileType={item.fileType} 
+                          title={item.title} 
+                        />
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* ── SONG/AUDIO RENDER ── */}
@@ -1273,7 +1287,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 )}
 
                 {/* Empty state */}
-                {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && !activeDetails?.content && (
+                {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && !activeDetails?.content && !item?.fileUrl && (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div
                       className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"

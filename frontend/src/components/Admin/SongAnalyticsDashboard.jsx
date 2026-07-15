@@ -17,7 +17,7 @@ function StatCard({ icon: Icon, label, value, sub, color = 'text-primary', bg = 
   );
 }
 
-function DropOffHeatmap({ distribution = [], title }) {
+function RetentionHeatmap({ distribution = [], title }) {
   const max = Math.max(...distribution, 1);
   const labels = ['0-10%', '10-20%', '20-30%', '30-40%', '40-50%', '50-60%', '60-70%', '70-80%', '80-90%', '90-100%'];
   return (
@@ -26,16 +26,16 @@ function DropOffHeatmap({ distribution = [], title }) {
       <div className="flex items-end gap-1.5 h-24">
         {distribution.map((val, i) => {
           const pct = (val / max) * 100;
-          const isHot = pct > 70;
+          const isHigh = pct > 70;
           const isMid = pct > 35;
           return (
             <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
               <div
-                className={`w-full rounded-t-sm transition-all duration-300 ${isHot ? 'bg-red-400' : isMid ? 'bg-amber-400' : 'bg-emerald-400/60'}`}
+                className={`w-full rounded-t-sm transition-all duration-300 ${isHigh ? 'bg-emerald-400/60' : isMid ? 'bg-amber-400' : 'bg-red-400'}`}
                 style={{ height: `${Math.max(4, pct)}%` }}
               />
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container border border-outline/20 rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-sm pointer-events-none">
-                {val} drops at {labels[i]}
+                {val} listeners reached {labels[i]}
               </div>
             </div>
           );
@@ -46,13 +46,13 @@ function DropOffHeatmap({ distribution = [], title }) {
       </div>
       <div className="flex items-center gap-3 mt-3">
         <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant">
-          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400/60" /> Low drop-off
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400/60" /> High retention
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant">
           <div className="w-2.5 h-2.5 rounded-sm bg-amber-400" /> Medium
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant">
-          <div className="w-2.5 h-2.5 rounded-sm bg-red-400" /> High drop-off
+          <div className="w-2.5 h-2.5 rounded-sm bg-red-400" /> Low retention
         </div>
       </div>
     </div>
@@ -163,9 +163,9 @@ export default function SongAnalyticsDashboard() {
         <StatCard icon={IconTrophy} label="Avg Completion" value={`${avgCompletion}%`} color="text-emerald-400" bg="bg-emerald-500/10" />
       </div>
 
-      {/* Drop-off heatmap */}
+      {/* Retention heatmap */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DropOffHeatmap distribution={aggregateDropOff} title="Overall Drop-Off Distribution (all songs)" />
+        <RetentionHeatmap distribution={aggregateDropOff} title="Overall Audience Retention (all songs)" />
         
         {/* Song selector for individual heatmap */}
         <div className="bg-surface rounded-2xl border border-outline/10 p-5 shadow-sm flex flex-col gap-3 transition-colors duration-300">
@@ -179,7 +179,7 @@ export default function SongAnalyticsDashboard() {
             {songs.map(s => <option key={s._id} value={s._id}>{s.title}</option>)}
           </select>
           {selectedSong ? (
-            <DropOffHeatmap distribution={selectedSong.dropOffDistribution || new Array(10).fill(0)} title={selectedSong.title} />
+            <RetentionHeatmap distribution={selectedSong.dropOffDistribution || new Array(10).fill(0)} title={selectedSong.title} />
           ) : (
             <div className="flex items-center justify-center h-24 text-on-surface-variant/50 text-sm">Select a song above</div>
           )}

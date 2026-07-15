@@ -168,7 +168,8 @@ export const getSongAnalytics = async (req, res) => {
       'title subject class playCount completionCount shareCount repeatCount dropOffDistribution duration'
     );
     if (!song) return res.status(404).json({ message: 'Song not found' });
-    const completionRate = song.playCount > 0 ? (song.completionCount / song.playCount * 100).toFixed(1) : 0;
+    const rate = song.playCount > 0 ? (song.completionCount / song.playCount * 100) : 0;
+    const completionRate = Math.min(rate, 100).toFixed(1);
     res.json({ ...song.toObject(), completionRate });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -183,10 +184,13 @@ export const getAllSongAnalytics = async (req, res) => {
     const songs = await Song.find({}).select(
       'title subject class playCount completionCount shareCount repeatCount dropOffDistribution duration'
     ).sort({ playCount: -1 });
-    const enriched = songs.map(s => ({
-      ...s.toObject(),
-      completionRate: s.playCount > 0 ? (s.completionCount / s.playCount * 100).toFixed(1) : 0,
-    }));
+    const enriched = songs.map(s => {
+      const rate = s.playCount > 0 ? (s.completionCount / s.playCount * 100) : 0;
+      return {
+        ...s.toObject(),
+        completionRate: Math.min(rate, 100).toFixed(1),
+      };
+    });
     res.json(enriched);
   } catch (error) {
     res.status(500).json({ message: error.message });

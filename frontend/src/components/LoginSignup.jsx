@@ -440,22 +440,22 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
     <section className="py-12 md:py-8 px-gutter min-h-[100dvh] flex items-center justify-center bg-transparent relative transition-colors duration-300">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[rgba(var(--color-outline),0.1)] to-transparent"></div>
       
-      {/* Absolute Back Button in Upper Left Corner */}
-      <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20">
-        <button 
-          type="button"
-          onClick={() => navigate('/')}
-          className="group flex items-center justify-center w-10 h-10 border border-[var(--border-floating-card)] hover:border-primary/30 rounded-full bg-surface-container/50 hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 shadow-sm hover:shadow active:scale-[0.95]"
-          aria-label="Back to Home"
-        >
-          <IconChevronLeft size={20} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
-        </button>
-      </div>
+      <div className="w-full max-w-md flex flex-col" data-gsap="auth-container">
 
-      <div className="w-full max-w-md" data-gsap="auth-container">
+        {/* Back Button positioned above the card */}
+        <div className="mb-4 ml-2">
+          <button 
+            type="button"
+            onClick={() => navigate('/')}
+            className="group flex items-center justify-center w-10 h-10 border border-[var(--border-floating-card)] hover:border-primary/30 rounded-full bg-surface-container/50 hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 shadow-sm hover:shadow active:scale-[0.95]"
+            aria-label="Back to Home"
+          >
+            <IconChevronLeft size={20} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
+          </button>
+        </div>
 
         {/* Auth Card Box */}
-        <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-8 md:p-10 shadow-[var(--shadow-floating-card)] relative overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-6 md:p-10 shadow-[var(--shadow-floating-card)] relative overflow-hidden">
           
           {/* Top Tabs (Only show in password / default register mode) */}
           {(authSubMode === 'password') && (
@@ -463,7 +463,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
               <button
                 type="button"
                 onClick={() => { if (!isLoginMode) toggleMode(); }}
-                className={`flex-1 pb-4 text-center font-headline-md text-lg font-bold transition-all border-b-2 focus-visible:outline-none ${
+                className={`flex-1 pb-4 text-center font-headline-md text-base sm:text-lg whitespace-nowrap font-bold transition-all border-b-2 focus-visible:outline-none ${
                   isLoginMode 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-on-surface-variant hover:text-on-surface'
@@ -474,7 +474,7 @@ export default function LoginSignup({ onLoginSuccess, navigate }) {
               <button
                 type="button"
                 onClick={() => { if (isLoginMode) toggleMode(); }}
-                className={`flex-1 pb-4 text-center font-headline-md text-lg font-bold transition-all border-b-2 focus-visible:outline-none ${
+                className={`flex-1 pb-4 text-center font-headline-md text-base sm:text-lg whitespace-nowrap font-bold transition-all border-b-2 focus-visible:outline-none ${
                   !isLoginMode 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-on-surface-variant hover:text-on-surface'

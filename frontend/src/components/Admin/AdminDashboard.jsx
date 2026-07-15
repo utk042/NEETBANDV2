@@ -503,7 +503,7 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                   <h3 className="font-bold text-on-surface mb-6">Student Activity</h3>
                   <div className="flex justify-center relative mt-6 md:mt-10">
                     <svg className="w-40 h-40 md:w-48 md:h-48 transform -rotate-90" viewBox="0 0 192 192">
-                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-outline-variant/10" strokeWidth="30" fill="none" />
+                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-blue-500/20" strokeWidth="30" fill="none" />
                       <circle 
                         cx="96" 
                         cy="96" 
@@ -527,7 +527,7 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                   <h3 className="font-bold text-on-surface mb-6">Premium vs Free Content</h3>
                   <div className="flex justify-center relative mt-6 md:mt-10">
                     <svg className="w-40 h-40 md:w-48 md:h-48 transform -rotate-90" viewBox="0 0 192 192">
-                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-outline-variant/10" strokeWidth="30" fill="none" />
+                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-amber-500/20" strokeWidth="30" fill="none" />
                       <circle 
                         cx="96" 
                         cy="96" 
