@@ -222,7 +222,7 @@ export default function UserRoutes() {
               }} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onUpgradeClick={handleUpgradeClick} queue={queue} setQueue={setQueue} handleNext={handleNext} handlePrev={handlePrev} handleSeek={handleSeek} />} />
 
             <Route path="/course/:courseId" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
-            <Route path="/course/:courseId/:itemType/:lessonIdx/:itemIdx" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
+            <Route path="/course/:courseId/:itemType/:subjectIdx/:chapterIdx/:itemIdx" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub /></div>} />
