@@ -227,10 +227,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     return !!(item?.isPremium || chapter?.isPremium || subject?.isPremium || course?.isPremium);
   };
 
-  // Normalise lessons from DB
-  const lessons = React.useMemo(() => {
-    return [...(course?.lessons || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }, [course?.lessons]);
+
   const coverColor = course?.coverColor || '#ecc246';
   const SubjectIcon = getSubjectIcon(course?.subject);
 
@@ -509,8 +506,8 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-surface-container rounded-xl p-3">
-                  <p className="text-2xl font-bold text-on-surface">{lessons.length}</p>
-                  <p className="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">Lessons</p>
+                  <p className="text-2xl font-bold text-on-surface">{course?.subjects?.length || 0}</p>
+                  <p className="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">Subjects</p>
                 </div>
                 <div className="bg-surface-container rounded-xl p-3">
                   <p className="text-2xl font-bold text-on-surface">{totalItemsCount}</p>
@@ -642,11 +639,10 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   }
 
   // ── LESSON VIEW (Playing an item) ─────────────────────────
-  const lesson = lessons[selectedLessonIdx];
-  const item = lesson?.items?.[selectedItemIdx];
+  const item = activeItem;
   const meta = TYPE_META[item?.type] || TYPE_META.notes;
   const LIcon = meta.Icon;
-  const locked = isItemLocked(selectedLessonIdx, selectedItemIdx);
+  const locked = isItemLocked(selectedSubjectIdx, selectedChapterIdx, selectedItemIdx);
 
   return (
     <div
@@ -736,62 +732,93 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
         `}>
           <div className="p-4 border-b border-outline/10">
             <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Course Contents</p>
-            <p className="text-xs text-on-surface-variant/60 mt-0.5">{lessons.length} lessons · {totalItemsCount} items</p>
+            <p className="text-xs text-on-surface-variant/60 mt-0.5">{course?.subjects?.length || 0} subjects · {totalItemsCount} items</p>
           </div>
-          <div className="flex-1 overflow-y-auto pb-28 divide-y divide-outline/5">
-            {lessons.map((l, lIdx) => {
-              const items = l.items || [];
-              const isCurrentLesson = lIdx === selectedLessonIdx;
+          {/* Subject Tabs */}
+          <div className="flex px-2 py-2 overflow-x-auto hide-scrollbar gap-2 border-b border-outline/10 bg-surface-container-low shrink-0">
+            {(course?.subjects || []).map((sub, sIdx) => {
+              const isSelected = sIdx === sidebarSubjectIdx;
               return (
-                <div key={l._id || lIdx} className="bg-surface-container-lowest">
-                  {/* Sidebar Lesson Header */}
-                  <div className="px-4 py-3 bg-surface-container-low/60 flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-on-surface truncate pr-2">
-                      {l.title}
-                    </span>
-                    {l.isPremium && <IconCrown size={11} className="text-amber-400 shrink-0" />}
-                  </div>
-
-                  {/* Sidebar Items list under lesson */}
-                  <div className="divide-y divide-outline/5">
-                    {items.map((subItem, itemIdx) => {
-                      const isSelected = isCurrentLesson && itemIdx === selectedItemIdx;
-                      const m = TYPE_META[subItem.type] || TYPE_META.notes;
-                      const MIcon = m.Icon;
-                      return (
-                        <button
-                          key={subItem._id || itemIdx}
-                          onClick={() => {
-                            navigate(`/course/${course._id}/${getSlugType(subItem.type)}/${lIdx + 1}/${itemIdx + 1}`);
-                            setIsSidebarOpen(false);
-                          }}
-                          className={`w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs transition-all border rounded-lg ${
-                            isSelected 
-                              ? 'bg-primary/15 font-bold border-primary/30 text-on-surface' 
-                              : 'border-transparent hover:bg-surface-container-highest text-on-surface-variant'
-                          }`}
-                        >
-                          <div className={`w-5.5 h-5.5 rounded-md border flex items-center justify-center shrink-0 ${m.bg}`}>
-                            <MIcon size={10} stroke={2} className={m.color} />
-                          </div>
-                          <span className={`flex-1 truncate ${isSelected ? 'text-on-surface' : 'text-on-surface-variant'}`}>
-                            {subItem.title}
-                          </span>
-                          {isItemLocked(lIdx, itemIdx) && (
-                            <IconCrown size={11} className="text-amber-400/80 shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                    {items.length === 0 && (
-                      <div className="px-4 py-2 text-[10px] text-on-surface-variant/40 italic">
-                        No content items
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <button
+                  key={sub._id || sIdx}
+                  onClick={() => setSidebarSubjectIdx(sIdx)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    isSelected 
+                      ? 'bg-surface-variant text-on-surface' 
+                      : 'text-on-surface-variant hover:bg-surface-container-highest'
+                  }`}
+                >
+                  {sub.title}
+                </button>
               );
             })}
+          </div>
+
+          <div className="flex-1 overflow-y-auto pb-28 divide-y divide-outline/5">
+            {(() => {
+              const activeSidebarSubject = course?.subjects?.[sidebarSubjectIdx];
+              if (!activeSidebarSubject || !activeSidebarSubject.chapters || activeSidebarSubject.chapters.length === 0) {
+                return <div className="p-4 text-xs text-on-surface-variant/50 text-center italic">No content in this subject.</div>;
+              }
+              return activeSidebarSubject.chapters.map((chapter, cIdx) => {
+                return (
+                  <div key={chapter._id || cIdx} className="bg-surface-container-lowest">
+                    {/* Sidebar Chapter Header */}
+                    <div className="px-4 py-3 bg-surface-container-low/60 flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-on-surface truncate pr-2">
+                        {chapter.title}
+                      </span>
+                    </div>
+
+                    {/* Sidebar Items list under chapter */}
+                    <div className="divide-y divide-outline/5">
+                      {(chapter.items || []).map((subItem, itemIdx) => {
+                        const isSelected = sidebarSubjectIdx === selectedSubjectIdx && cIdx === selectedChapterIdx && itemIdx === selectedItemIdx;
+                        const m = TYPE_META[subItem.type] || TYPE_META.notes;
+                        const MIcon = m.Icon;
+                        const locked = isItemLocked(sidebarSubjectIdx, cIdx, itemIdx);
+                        return (
+                          <button
+                            key={subItem._id || itemIdx}
+                            onClick={() => {
+                              if (!locked) {
+                                navigate(`/course/${course._id}/${getSlugType(subItem.type)}/${sidebarSubjectIdx + 1}/${cIdx + 1}/${itemIdx + 1}`);
+                                setIsSidebarOpen(false);
+                              } else {
+                                onUpgradeClick();
+                              }
+                            }}
+                            className={`w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs transition-all border rounded-lg ${
+                              isSelected 
+                                ? 'bg-primary/15 font-bold border-primary/30 text-on-surface' 
+                                : 'border-transparent text-on-surface-variant hover:bg-surface-container/50'
+                            }`}
+                          >
+                            <div className={`w-6 h-6 rounded border flex items-center justify-center shrink-0 ${
+                              isSelected ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-surface-container-highest border-outline/10'
+                            }`}>
+                              <MIcon size={12} stroke={2.5} className={isSelected ? 'text-primary' : m.color} />
+                            </div>
+                            <span className="truncate flex-1 leading-tight flex items-center gap-1.5">
+                              {subItem.title}
+                              {locked && <IconCrown size={10} className="text-amber-400/80 shrink-0" />}
+                            </span>
+                            {subItem.duration && (
+                              <span className="text-[9px] opacity-60 font-medium shrink-0">{subItem.duration}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {(!chapter.items || chapter.items.length === 0) && (
+                        <div className="px-4 py-2 text-[10px] text-on-surface-variant/40 italic">
+                          No items
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </aside>
 
@@ -814,7 +841,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-on-surface leading-tight">{item?.title}</h1>
               </div>
 
-              {lesson?.isPremium && (
+              {(activeItem?.isPremium || activeChapter?.isPremium || activeSubject?.isPremium) && (
                 <span className="ml-auto flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
                   <IconCrown size={13} stroke={2} /> Premium
                 </span>
