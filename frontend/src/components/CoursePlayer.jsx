@@ -697,10 +697,10 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
         <div className="flex-1 px-4 min-w-0">
           <p className="text-xs text-on-surface-variant leading-none truncate mb-1">
-            {lesson?.title}
+            {activeSubject?.title} &gt; {activeChapter?.title}
           </p>
           <p className="text-sm font-bold text-on-surface leading-none truncate">
-            {item?.title}
+            {activeItem?.title}
           </p>
         </div>
 
@@ -708,10 +708,11 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           <button
             onClick={() => {
               if (prevItem) {
-                const prevLesson = lessons[prevItem.lessonIdx];
-                const prevItemObj = prevLesson?.items?.[prevItem.itemIdx];
+                const prevSub = course.subjects[prevItem.sIdx];
+                const prevCap = prevSub?.chapters?.[prevItem.cIdx];
+                const prevItemObj = prevCap?.items?.[prevItem.iIdx];
                 if (prevItemObj) {
-                  navigate(`/course/${course._id}/${getSlugType(prevItemObj.type)}/${prevItem.lessonIdx + 1}/${prevItem.itemIdx + 1}`);
+                  navigate(`/course/${course._id}/${getSlugType(prevItemObj.type)}/${prevItem.sIdx + 1}/${prevItem.cIdx + 1}/${prevItem.iIdx + 1}`);
                 }
               }
             }}
@@ -723,10 +724,11 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           <button
             onClick={() => {
               if (nextItem) {
-                const nextLesson = lessons[nextItem.lessonIdx];
-                const nextItemObj = nextLesson?.items?.[nextItem.itemIdx];
+                const nextSub = course.subjects[nextItem.sIdx];
+                const nextCap = nextSub?.chapters?.[nextItem.cIdx];
+                const nextItemObj = nextCap?.items?.[nextItem.iIdx];
                 if (nextItemObj) {
-                  navigate(`/course/${course._id}/${getSlugType(nextItemObj.type)}/${nextItem.lessonIdx + 1}/${nextItem.itemIdx + 1}`);
+                  navigate(`/course/${course._id}/${getSlugType(nextItemObj.type)}/${nextItem.sIdx + 1}/${nextItem.cIdx + 1}/${nextItem.iIdx + 1}`);
                 }
               } else {
                 navigate(`/course/${course._id}`);
