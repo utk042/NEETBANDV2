@@ -322,15 +322,16 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeDetails, setActiveDetails] = useState(null);
 
-  const activeLesson = selectedLessonIdx !== null ? lessons[selectedLessonIdx] : null;
-  const activeItem = activeLesson?.items?.[selectedItemIdx];
+  const activeSubject = selectedSubjectIdx !== null ? course?.subjects?.[selectedSubjectIdx] : null;
+  const activeChapter = selectedChapterIdx !== null ? activeSubject?.chapters?.[selectedChapterIdx] : null;
+  const activeItem = activeChapter?.items?.[selectedItemIdx];
 
   useEffect(() => {
-    if (selectedLessonIdx === null || selectedItemIdx === null) {
+    if (selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null) {
       setActiveDetails(null);
       return;
     }
-    if (isItemLocked(selectedLessonIdx, selectedItemIdx)) {
+    if (isItemLocked(selectedSubjectIdx, selectedChapterIdx, selectedItemIdx)) {
       setActiveDetails(null);
       return;
     }
@@ -363,7 +364,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     };
 
     loadDetails();
-  }, [selectedLessonIdx, selectedItemIdx, activeItem?._id, activeItem?.type]);
+  }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, activeItem?._id, activeItem?.type]);
 
   // Auto-render LaTeX math in main content area whenever content updates
   useEffect(() => {
@@ -390,36 +391,68 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
   // Traversal Helpers
   const getPreviousItem = () => {
-    if (selectedLessonIdx === null || selectedItemIdx === null) return null;
+    if (selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null || !course?.subjects) return null;
+    
     if (selectedItemIdx > 0) {
-      return { lessonIdx: selectedLessonIdx, itemIdx: selectedItemIdx - 1 };
+      return { sIdx: selectedSubjectIdx, cIdx: selectedChapterIdx, iIdx: selectedItemIdx - 1 };
     }
-    // go to previous lesson's last item
-    let lIdx = selectedLessonIdx - 1;
-    while (lIdx >= 0) {
-      const prevLesson = lessons[lIdx];
-      if (prevLesson.items && prevLesson.items.length > 0) {
-        return { lessonIdx: lIdx, itemIdx: prevLesson.items.length - 1 };
+    
+    // Go to previous chapter's last item
+    let cIdx = selectedChapterIdx - 1;
+    const subject = course.subjects[selectedSubjectIdx];
+    while (cIdx >= 0) {
+      if (subject?.chapters?.[cIdx]?.items?.length > 0) {
+        return { sIdx: selectedSubjectIdx, cIdx, iIdx: subject.chapters[cIdx].items.length - 1 };
       }
-      lIdx--;
+      cIdx--;
+    }
+    
+    // Go to previous subject's last chapter's last item
+    let sIdx = selectedSubjectIdx - 1;
+    while (sIdx >= 0) {
+      const prevSub = course.subjects[sIdx];
+      let prevCIdx = (prevSub?.chapters?.length || 0) - 1;
+      while (prevCIdx >= 0) {
+        if (prevSub.chapters[prevCIdx]?.items?.length > 0) {
+          return { sIdx, cIdx: prevCIdx, iIdx: prevSub.chapters[prevCIdx].items.length - 1 };
+        }
+        prevCIdx--;
+      }
+      sIdx--;
     }
     return null;
   };
 
   const getNextItem = () => {
-    if (selectedLessonIdx === null || selectedItemIdx === null) return null;
-    const lesson = lessons[selectedLessonIdx];
-    if (selectedItemIdx < (lesson?.items?.length || 0) - 1) {
-      return { lessonIdx: selectedLessonIdx, itemIdx: selectedItemIdx + 1 };
+    if (selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null || !course?.subjects) return null;
+    const subject = course.subjects[selectedSubjectIdx];
+    const chapter = subject?.chapters?.[selectedChapterIdx];
+    
+    if (selectedItemIdx < (chapter?.items?.length || 0) - 1) {
+      return { sIdx: selectedSubjectIdx, cIdx: selectedChapterIdx, iIdx: selectedItemIdx + 1 };
     }
-    // go to next lesson's first item
-    let lIdx = selectedLessonIdx + 1;
-    while (lIdx < lessons.length) {
-      const nextLesson = lessons[lIdx];
-      if (nextLesson.items && nextLesson.items.length > 0) {
-        return { lessonIdx: lIdx, itemIdx: 0 };
+    
+    // Go to next chapter's first item
+    let cIdx = selectedChapterIdx + 1;
+    while (cIdx < (subject?.chapters?.length || 0)) {
+      if (subject.chapters[cIdx]?.items?.length > 0) {
+        return { sIdx: selectedSubjectIdx, cIdx, iIdx: 0 };
       }
-      lIdx++;
+      cIdx++;
+    }
+    
+    // Go to next subject's first chapter's first item
+    let sIdx = selectedSubjectIdx + 1;
+    while (sIdx < (course.subjects?.length || 0)) {
+      const nextSub = course.subjects[sIdx];
+      let nextCIdx = 0;
+      while (nextCIdx < (nextSub?.chapters?.length || 0)) {
+         if (nextSub.chapters[nextCIdx]?.items?.length > 0) {
+            return { sIdx, cIdx: nextCIdx, iIdx: 0 };
+         }
+         nextCIdx++;
+      }
+      sIdx++;
     }
     return null;
   };
