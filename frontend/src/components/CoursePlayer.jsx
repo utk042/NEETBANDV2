@@ -549,13 +549,12 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               </div>
 
               {/* Start CTA */}
-              {lessons.length > 0 && lessons[0].items?.length > 0 && (
+              {course?.subjects?.length > 0 && course.subjects[0].chapters?.length > 0 && course.subjects[0].chapters[0].items?.length > 0 && (
                 <button
                   onClick={() => {
-                    const firstLesson = lessons[0];
-                    const firstItem = firstLesson?.items?.[0];
+                    const firstItem = course.subjects[0].chapters[0].items[0];
                     if (firstItem) {
-                      navigate(`/course/${course._id}/${getSlugType(firstItem.type)}/1/1`);
+                      navigate(`/course/${course._id}/${getSlugType(firstItem.type)}/1/1/1`);
                     }
                   }}
                   className="group flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white mb-8 transition-all hover:brightness-110 active:scale-[0.98] shadow-lg"
@@ -568,7 +567,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               )}
 
               {/* Lesson list */}
-              {lessons.length === 0 ? (
+              {!course?.subjects || course.subjects.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline/20 rounded-2xl">
                   <div className="w-16 h-16 rounded-2xl bg-surface-container border border-outline/10 flex items-center justify-center mb-4">
                     <IconBook2 size={28} className="text-on-surface-variant/40" />
@@ -578,90 +577,61 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {lessons.map((lesson, lessonIdx) => {
-                    const items = lesson.items || [];
-                    return (
-                      <div key={lesson._id || lessonIdx} className="rounded-2xl border border-outline/15 overflow-hidden bg-surface-container-lowest">
-                        {/* Parent Lesson Header */}
-                        <div className="px-5 py-4 bg-surface-container-low flex items-center justify-between border-b border-outline/10">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-surface-variant flex items-center justify-center shrink-0 text-xs font-bold text-on-surface-variant">
-                              {String(lessonIdx + 1).padStart(2, '0')}
+                  {(course?.subjects || []).map((subject, sIdx) => (
+                    <div key={subject._id || sIdx} className="mb-8">
+                      <h3 className="text-xl font-bold text-on-surface mb-4">{subject.title}</h3>
+                      <div className="space-y-4">
+                        {(subject.chapters || []).map((chapter, cIdx) => (
+                          <div key={chapter._id || cIdx} className="rounded-2xl border border-outline/15 overflow-hidden bg-surface-container-lowest">
+                            {/* Chapter Header */}
+                            <div className="px-5 py-4 bg-surface-container-low flex items-center justify-between border-b border-outline/10">
+                              <span className="font-extrabold text-sm sm:text-base text-on-surface truncate">
+                                {chapter.title}
+                              </span>
                             </div>
-                            <span className="font-extrabold text-sm sm:text-base text-on-surface truncate">
-                              {lesson.title || 'Untitled Lesson'}
-                            </span>
-                          </div>
-                          {lesson.isPremium && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                              <IconCrown size={10} stroke={2.5} /> PRO
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Child Items */}
-                        <div className="divide-y divide-outline/5">
-                          {items.map((item, itemIdx) => {
-                            const meta = TYPE_META[item.type] || TYPE_META.notes;
-                            const LIcon = meta.Icon;
-                            const locked = isItemLocked(lessonIdx, itemIdx);
-                            return (
-                              <div
-                                key={item._id || itemIdx}
-                                className="group flex items-center justify-between gap-4 p-4 hover:bg-surface-container/30 transition-colors"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  {/* Icon */}
-                                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${meta.bg}`}>
-                                    <LIcon size={15} stroke={2} className={meta.color} />
-                                  </div>
-                                  
-                                  {/* Info */}
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-on-surface text-xs sm:text-sm leading-tight truncate group-hover:text-primary transition-colors flex items-center gap-1.5">
-                                      {item.title}
-                                      {locked && (
-                                        <IconCrown size={11} className="text-amber-400/80 shrink-0" />
-                                      )}
-                                    </p>
-                                    {item.duration && (
-                                      <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">
-                                        {item.duration}
-                                      </p>
+                            {/* Items */}
+                            <div className="divide-y divide-outline/5">
+                              {(chapter.items || []).map((item, itemIdx) => {
+                                const meta = TYPE_META[item.type] || TYPE_META.notes;
+                                const LIcon = meta.Icon;
+                                const locked = isItemLocked(sIdx, cIdx, itemIdx);
+                                return (
+                                  <div key={item._id || itemIdx} className="group flex items-center justify-between gap-4 p-4 hover:bg-surface-container/30 transition-colors">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${meta.bg}`}>
+                                        <LIcon size={15} stroke={2} className={meta.color} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-on-surface text-xs sm:text-sm leading-tight truncate group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                          {item.title}
+                                          {locked && <IconCrown size={11} className="text-amber-400/80 shrink-0" />}
+                                        </p>
+                                        {item.duration && <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">{item.duration}</p>}
+                                      </div>
+                                    </div>
+                                    {locked ? (
+                                      <button onClick={onUpgradeClick} className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#342410] text-amber-400 border border-amber-500/20 flex items-center gap-1 hover:brightness-110 transition-all shrink-0">
+                                        <IconCrown size={11} className="fill-current" /> Unlock
+                                      </button>
+                                    ) : (
+                                      <button onClick={() => navigate(`/course/${course._id}/${getSlugType(item.type)}/${sIdx + 1}/${cIdx + 1}/${itemIdx + 1}`)} className="px-4 py-1.5 rounded-lg text-xs font-extrabold bg-[#16362f] text-emerald-400 border border-emerald-500/20 hover:brightness-110 active:scale-[0.97] transition-all shrink-0">
+                                        Start
+                                      </button>
                                     )}
                                   </div>
+                                );
+                              })}
+                              {(!chapter.items || chapter.items.length === 0) && (
+                                <div className="p-5 text-center text-xs text-on-surface-variant/50 italic">
+                                  No items under this chapter yet.
                                 </div>
-
-                                {/* Start / Unlock Button */}
-                                {locked ? (
-                                  <button
-                                    onClick={onUpgradeClick}
-                                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#342410] text-amber-400 border border-amber-500/20 flex items-center gap-1 hover:brightness-110 transition-all shrink-0"
-                                  >
-                                    <IconCrown size={11} className="fill-current" /> Unlock
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      navigate(`/course/${course._id}/${getSlugType(item.type)}/${lessonIdx + 1}/${itemIdx + 1}`);
-                                    }}
-                                    className="px-4 py-1.5 rounded-lg text-xs font-extrabold bg-[#16362f] text-emerald-400 border border-emerald-500/20 hover:brightness-110 active:scale-[0.97] transition-all shrink-0"
-                                  >
-                                    Start
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {items.length === 0 && (
-                            <div className="p-5 text-center text-xs text-on-surface-variant/50 italic">
-                              No items under this lesson heading yet.
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
