@@ -171,7 +171,7 @@ function AudioAdPlayer({ item, user }) {
 
 export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const navigate = useNavigate();
-  const { courseId, itemType, lessonIdx: lessonIdxParam, itemIdx: itemIdxParam } = useParams();
+  const { courseId, itemType, subjectIdx: subjectIdxParam, chapterIdx: chapterIdxParam, itemIdx: itemIdxParam } = useParams();
 
   const [course, setCourse] = useState(null);
   const [courseLoading, setCourseLoading] = useState(true);
@@ -191,8 +191,21 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
       });
   }, [courseId]);
 
-  const selectedLessonIdx = lessonIdxParam !== undefined ? parseInt(lessonIdxParam, 10) - 1 : null;
+  const selectedSubjectIdx = subjectIdxParam !== undefined ? parseInt(subjectIdxParam, 10) - 1 : null;
+  const selectedChapterIdx = chapterIdxParam !== undefined ? parseInt(chapterIdxParam, 10) - 1 : null;
   const selectedItemIdx = itemIdxParam !== undefined ? parseInt(itemIdxParam, 10) - 1 : null;
+  
+  // Temporary variable to prevent syntax errors until Task 3 is implemented
+  const selectedLessonIdx = null;
+
+  const [sidebarSubjectIdx, setSidebarSubjectIdx] = useState(0);
+
+  // Sync sidebar subject with playing subject when URL changes
+  useEffect(() => {
+    if (selectedSubjectIdx !== null && selectedSubjectIdx >= 0) {
+      setSidebarSubjectIdx(selectedSubjectIdx);
+    }
+  }, [selectedSubjectIdx]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -206,11 +219,12 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
   const bottomClass = currentTrack ? 'bottom-[152px] md:bottom-24' : 'bottom-20 md:bottom-24';
 
-  const isItemLocked = (lIdx, iIdx) => {
+  const isItemLocked = (sIdx, cIdx, iIdx) => {
     if (user?.isPremium) return false;
-    const lesson = lessons[lIdx];
-    const item = lesson?.items?.[iIdx];
-    return !!(item?.isPremium);
+    const subject = course?.subjects?.[sIdx];
+    const chapter = subject?.chapters?.[cIdx];
+    const item = chapter?.items?.[iIdx];
+    return !!(item?.isPremium || chapter?.isPremium || subject?.isPremium || course?.isPremium);
   };
 
   // Normalise lessons from DB
@@ -221,7 +235,9 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const SubjectIcon = getSubjectIcon(course?.subject);
 
   // Calculate total items across all lessons
-  const totalItemsCount = lessons.reduce((acc, l) => acc + (l.items || []).length, 0);
+  const totalItemsCount = (course?.subjects || []).reduce((acc, sub) => {
+    return acc + (sub.chapters || []).reduce((capAcc, cap) => capAcc + (cap.items || []).length, 0);
+  }, 0);
 
   useEffect(() => {
     const update = () => {
