@@ -10,7 +10,9 @@ import {
   IconDna,
   IconAtom,
   IconFlask,
+  IconHelpCircle, IconMessageCircle, IconList,
 } from '@tabler/icons-react';
+import * as TablerIcons from '@tabler/icons-react';
 import {
   updateCourse,
   getLessonContent, updateLessonContent,
@@ -53,7 +55,58 @@ const getSubjectIcon = (subjectName) => {
   return sub ? sub.Icon : IconBook2;
 };
 
-// ── Helper: generate a temp ID ──────────────────────────────
+const COMMON_ICONS = [
+  'IconBook2', 'IconAtom', 'IconDna', 'IconFlask', 'IconCode',
+  'IconLanguage', 'IconPalette', 'IconChartBar', 'IconCalculator', 
+  'IconMicroscope', 'IconBrain', 'IconList', 'IconFolder', 'IconFileText',
+  'IconBulb', 'IconStar', 'IconTrophy', 'IconTarget', 'IconFlame',
+  'IconRocket', 'IconCompass', 'IconMap', 'IconMusic', 'IconVideo'
+];
+
+function DynamicIcon({ name, size = 24, className, stroke }) {
+  const IconComponent = TablerIcons[name] || TablerIcons.IconBook2;
+  return <IconComponent size={size} className={className} stroke={stroke} />;
+}
+
+function IconSelector({ value, onChange, size = 20, className }) {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="relative">
+      <button 
+        onClick={(e) => { e.preventDefault(); setOpen(!open); }}
+        className={`flex items-center justify-center hover:bg-surface-variant/50 rounded p-1 transition-colors ${className}`}
+        title="Change Icon"
+      >
+        <DynamicIcon name={value} size={size} stroke={2.5} />
+      </button>
+      
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); setOpen(false); }} />
+          <div className="absolute z-50 top-full left-0 mt-1 bg-surface-container-highest shadow-xl rounded-xl border border-outline/20 p-2 w-48 grid grid-cols-4 gap-1 max-h-48 overflow-y-auto">
+            {COMMON_ICONS.map(iconName => (
+              <button
+                key={iconName}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onChange(iconName);
+                  setOpen(false);
+                }}
+                className={`flex items-center justify-center p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors ${value === iconName ? 'bg-primary/20 text-primary' : 'text-on-surface-variant'}`}
+                title={iconName.replace('Icon', '')}
+              >
+                <DynamicIcon name={iconName} size={20} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Helper: generate a temp ID ────────────────────────────────────────────────────
 const tempId = () => `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 // ── Quiz editor ─────────────────────────────────────────────
@@ -732,41 +785,95 @@ function cleanDocumentText(text) {
   return cleanedParagraphs.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) {
-  const [expanded, setExpanded] = useState(true);
+
+function ChapterCard({ chapter, index, chapters, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast, onManageContent }) {
+  return (
+    <div className="rounded-xl border transition-all duration-200 border-outline-variant/15 bg-surface-container-low hover:border-outline-variant/30">
+      <div className="flex items-center gap-2 p-3">
+        <div className="flex flex-col gap-0.5 shrink-0 opacity-45">
+          <button onClick={onMoveUp} disabled={isFirst} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
+            <IconChevronUp size={12} stroke={2.5} />
+          </button>
+          <button onClick={onMoveDown} disabled={isLast} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
+            <IconChevronDown size={12} stroke={2.5} />
+          </button>
+        </div>
+        <div className="w-6 h-6 rounded-md bg-surface-variant flex items-center justify-center shrink-0">
+          <span className="text-[10px] font-bold text-on-surface-variant">{index + 1}</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-1.5 py-1 rounded-md border text-[10px] font-bold shrink-0 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+          <IconSelector value={chapter.icon || 'IconList'} onChange={icon => onUpdate({ icon })} size={13} className="text-emerald-400" />
+          Chapter
+        </div>
+        <input
+          type="text"
+          placeholder={`Chapter ${index + 1}`}
+          className="flex-1 min-w-0 bg-transparent text-xs font-semibold text-on-surface outline-none border-b border-transparent focus:border-primary/50 pb-0.5"
+          value={chapter.title || ''}
+          onChange={e => onUpdate({ title: e.target.value })}
+        />
+        <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
+          <button
+            onClick={onManageContent}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-variant hover:bg-surface-variant/80 transition-colors text-xs font-bold text-on-surface"
+          >
+            Manage Content
+            <IconArrowLeft size={14} className="rotate-180" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 rounded-md hover:bg-error/10 hover:text-error transition-colors text-on-surface-variant"
+          >
+            <IconTrash size={14} stroke={2} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ItemContentEditor({ item, onUpdate, items = [] }) {
+  const { toast } = useDialog();
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [autoConvertHtml, setAutoConvertHtml] = useState(true);
   const [isParsingFile, setIsParsingFile] = useState(false);
 
-  const typeIndex = React.useMemo(() => {
-    if (!items || !item) return index + 1;
-    let count = 0;
-    const getCategory = (t) => {
-      if (t === 'notes' || t === 'lesson' || t === 'reading') return 'notes';
-      return t;
-    };
-    const itemCategory = getCategory(item.type);
-    for (let i = 0; i < items.length; i++) {
-      if (getCategory(items[i].type) === itemCategory) {
-        count++;
-      }
-      if (items[i] === item || (items[i]._id && items[i]._id === item._id)) {
-        break;
-      }
+  useEffect(() => {
+    const hasData = (item.type === 'notes' && item.content !== undefined) || 
+                    (item.type === 'quiz' && item.questions !== undefined) || 
+                    (item.type === 'qa' && item.qas !== undefined);
+                    
+    if (!hasData && item._id && !String(item._id).startsWith('temp_') && !String(item._id).startsWith('tmp_')) {
+      const fetchDetails = async () => {
+        setDetailsLoading(true);
+        try {
+          if (item.type === 'notes' || !item.type) {
+            const res = await getLessonContent(item._id).catch(() => ({ content: '' }));
+            onUpdate({ content: res.content || '' });
+          } else if (item.type === 'quiz') {
+            const res = await getLessonQuiz(item._id).catch(() => ({ questions: [] }));
+            onUpdate({ questions: res.questions || [] });
+          } else if (item.type === 'qa') {
+            const res = await getLessonQa(item._id).catch(() => ({ qas: [] }));
+            onUpdate({ qas: res.qas || [] });
+          }
+        } catch (err) {
+          console.error("Failed to load item details:", err);
+        } finally {
+          setDetailsLoading(false);
+        }
+      };
+      fetchDetails();
     }
-    return count;
-  }, [items, item, index]);
+  }, [item._id, item.type]);
 
   const handlePaste = (e) => {
     const htmlData = e.clipboardData.getData('text/html');
     const plainText = e.clipboardData.getData('text/plain');
-    
     if (autoConvertHtml && htmlData) {
       e.preventDefault();
       let markdown = htmlToMarkdown(htmlData);
-      // Normalize any unicode bullets in generated markdown
       markdown = markdown.replace(/^[ \t]*[•▪◦⚫][ \t]*/gm, '- ');
-      
       const textarea = e.target;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
@@ -778,7 +885,6 @@ function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMo
         textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
       }, 0);
     } else if (plainText) {
-      // Intercept plain text paste to convert unicode bullets and format
       const hasUnicodeBullets = /^[ \t]*[•▪◦⚫]/m.test(plainText);
       if (hasUnicodeBullets) {
         e.preventDefault();
@@ -803,335 +909,363 @@ function LessonItemCard({ item, index, items, onUpdate, onDelete, onMoveUp, onMo
     onUpdate({ content: cleanDocumentText(currentValue) });
   };
 
-  const typeInfo = LESSON_TYPES.find(t => t.value === item.type) || LESSON_TYPES[0];
-  const Icon = typeInfo.icon;
-
-  useEffect(() => {
-    const hasData = item.content !== undefined || item.questions !== undefined || item.qas !== undefined;
-    if (!hasData && expanded && item._id && !String(item._id).startsWith('temp_') && !String(item._id).startsWith('tmp_')) {
-      const fetchDetails = async () => {
-        setDetailsLoading(true);
-        try {
-          if (item.type === 'notes' || item.type === 'lesson' || item.type === 'reading') {
-            const res = await getLessonContent(item._id);
-            onUpdate({ content: res.content });
-          } else if (item.type === 'quiz') {
-            const res = await getLessonQuiz(item._id);
-            onUpdate({ questions: res.questions });
-          } else if (item.type === 'qa') {
-            const res = await getLessonQa(item._id);
-            onUpdate({ qas: res.qas });
-          }
-        } catch (err) {
-          console.error("Failed to load item details:", err);
-        } finally {
-          setDetailsLoading(false);
-        }
-      };
-      fetchDetails();
-    }
-  }, [expanded, item._id, item.type]);
+  if (detailsLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center border border-outline-variant/20 rounded-2xl bg-surface-container-low">
+        <IconLoader2 className="animate-spin text-primary mb-2" size={24} />
+        <p className="text-xs text-on-surface-variant">Loading item details...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className={`rounded-xl border transition-all duration-200 ${expanded ? 'border-primary/30 bg-surface-container-high' : 'border-outline-variant/15 bg-surface-container-low hover:border-outline-variant/30'}`}>
-      <div className="flex items-center gap-2 p-3">
-        <div className="flex flex-col gap-0.5 shrink-0 opacity-45">
-          <button onClick={onMoveUp} disabled={isFirst} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
-            <IconChevronUp size={12} stroke={2.5} />
-          </button>
-          <button onClick={onMoveDown} disabled={isLast} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
-            <IconChevronDown size={12} stroke={2.5} />
-          </button>
+    <div className="border border-outline-variant/20 rounded-2xl bg-surface-container-low p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex-1">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1 block">Item Title</label>
+          <input
+            type="text"
+            className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-sm font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+            value={item.title || ''}
+            onChange={e => onUpdate({ title: e.target.value })}
+            placeholder="e.g., Chapter 1 Notes"
+          />
         </div>
-        <div className="w-6 h-6 rounded-md bg-surface-variant flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-on-surface-variant">{typeIndex}</span>
-        </div>
-        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md border text-[10px] font-bold shrink-0 ${typeInfo.bg} ${typeInfo.color}`}>
-          <Icon size={11} stroke={2.5} />
-          {typeInfo.label}
-        </div>
-        <input
-          type="text"
-          placeholder={
-            item.type === 'quiz'
-              ? `Quiz ${typeIndex}`
-              : item.type === 'qa'
-              ? `Q&A ${typeIndex}`
-              : `Notes ${typeIndex}`
-          }
-          className="flex-1 min-w-0 bg-transparent text-xs font-semibold text-on-surface outline-none border-b border-transparent focus:border-primary/50 pb-0.5"
-          value={item.title || ''}
-          onChange={e => onUpdate({ title: e.target.value })}
-        />
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="p-1 rounded-md hover:bg-surface-variant transition-colors text-on-surface-variant hover:text-on-surface"
+        <div className="w-full md:w-48">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1 block">Type</label>
+          <select
+            className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-sm font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+            value={item.type || 'notes'}
+            onChange={e => {
+              const newType = e.target.value;
+              let newTitle = item.title;
+              
+              const isDefaultTitle = /^Note \d+$/i.test(item.title) || 
+                                     /^Quiz \d+$/i.test(item.title) || 
+                                     /^Q&A \d+$/i.test(item.title) ||
+                                     item.title === 'New Item';
+                                     
+              if (isDefaultTitle) {
+                const count = items.filter(i => (i.type || 'notes') === newType).length;
+                if (newType === 'notes') newTitle = `Note ${count + 1}`;
+                else if (newType === 'quiz') newTitle = `Quiz ${count + 1}`;
+                else if (newType === 'qa') newTitle = `Q&A ${count + 1}`;
+              }
+              
+              onUpdate({ type: newType, title: newTitle });
+            }}
           >
-            {expanded ? <IconChevronUp size={14} stroke={2} /> : <IconChevronDown size={14} stroke={2} />}
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1 rounded-md hover:bg-error/10 hover:text-error transition-colors text-on-surface-variant"
-          >
-            <IconTrash size={14} stroke={2} />
-          </button>
+            <option value="notes">Notes / Text</option>
+            <option value="quiz">Quiz</option>
+            <option value="qa">Q&A / Flashcards</option>
+          </select>
         </div>
       </div>
-      {expanded && (
-        <div className="px-3 pb-3 pt-1 border-t border-outline-variant/10 space-y-3">
-          {detailsLoading ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <IconLoader2 className="animate-spin text-primary mb-2" size={20} />
-              <p className="text-[10px] text-on-surface-variant">Loading details...</p>
+
+      <div className="flex items-center justify-between p-3 rounded-xl bg-background border border-outline-variant/20 mb-6">
+        <div className="flex items-center gap-2">
+          <IconCrown size={16} className={item.isPremium ? 'text-amber-400' : 'text-on-surface-variant'} />
+          <span className="text-xs font-bold uppercase tracking-wider text-on-surface">Premium Item (Locked for Free Users)</span>
+        </div>
+        <button
+          onClick={() => onUpdate({ isPremium: !item.isPremium })}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.isPremium ? 'bg-amber-500' : 'bg-surface-variant'}`}
+        >
+          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm" style={{ transform: item.isPremium ? 'translateX(22px)' : 'translateX(4px)' }} />
+        </button>
+      </div>
+
+      {(item.type === 'notes' || !item.type) && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Notes / Content</label>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1 text-[11px] text-on-surface-variant cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoConvertHtml}
+                  onChange={(e) => setAutoConvertHtml(e.target.checked)}
+                  className="rounded border-outline-variant/40 text-emerald-500 focus:ring-emerald-500/20 bg-background w-3 h-3"
+                />
+                <span>Auto-Format Paste</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleCleanPdfWraps}
+                className="px-3 py-1 rounded bg-surface border border-outline-variant/20 hover:border-outline-variant/50 text-[11px] font-bold text-on-surface-variant hover:text-on-surface transition-all"
+                title="Fix mid-sentence line breaks from PDF copy-paste"
+              >
+                Clean PDF Wraps
+              </button>
+
+              <button
+                type="button"
+                onClick={() => document.getElementById(`doc-upload-${item._id}`).click()}
+                disabled={isParsingFile}
+                className="flex items-center gap-1 px-3 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-[11px] font-bold text-emerald-400 transition-all disabled:opacity-50"
+              >
+                {isParsingFile ? (
+                  <>
+                    <IconLoader2 size={12} className="animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconCloudUpload size={12} />
+                    <span>Upload Document</span>
+                  </>
+                )}
+              </button>
+              <input
+                id={`doc-upload-${item._id}`}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setIsParsingFile(true);
+                  try {
+                    const res = await uploadFile(file, 'document');
+                    if (res.url) {
+                      let type = 'link';
+                      if (file.name.toLowerCase().endsWith('.pdf')) type = 'pdf';
+                      if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) type = 'doc';
+                      const finalUrl = res.url.startsWith('/') 
+                        ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${res.url}` 
+                        : res.url;
+                      onUpdate({ fileUrl: finalUrl, fileType: type });
+                    }
+                  } catch (err) {
+                    console.error('File upload failed:', err);
+                  } finally {
+                    setIsParsingFile(false);
+                    e.target.value = '';
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {item.fileUrl ? (
+            <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl relative group">
+              <button
+                onClick={() => onUpdate({ fileUrl: '', fileType: 'link' })}
+                className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-400 rounded-md transition-opacity hover:bg-red-500/20"
+                title="Remove attached document"
+              >
+                <IconTrash size={16} />
+              </button>
+              <p className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase mb-3">Document Loaded as Notes</p>
+              <div className="flex gap-2 items-center mb-3 pr-8">
+                <input
+                  type="text"
+                  placeholder="Document link..."
+                  className="flex-1 px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  value={item.fileUrl || ''}
+                  onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
+                />
+                <select
+                  value={item.fileType || 'link'}
+                  onChange={e => onUpdate({ fileType: e.target.value })}
+                  className="px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                >
+                  <option value="link">Auto (Link)</option>
+                  <option value="pdf">PDF File</option>
+                  <option value="doc">Word Doc</option>
+                </select>
+              </div>
+              <a href={item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl} target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-500 hover:underline">
+                Open in new tab to preview
+              </a>
             </div>
           ) : (
             <>
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant mb-1 block">Item Type</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {LESSON_TYPES.map(t => {
-                    const TIcon = t.icon;
-                    return (
-                      <button
-                        key={t.value}
-                        onClick={() => onUpdate({ type: t.value })}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md border text-[10px] font-bold transition-all ${
-                          item.type === t.value
-                            ? `${t.bg} ${t.color} scale-105 shadow-sm`
-                            : 'border-outline-variant/20 text-on-surface-variant hover:border-outline-variant'
-                        }`}
-                      >
-                        <TIcon size={11} stroke={2.5} /> {t.label}
-                      </button>
-                    );
-                  })}
-                </div>
+              <textarea
+                id={`textarea-${item._id}`}
+                rows={12}
+                placeholder="Enter item notes, markdown, or key summary points..."
+                className="w-full px-4 py-3 rounded-xl bg-background border border-outline-variant/40 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40 resize-y font-mono leading-relaxed"
+                value={item.content || ''}
+                onChange={e => onUpdate({ content: e.target.value })}
+                onPaste={handlePaste}
+                disabled={isParsingFile}
+              />
+              <div className="flex gap-2 items-center mt-2">
+                <input
+                  type="text"
+                  placeholder="Or paste a public document link here (e.g. https://.../file.pdf)"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-outline-variant/40 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40"
+                  value={item.fileUrl || ''}
+                  onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
+                />
               </div>
-
-              {/* Item premium status */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-background border border-outline-variant/20">
-                <div className="flex items-center gap-2">
-                  <IconCrown size={14} className={item.isPremium ? 'text-amber-400' : 'text-on-surface-variant'} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface">Premium Item (Locked for Free Users)</span>
-                </div>
-                <button
-                  onClick={() => onUpdate({ isPremium: !item.isPremium })}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${item.isPremium ? 'bg-amber-500' : 'bg-surface-variant'}`}
-                >
-                  <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm" style={{ transform: item.isPremium ? 'translateX(18px)' : 'translateX(2px)' }} />
-                </button>
-              </div>
-
-              {(item.type === 'notes' || item.type === 'lesson' || item.type === 'reading') && (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Notes / Content</label>
-                    <div className="flex items-center gap-2">
-                      {/* Auto-convert Toggle */}
-                      <label className="flex items-center gap-1 text-[10px] text-on-surface-variant cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={autoConvertHtml}
-                          onChange={(e) => setAutoConvertHtml(e.target.checked)}
-                          className="rounded border-outline-variant/40 text-emerald-500 focus:ring-emerald-500/20 bg-background w-3 h-3"
-                        />
-                        <span>Auto-Format Paste</span>
-                      </label>
-
-                      {/* Clean PDF Wraps Button */}
-                      <button
-                        type="button"
-                        onClick={handleCleanPdfWraps}
-                        className="px-2 py-0.5 rounded bg-surface border border-outline-variant/20 hover:border-outline-variant/50 text-[10px] font-bold text-on-surface-variant hover:text-on-surface transition-all"
-                        title="Fix mid-sentence line breaks from PDF copy-paste"
-                      >
-                        Clean PDF Wraps
-                      </button>
-
-                      {/* Upload Document Button */}
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById(`doc-upload-${item._id}`).click()}
-                        disabled={isParsingFile}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 transition-all disabled:opacity-50"
-                      >
-                        {isParsingFile ? (
-                          <>
-                            <IconLoader2 size={10} className="animate-spin" />
-                            <span>Uploading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <IconCloudUpload size={10} />
-                            <span>Upload Document</span>
-                          </>
-                        )}
-                      </button>
-                      <input
-                        id={`doc-upload-${item._id}`}
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          setIsParsingFile(true);
-                          try {
-                            const res = await uploadFile(file, 'document');
-                            if (res.url) {
-                              let type = 'link';
-                              if (file.name.toLowerCase().endsWith('.pdf')) type = 'pdf';
-                              if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) type = 'doc';
-                              
-                              // Convert relative to absolute URL so the full link is used and visible
-                              const finalUrl = res.url.startsWith('/') 
-                                ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${res.url}` 
-                                : res.url;
-                                
-                              onUpdate({ fileUrl: finalUrl, fileType: type });
-                            }
-                          } catch (err) {
-                            console.error('File upload failed:', err);
-                            toast.error('Failed to upload file: ' + err.message);
-                          } finally {
-                            setIsParsingFile(false);
-                            e.target.value = ''; // Reset input
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {item.fileUrl ? (
-                    <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl relative group">
-                      <button
-                        onClick={() => onUpdate({ fileUrl: '', fileType: 'link' })}
-                        className="absolute top-2 right-2 p-1 bg-red-500/10 text-red-400 rounded-md transition-opacity hover:bg-red-500/20"
-                        title="Remove attached document"
-                      >
-                        <IconTrash size={14} />
-                      </button>
-                      <p className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase mb-3">Document Loaded as Notes</p>
-                      <div className="flex gap-2 items-center mb-3 pr-8">
-                        <input
-                          type="text"
-                          placeholder="Document link..."
-                          className="flex-1 px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                          value={item.fileUrl || ''}
-                          onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
-                        />
-                        <select
-                          value={item.fileType || 'link'}
-                          onChange={e => onUpdate({ fileType: e.target.value })}
-                          className="px-2 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                        >
-                          <option value="link">Auto (Link)</option>
-                          <option value="pdf">PDF File</option>
-                          <option value="doc">Word Doc</option>
-                        </select>
-                      </div>
-                      <a href={item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-500 hover:underline">
-                        Open in new tab to preview
-                      </a>
-                    </div>
-                  ) : (
-                    <>
-                      <textarea
-                        id={`textarea-${item._id}`}
-                        rows={6}
-                        placeholder="Enter lesson notes, markdown, or key summary points..."
-                        className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40 resize-y font-mono leading-relaxed"
-                        value={item.content || ''}
-                        onChange={e => onUpdate({ content: e.target.value })}
-                        onPaste={handlePaste}
-                        disabled={isParsingFile}
-                      />
-                      <div className="flex gap-2 items-center mt-2">
-                        <input
-                          type="text"
-                          placeholder="Or paste a public document link here (e.g. https://.../file.pdf)"
-                          className="flex-1 px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-on-surface-variant/40"
-                          value={item.fileUrl || ''}
-                          onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-              {item.type === 'quiz' && (
-                <div>
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-amber-400 mb-2 block">Quiz Questions</label>
-                  <QuizEditor
-                    questions={item.questions || []}
-                    onChange={qs => onUpdate({ questions: qs })}
-                  />
-                </div>
-              )}
-              {item.type === 'qa' && (
-                <div>
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-violet-400 mb-2 block">Q&A Pairs</label>
-                  <QaEditor
-                    qas={item.qas || []}
-                    onChange={pairs => onUpdate({ qas: pairs })}
-                  />
-                </div>
-              )}
-
             </>
           )}
+        </div>
+      )}
+
+      {item.type === 'qa' && (
+        <div className="mt-4">
+          <QaEditor
+            qas={item.qas || []}
+            onChange={pairs => onUpdate({ qas: pairs })}
+          />
+        </div>
+      )}
+
+      {item.type === 'quiz' && (
+        <div className="mt-4">
+          <QuizEditor
+            questions={item.questions || []}
+            onChange={qs => onUpdate({ questions: qs })}
+          />
         </div>
       )}
     </div>
   );
 }
 
-function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) {
-  const [expanded, setExpanded] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const items = lesson.items || [];
+function ChapterContentEditor({ chapter, onUpdate }) {
+  const items = chapter.items || [];
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
 
-  const updateItem = (itemIdx, patch) => {
-    onUpdate(prevLesson => ({
-      items: (prevLesson.items || []).map((item, idx) => idx === itemIdx ? { ...item, ...patch } : item)
-    }));
-  };
-
-  const deleteItem = (itemIdx) => {
-    onUpdate(prevLesson => ({
-      items: (prevLesson.items || []).filter((_, idx) => idx !== itemIdx)
-    }));
-  };
-
-  const addItem = (type) => {
-    const newItem = {
-      _id: `temp_${Date.now()}`,
-      title: '',
-      type,
-      duration: '',
-      videoUrl: '',
-      isPremium: true,
-      order: items.length
-    };
-    onUpdate(prevLesson => ({
-      items: [...(prevLesson.items || []), newItem]
-    }));
-  };
-
-  const moveItem = (itemIdx, direction) => {
-    onUpdate(prevLesson => {
-      const arr = [...(prevLesson.items || [])];
-      const targetIdx = itemIdx + direction;
-      if (targetIdx < 0 || targetIdx >= arr.length) return {};
-      [arr[itemIdx], arr[targetIdx]] = [arr[targetIdx], arr[itemIdx]];
-      const updated = arr.map((item, idx) => ({ ...item, order: idx }));
-      return { items: updated };
-    });
-  };
+  if (selectedItemIndex !== null) {
+    const item = items[selectedItemIndex];
+    if (!item) {
+      setSelectedItemIndex(null);
+      return null;
+    }
+    return (
+      <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+        <button 
+          onClick={() => setSelectedItemIndex(null)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-6"
+        >
+          <IconArrowLeft size={16} stroke={2} />
+          Back to Items
+        </button>
+        <ItemContentEditor 
+          item={item} 
+          items={items}
+          onUpdate={(patch) => {
+            const newItems = [...items];
+            newItems[selectedItemIndex] = { ...item, ...patch };
+            onUpdate({ items: newItems });
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className={`rounded-2xl border transition-all duration-200 ${expanded ? 'border-primary/40 bg-surface-container' : 'border-outline-variant/25 bg-surface-container-lowest hover:border-outline-variant/50'}`}>
+    <div className="border border-outline-variant/20 rounded-2xl bg-surface-container-low p-4 md:p-6 animate-in fade-in slide-in-from-left-4 duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-black text-on-surface">Items</h3>
+          <p className="text-xs text-on-surface-variant mt-1">Manage notes, quizzes, and Q&As for this chapter.</p>
+        </div>
+        <button
+          onClick={() => {
+            const notesCount = items.filter(i => (i.type || 'notes') === 'notes').length;
+            const newItem = { _id: `temp_${Date.now()}`, title: `Note ${notesCount + 1}`, type: 'notes', isPremium: false };
+            onUpdate({ items: [...items, newItem] });
+            setSelectedItemIndex(items.length);
+          }}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-on-primary text-sm font-bold hover:brightness-110 transition-all shadow-sm"
+        >
+          <IconPlus size={16} stroke={2.5} />
+          Add Item
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant/20 rounded-2xl bg-background">
+          <IconFileText className="text-on-surface-variant/40 mb-3" size={32} />
+          <p className="text-sm font-bold text-on-surface-variant">No items yet</p>
+          <p className="text-xs text-on-surface-variant/60 mt-1">Click "Add Item" to create notes, quizzes, or Q&As.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, idx) => {
+            let Icon = IconFileText;
+            if (item.type === 'quiz') Icon = IconHelpCircle;
+            if (item.type === 'qa') Icon = IconMessageCircle;
+            return (
+              <div 
+                key={item._id || idx}
+                className="flex items-center justify-between p-3 rounded-xl bg-background border border-outline-variant/20 hover:border-primary/30 group transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+                    <Icon size={16} stroke={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{item.title || 'Untitled Item'}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mt-0.5">{item.type}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (idx > 0) {
+                        const newItems = [...items];
+                        [newItems[idx], newItems[idx-1]] = [newItems[idx-1], newItems[idx]];
+                        onUpdate({ items: newItems });
+                      }
+                    }}
+                    disabled={idx === 0}
+                    className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface disabled:opacity-30 transition-all"
+                  >
+                    <IconChevronUp size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (idx < items.length - 1) {
+                        const newItems = [...items];
+                        [newItems[idx], newItems[idx+1]] = [newItems[idx+1], newItems[idx]];
+                        onUpdate({ items: newItems });
+                      }
+                    }}
+                    disabled={idx === items.length - 1}
+                    className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface disabled:opacity-30 transition-all"
+                  >
+                    <IconChevronDown size={16} />
+                  </button>
+                  <button
+                    onClick={() => setSelectedItemIndex(idx)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-all ml-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this item?')) {
+                        const newItems = items.filter((_, i) => i !== idx);
+                        onUpdate({ items: newItems });
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-error/70 hover:bg-error/10 hover:text-error transition-all ml-1"
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubjectCard({ subject, index, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast, onManageChapters }) {
+  const [editing, setEditing] = useState(false);
+  const chapters = subject.chapters || [];
+
+  return (
+    <div className="rounded-2xl border transition-all duration-200 border-outline-variant/25 bg-surface-container-lowest hover:border-outline-variant/50">
       <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4">
         <div className="flex flex-col gap-0.5 shrink-0 opacity-40">
           <button onClick={onMoveUp} disabled={isFirst} className="disabled:opacity-20 hover:opacity-100 transition-opacity">
@@ -1144,17 +1278,17 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
         <div className="w-7 h-7 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
           <span className="text-xs font-bold text-on-surface-variant">{index + 1}</span>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold shrink-0 bg-blue-500/10 border-blue-500/20 text-blue-400">
-          <IconBook2 size={13} stroke={2.5} />
-          Lesson Heading
+        <div className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg border text-xs font-bold shrink-0 bg-blue-500/10 border-blue-500/20 text-blue-400">
+          <IconSelector value={subject.icon || 'IconBook2'} onChange={icon => onUpdate({ icon })} size={16} className="text-blue-400" />
+          Subject Heading
         </div>
         <div className="flex-1 min-w-0">
           {editing ? (
             <input
               autoFocus
-              placeholder={`Lesson ${index + 1}`}
+              placeholder={`Subject ${index + 1}`}
               className="w-full bg-transparent text-sm font-semibold text-on-surface outline-none border-b border-primary/50 pb-0.5"
-              value={lesson.title}
+              value={subject.title}
               onChange={e => onUpdate({ title: e.target.value })}
               onBlur={() => setEditing(false)}
               onKeyDown={e => e.key === 'Enter' && setEditing(false)}
@@ -1164,21 +1298,22 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
               onClick={() => setEditing(true)}
               className="w-full text-left text-sm font-semibold text-on-surface truncate hover:text-primary transition-colors"
             >
-              {lesson.title || <span className="text-on-surface-variant/40 italic">Lesson {index + 1}</span>}
+              {subject.title || <span className="text-on-surface-variant/40 italic">Subject {index + 1}</span>}
             </button>
           )}
-          {items.length > 0 && (
+          {chapters.length > 0 && (
             <span className="text-[11px] text-on-surface-variant/70 block mt-0.5">
-              {items.length} item{items.length !== 1 ? 's' : ''} under this lesson
+              {chapters.length} item{chapters.length !== 1 ? 's' : ''} under this subject
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+        <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
           <button
-            onClick={() => setExpanded(!expanded)}
-            className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors text-on-surface-variant hover:text-on-surface"
+            onClick={onManageChapters}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-variant hover:bg-surface-variant/80 transition-colors text-xs font-bold text-on-surface"
           >
-            {expanded ? <IconChevronUp size={16} stroke={2} /> : <IconChevronDown size={16} stroke={2} />}
+            Manage Chapters
+            <IconArrowLeft size={14} className="rotate-180" />
           </button>
           <button
             onClick={onDelete}
@@ -1188,90 +1323,13 @@ function LessonCard({ lesson, index, onUpdate, onDelete, onMoveUp, onMoveDown, i
           </button>
         </div>
       </div>
-      {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-outline-variant/20 space-y-4">
-          <div className="pt-3">
-            <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-2 block">Lesson Description</label>
-            <textarea
-              rows={2}
-              placeholder="Briefly describe what this lesson is about..."
-              className="w-full px-3 py-2 rounded-xl bg-background border border-outline-variant/40 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-on-surface-variant/40 resize-none"
-              value={lesson.description || ''}
-              onChange={e => onUpdate({ description: e.target.value })}
-            />
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <button
-                type="button"
-                onClick={() => {
-                  const newIsPremium = !lesson.isPremium;
-                  onUpdate({ 
-                    isPremium: newIsPremium,
-                    items: items.map(item => ({ ...item, isPremium: newIsPremium }))
-                  });
-                }}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${lesson.isPremium ? 'bg-amber-500' : 'bg-surface-variant'}`}
-              >
-                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm`} style={{ transform: lesson.isPremium ? 'translateX(18px)' : 'translateX(2px)' }} />
-              </button>
-              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-                <IconCrown size={13} className={lesson.isPremium ? 'text-amber-400' : 'text-on-surface-variant'} />
-                Premium Content
-              </span>
-            </label>
-          </div>
-          <hr className="border-outline-variant/20 my-4" />
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant block">Lesson Content Items</label>
-            </div>
-            <div className="space-y-2">
-              {items.map((item, idx) => (
-                <LessonItemCard
-                  key={item._id || idx}
-                  item={item}
-                  index={idx}
-                  items={items}
-                  onUpdate={patch => updateItem(idx, patch)}
-                  onDelete={() => deleteItem(idx)}
-                  onMoveUp={() => moveItem(idx, -1)}
-                  onMoveDown={() => moveItem(idx, 1)}
-                  isFirst={idx === 0}
-                  isLast={idx === items.length - 1}
-                />
-              ))}
-              {items.length === 0 && (
-                <div className="text-center py-6 border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-lowest">
-                  <p className="text-xs text-on-surface-variant/60">No items added to this lesson yet.</p>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              {LESSON_TYPES.map(t => {
-                const TIcon = t.icon;
-                return (
-                  <button
-                    key={t.value}
-                    onClick={() => addItem(t.value)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all hover:scale-105 active:scale-95 ${t.bg} ${t.color}`}
-                  >
-                    <IconPlus size={12} stroke={2.5} />
-                    Add {t.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function CourseDesigner({ course, onClose, onSaved }) {
   const { toast } = useDialog();
-  const [lessons, setLessons] = useState(course.lessons || []);
+  const [subjects, setSubjects] = useState(course.subjects || []);
   const [meta, setMeta] = useState({
     title: course.title,
     class: course.class,
@@ -1285,6 +1343,8 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'settings'
+  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(null);
+  const [selectedChapterIndex, setSelectedChapterIndex] = useState(null);
   const SubjectIcon = getSubjectIcon(meta.subject);
 
   const handleFileUpload = async (e) => {
@@ -1299,32 +1359,31 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
       toast.error("Failed to upload file: " + err.message);
     }
   };
-
-  const addLesson = () => {
-    setLessons(prev => [...prev, {
+  const addSubject = () => {
+    setSubjects(prev => [...prev, {
       _id: `temp_${Date.now()}`,
       title: '',
       description: '',
-      isPremium: true,
+      isPremium: false,
       order: prev.length,
-      items: [],
+      chapters: [],
     }]);
   };
 
-  const updateLesson = (index, patch) => {
-    setLessons(prev => prev.map((l, i) => {
+    const updateSubject = (index, patch) => {
+    setSubjects(prev => prev.map((l, i) => {
       if (i !== index) return l;
       const appliedPatch = typeof patch === 'function' ? patch(l) : patch;
       return { ...l, ...appliedPatch };
     }));
   };
 
-  const deleteLesson = (index) => {
-    setLessons(prev => prev.filter((_, i) => i !== index));
+  const deleteSubject = (index) => {
+    setSubjects(prev => prev.filter((_, i) => i !== index));
   };
 
-  const moveLesson = (index, direction) => {
-    setLessons(prev => {
+  const moveSubject = (index, direction) => {
+    setSubjects(prev => {
       const arr = [...prev];
       const target = index + direction;
       if (target < 0 || target >= arr.length) return arr;
@@ -1334,85 +1393,109 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   };
 
   const handleSave = async () => {
-    // Auto-fill untitled lessons with 'Lesson X'
-    const cleanLessonsWithTitles = lessons.map((l, i) => ({
+    // Auto-fill untitled subjects with 'Subject X'
+    const cleanSubjectsWithTitles = subjects.map((l, i) => ({
       ...l,
-      title: l.title?.trim() || `Lesson ${i + 1}`
+      title: l.title?.trim() || `Subject ${i + 1}`
     }));
     
     setSaving(true);
     try {
-      // Clean lessons outline to save
-      const cleanLessons = cleanLessonsWithTitles.map((l, i) => {
-        const cleanItems = (l.items || []).map((item, idx) => {
-          const itemClean = {
-            title: item.title?.trim() || `${LESSON_TYPES.find(t => t.value === item.type)?.label || 'Item'} ${idx + 1}`,
-            type: item.type || 'notes',
-            duration: item.duration || '',
+      // Clean subjects outline to save
+      const cleanSubjects = cleanSubjectsWithTitles.map((l, i) => {
+        const cleanChapters = (l.chapters || []).map((chapter, idx) => {
+          const cleanItems = (chapter.items || []).map((item, iIdx) => {
+             const cleanItem = {
+                title: item.title?.trim() || `Item ${iIdx + 1}`,
+                type: item.type || 'notes',
+                order: iIdx,
+                isPremium: !!item.isPremium,
+                fileUrl: item.fileUrl || '',
+                fileType: item.fileType || '',
+             };
+             if (item._id && !String(item._id).startsWith('temp_') && !String(item._id).startsWith('tmp_')) {
+               cleanItem._id = item._id;
+             }
+             return cleanItem;
+          });
+
+          const cleanChapter = {
+            title: chapter.title?.trim() || `Chapter ${idx + 1}`,
+            description: chapter.description || '',
+            icon: chapter.icon || '',
             order: idx,
-            isPremium: !!item.isPremium,
-            fileUrl: item.fileUrl || '',
-            fileType: item.fileType || '',
+            items: cleanItems
           };
-          if (item._id && !String(item._id).startsWith('temp_') && !String(item._id).startsWith('tmp_')) {
-            itemClean._id = item._id;
+          if (chapter._id && !String(chapter._id).startsWith('temp_') && !String(chapter._id).startsWith('tmp_')) {
+            cleanChapter._id = chapter._id;
           }
-          return itemClean;
+          return cleanChapter;
         });
 
-        const clean = {
-          title: l.title.trim(),
+        const cleanL = {
+          title: l.title?.trim() || `Subject ${i + 1}`,
           description: l.description || '',
-          isPremium: !!l.isPremium,
+          icon: l.icon || '',
+          isPremium: l.isPremium || false,
           order: i,
-          items: cleanItems,
+          chapters: cleanChapters,
         };
         if (l._id && !String(l._id).startsWith('temp_') && !String(l._id).startsWith('tmp_')) {
-          clean._id = l._id;
+          cleanL._id = l._id;
         }
-        return clean;
+        return cleanL;
       });
 
       const updated = await updateCourse(course._id, {
         ...meta,
-        lessons: cleanLessons,
+        subjects: cleanSubjects,
       });
 
-      // Now save details for all items inside all lessons in parallel
+      // Now save details for all items inside all chapters inside all subjects
       const savePromises = [];
-      const updatedLessons = updated?.lessons || [];
-      for (let lIdx = 0; lIdx < updatedLessons.length; lIdx++) {
-        const cleanL = updatedLessons[lIdx];
-        const localL = lessons[lIdx];
+      const updatedSubjects = updated?.subjects || [];
+      for (let lIdx = 0; lIdx < updatedSubjects.length; lIdx++) {
+        const cleanL = updatedSubjects[lIdx];
+        const localL = subjects[lIdx];
 
-        if (localL && localL.items) {
-          const cleanItems = cleanL?.items || [];
-          for (let iIdx = 0; iIdx < cleanItems.length; iIdx++) {
-            const cleanItem = cleanItems[iIdx];
-            const localItem = localL.items[iIdx];
+        if (localL && localL.chapters) {
+          const cleanChapters = cleanL?.chapters || [];
+          for (let cIdx = 0; cIdx < cleanChapters.length; cIdx++) {
+            const cleanChapter = cleanChapters[cIdx];
+            const localChapter = localL.chapters[cIdx];
+            
+            if (localChapter && localChapter.items) {
+               const cleanItems = cleanChapter?.items || [];
+               for (let iIdx = 0; iIdx < cleanItems.length; iIdx++) {
+                 const cleanItem = cleanItems[iIdx];
+                 const localItem = localChapter.items[iIdx];
 
-            if (localItem) {
-              const isNewItem = !localItem._id || String(localItem._id).startsWith('temp_') || String(localItem._id).startsWith('tmp_');
-              
-              if (cleanItem.type === 'notes' && (localItem.content !== undefined || isNewItem)) {
-                savePromises.push(updateLessonContent(cleanItem._id, localItem.content || ''));
-              } else if (cleanItem.type === 'quiz' && (localItem.questions !== undefined || isNewItem)) {
-                const cleanQs = (localItem.questions || []).map(q => {
-                  const { _id: qid, ...qrest } = q;
-                  const cq = { ...qrest };
-                  if (qid && !String(qid).startsWith('tmp_') && !String(qid).startsWith('temp_')) cq._id = qid;
-                  return cq;
-                });
-                savePromises.push(updateLessonQuiz(cleanItem._id, cleanQs));
-              } else if (cleanItem.type === 'qa' && (localItem.qas !== undefined || isNewItem)) {
-                const cleanQas = (localItem.qas || []).map(p => {
-                  const { _id: pid, ...prest } = p;
-                  const cp = { ...prest };
-                  if (pid && !String(pid).startsWith('tmp_') && !String(pid).startsWith('temp_')) cp._id = pid;
-                  return cp;
-                });
-                savePromises.push(updateLessonQa(cleanItem._id, cleanQas));
-              }
+                 if (localItem) {
+                    const isNewItem = !localItem._id || String(localItem._id).startsWith('temp_') || String(localItem._id).startsWith('tmp_');
+                    
+                    if (localItem.content !== undefined || isNewItem) {
+                      savePromises.push(updateLessonContent(cleanItem._id, localItem.content || ''));
+                    }
+                    if (localItem.questions !== undefined || isNewItem) {
+                      const cleanQs = (localItem.questions || []).map(q => {
+                        const { _id: qid, ...qrest } = q;
+                        const cq = { ...qrest };
+                        if (qid && !String(qid).startsWith('tmp_') && !String(qid).startsWith('temp_')) cq._id = qid;
+                        return cq;
+                      });
+                      savePromises.push(updateLessonQuiz(cleanItem._id, cleanQs));
+                    }
+                    if (localItem.qas !== undefined || isNewItem) {
+                       const cleanQas = (localItem.qas || []).map(p => {
+                          const { _id: pid, ...prest } = p;
+                          const cp = { ...prest };
+                          if (pid && !String(pid).startsWith('tmp_') && !String(pid).startsWith('temp_')) cp._id = pid;
+                          return cp;
+                       });
+                       savePromises.push(updateLessonQa(cleanItem._id, cleanQas));
+                    }
+                 }
+               }
             }
           }
         }
@@ -1423,24 +1506,31 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
       }
 
       // Update local state with real DB IDs but keep our content!
-      const mergedLessons = (updated?.lessons || []).map((serverL, lIdx) => {
-        const localL = lessons[lIdx];
+      const mergedSubjects = (updated?.subjects || []).map((serverL, lIdx) => {
+        const localL = subjects[lIdx];
         if (!localL) return serverL;
         return {
           ...serverL,
-          items: (serverL.items || []).map((serverI, iIdx) => {
-            const localI = (localL.items || [])[iIdx];
-            if (!localI) return serverI;
+          chapters: (serverL.chapters || []).map((serverC, cIdx) => {
+            const localC = (localL.chapters || [])[cIdx];
+            if (!localC) return serverC;
             return {
-              ...serverI,
-              content: localI.content,
-              questions: localI.questions,
-              qas: localI.qas
+              ...serverC,
+              items: (serverC.items || []).map((serverI, iIdx) => {
+                 const localI = (localC.items || [])[iIdx];
+                 if (!localI) return serverI;
+                 return {
+                    ...serverI,
+                    content: localI.content,
+                    questions: localI.questions,
+                    qas: localI.qas
+                 };
+              })
             };
           })
         };
       });
-      setLessons(mergedLessons);
+      setSubjects(mergedSubjects);
 
       setSaved(true);
       onSaved(updated);
@@ -1452,17 +1542,12 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
     }
   };
 
-  const totalLessons = lessons.length;
-  const premiumCount = lessons.filter(l => l.isPremium).length;
+  const totalSubjects = subjects.length;
+  const premiumCount = subjects.filter(l => l.isPremium).length;
   
-  const totalItemsCount = lessons.reduce((acc, l) => acc + (l.items || []).length, 0);
+  const totalChaptersCount = subjects.reduce((acc, l) => acc + (l.chapters || []).length, 0);
   
-  const typeBreakdown = LESSON_TYPES.map(t => {
-    const count = lessons.reduce((acc, l) => {
-      return acc + (l.items || []).filter(item => item.type === t.value).length;
-    }, 0);
-    return { ...t, count };
-  }).filter(t => t.count > 0);
+  
 
   return (
     <div className="fixed inset-0 z-modal-highest flex flex-col bg-surface animate-in fade-in duration-200">
@@ -1485,17 +1570,17 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Publish toggle */}
-          <button
-            onClick={() => setMeta(m => ({ ...m, isPublished: !m.isPublished }))}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
-              meta.isPublished
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                : 'bg-surface-variant/50 border-outline-variant/30 text-on-surface-variant'
-            }`}
-          >
-            {meta.isPublished ? <IconEye size={15} stroke={2} /> : <IconEyeOff size={15} stroke={2} />}
-            <span className="hidden sm:inline">{meta.isPublished ? 'Published' : 'Draft'}</span>
-          </button>
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-outline-variant/30 bg-surface-variant/20">
+            <span className={`text-xs font-bold ${meta.isPublished ? 'text-emerald-400' : 'text-on-surface-variant'}`}>
+              {meta.isPublished ? 'Published' : 'Draft'}
+            </span>
+            <button
+              onClick={() => setMeta(m => ({ ...m, isPublished: !m.isPublished }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${meta.isPublished ? 'bg-emerald-500' : 'bg-surface-variant'}`}
+            >
+              <span className="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm" style={{ transform: meta.isPublished ? 'translateX(18px)' : 'translateX(2px)' }} />
+            </button>
+          </div>
 
           {/* Save button */}
           <button
@@ -1540,36 +1625,17 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
 
           {/* Stats */}
           <div className="px-5 grid grid-cols-2 gap-3 mb-5">
-            <div className="bg-surface-container rounded-xl p-3">
-              <p className="text-2xl font-bold text-on-surface">{totalLessons}</p>
-              <p className="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">Items</p>
+            <div className="bg-surface-container rounded-xl p-3 border border-outline/5">
+              <p className="text-2xl font-bold text-on-surface">{totalSubjects}</p>
+              <p className="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">Subjects</p>
             </div>
-            <div className="bg-surface-container rounded-xl p-3">
-              <p className="text-2xl font-bold text-amber-400">{premiumCount}</p>
-              <p className="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">Premium</p>
+            <div className="bg-surface-container rounded-xl p-3 border border-outline/5">
+              <p className="text-2xl font-bold text-on-surface">{totalChaptersCount}</p>
+              <p className="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">Chapters</p>
             </div>
           </div>
 
-          {/* Type breakdown */}
-          {typeBreakdown.length > 0 && (
-            <div className="px-5 mb-5">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-3">Content Mix</p>
-              <div className="space-y-2">
-                {typeBreakdown.map(t => {
-                  const TIcon = t.icon;
-                  return (
-                    <div key={t.value} className="flex items-center gap-2.5">
-                      <div className={`w-6 h-6 rounded-lg border flex items-center justify-center ${t.bg}`}>
-                        <TIcon size={13} stroke={2} className={t.color} />
-                      </div>
-                      <span className="text-xs text-on-surface-variant flex-1">{t.label}</span>
-                      <span className="text-xs font-bold text-on-surface">{t.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+
 
           {/* Tips */}
           <div className="mx-5 mb-5 p-4 rounded-xl bg-primary/5 border border-primary/15">
@@ -1578,7 +1644,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
               <span className="text-[11px] font-bold uppercase tracking-widest text-primary">Tips</span>
             </div>
             <ul className="space-y-1.5">
-              {['Start with a hook — put your strongest lesson first', 'Keep lessons under 15 min each', 'Mix content types to boost engagement', 'Mark key lessons as Premium'].map(tip => (
+              {['Start with a hook — put your strongest subject first', 'Keep chapters under 15 min each', 'Mix content types to boost engagement', 'Mark key subjects as Premium'].map(tip => (
                 <li key={tip} className="text-[11px] text-on-surface-variant leading-relaxed">{tip}</li>
               ))}
             </ul>
@@ -1612,62 +1678,187 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
           </div>
 
           {/* ── Curriculum Tab ── */}
-          {activeTab === 'curriculum' && (
+          {activeTab === 'curriculum' && selectedSubjectIndex === null && (
             <div className="p-6 md:p-8 max-w-3xl">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-on-surface">Curriculum Builder</h2>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  Add lessons, songs, quizzes, and readings. Drag to reorder.
+                  Add subjects and arrange your course outline.
                 </p>
               </div>
 
               {/* Lesson list */}
               <div className="space-y-3 mb-6">
-                {lessons.length === 0 && (
+                {subjects.length === 0 && (
                   <div className="text-center py-16 border border-dashed border-outline-variant/30 rounded-2xl">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
                       <IconPlayerPlay size={26} stroke={1.5} className="text-primary" />
                     </div>
                     <h3 className="font-bold text-on-surface mb-1">No content yet</h3>
-                    <p className="text-sm text-on-surface-variant mb-5">Add your first lesson to start building the curriculum.</p>
+                    <p className="text-sm text-on-surface-variant mb-5">Add your first subject to start building the curriculum.</p>
                     <button
-                      onClick={addLesson}
+                      onClick={addSubject}
                       className="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:brightness-110 active:scale-[0.98] transition-all"
                     >
-                      Add First Lesson
+                      Add First Subject
                     </button>
                   </div>
                 )}
 
-                {lessons.map((lesson, i) => (
-                  <LessonCard
-                    key={lesson._id || i}
-                    lesson={lesson}
+                {subjects.map((subject, i) => (
+                  <SubjectCard
+                    key={subject._id || i}
+                    subject={subject}
                     index={i}
                     isFirst={i === 0}
-                    isLast={i === lessons.length - 1}
-                    onUpdate={patch => updateLesson(i, patch)}
-                    onDelete={() => deleteLesson(i)}
-                    onMoveUp={() => moveLesson(i, -1)}
-                    onMoveDown={() => moveLesson(i, 1)}
+                    isLast={i === subjects.length - 1}
+                    onUpdate={patch => updateSubject(i, patch)}
+                    onDelete={() => deleteSubject(i)}
+                    onMoveUp={() => moveSubject(i, -1)}
+                    onMoveDown={() => moveSubject(i, 1)}
+                    onManageChapters={() => setSelectedSubjectIndex(i)}
                   />
                 ))}
               </div>
 
               {/* Add buttons */}
-              {lessons.length > 0 && (
+              {subjects.length > 0 && (
                 <button
-                  onClick={addLesson}
+                  onClick={addSubject}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/20 text-primary bg-primary/10 text-xs font-bold transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
                 >
                   <IconPlus size={13} stroke={2.5} />
-                  Add Lesson Heading
+                  Add Subject
                 </button>
               )}
             </div>
           )}
 
+          {activeTab === 'curriculum' && selectedSubjectIndex !== null && selectedChapterIndex === null && (
+            <div className="p-6 md:p-8 max-w-3xl">
+              <div className="mb-6">
+                <button 
+                  onClick={() => { setSelectedSubjectIndex(null); setSelectedChapterIndex(null); }}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-4"
+                >
+                  <IconArrowLeft size={16} stroke={2} />
+                  Back to Subjects
+                </button>
+                <h2 className="text-xl font-bold text-on-surface">{subjects[selectedSubjectIndex]?.title || `Subject ${selectedSubjectIndex + 1}`}</h2>
+                <p className="text-sm text-on-surface-variant mt-1">
+                  Manage chapters for this subject.
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {(subjects[selectedSubjectIndex]?.chapters || []).length === 0 && (
+                  <div className="text-center py-10 border border-dashed border-outline-variant/30 rounded-2xl bg-surface-container-lowest">
+                    <p className="text-[13px] font-medium text-on-surface-variant/60 mb-4">No chapters added yet.</p>
+                    <button
+                      onClick={() => {
+                        const newItem = { _id: `temp_${Date.now()}`, title: '', duration: '', videoUrl: '', isPremium: false, order: (subjects[selectedSubjectIndex]?.chapters || []).length };
+                        updateSubject(selectedSubjectIndex, prev => ({ chapters: [...(prev.chapters || []), newItem] }));
+                      }}
+                      className="flex mx-auto items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    >
+                      <IconPlus size={14} stroke={2.5} />
+                      Add First Chapter
+                    </button>
+                  </div>
+                )}
+                
+                {(subjects[selectedSubjectIndex]?.chapters || []).map((chapter, idx) => (
+                  <ChapterCard
+                    key={chapter._id || idx}
+                    chapter={chapter}
+                    index={idx}
+                    chapters={subjects[selectedSubjectIndex].chapters || []}
+                    onUpdate={patch => {
+                      updateSubject(selectedSubjectIndex, prev => ({
+                        chapters: (prev.chapters || []).map((ch, i) => i === idx ? { ...ch, ...patch } : ch)
+                      }));
+                    }}
+                    onDelete={() => {
+                      updateSubject(selectedSubjectIndex, prev => ({
+                        chapters: (prev.chapters || []).filter((_, i) => i !== idx)
+                      }));
+                    }}
+                    onMoveUp={() => {
+                      updateSubject(selectedSubjectIndex, prev => {
+                        const arr = [...(prev.chapters || [])];
+                        if (idx > 0) { [arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]; }
+                        return { chapters: arr.map((ch, i) => ({ ...ch, order: i })) };
+                      });
+                    }}
+                    onMoveDown={() => {
+                      updateSubject(selectedSubjectIndex, prev => {
+                        const arr = [...(prev.chapters || [])];
+                        if (idx < arr.length - 1) { [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]; }
+                        return { chapters: arr.map((ch, i) => ({ ...ch, order: i })) };
+                      });
+                    }}
+                    isFirst={idx === 0}
+                    isLast={idx === (subjects[selectedSubjectIndex]?.chapters || []).length - 1}
+                    onManageContent={() => setSelectedChapterIndex(idx)}
+                  />
+                ))}
+              </div>
+
+              {(subjects[selectedSubjectIndex]?.chapters || []).length > 0 && (
+                <button
+                  onClick={() => {
+                    const newItem = { _id: `temp_${Date.now()}`, title: '', duration: '', videoUrl: '', isPremium: false, order: (subjects[selectedSubjectIndex]?.chapters || []).length };
+                    updateSubject(selectedSubjectIndex, prev => ({ chapters: [...(prev.chapters || []), newItem] }));
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-extrabold transition-all hover:scale-[1.02] active:scale-95 bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                >
+                  <IconPlus size={16} stroke={2.5} />
+                  Add Chapter
+                </button>
+              )}
+            </div>
+          )}
+
+                    {activeTab === 'curriculum' && selectedSubjectIndex !== null && selectedChapterIndex !== null && (
+            <div className="p-6 md:p-8 max-w-3xl">
+              <div className="mb-6">
+                <button 
+                  onClick={() => setSelectedChapterIndex(null)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-4"
+                >
+                  <IconArrowLeft size={16} stroke={2} />
+                  Back to Chapters
+                </button>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                    {subjects[selectedSubjectIndex]?.title || `Subject ${selectedSubjectIndex + 1}`}
+                  </span>
+                  <IconChevronDown size={12} className="-rotate-90 text-on-surface-variant" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                    {(subjects[selectedSubjectIndex]?.chapters || [])[selectedChapterIndex]?.title || `Chapter ${selectedChapterIndex + 1}`}
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold text-on-surface">Manage Content</h2>
+                <p className="text-sm text-on-surface-variant mt-1">
+                  Edit notes, quizzes, and Q&A for this chapter.
+                </p>
+              </div>
+
+              <ChapterContentEditor 
+                chapter={(subjects[selectedSubjectIndex]?.chapters || [])[selectedChapterIndex]} 
+                onUpdate={patch => {
+                  const updatedSubjects = [...subjects];
+                  const currentChapters = [...(updatedSubjects[selectedSubjectIndex].chapters || [])];
+                  currentChapters[selectedChapterIndex] = { ...currentChapters[selectedChapterIndex], ...patch };
+                  updatedSubjects[selectedSubjectIndex] = { ...updatedSubjects[selectedSubjectIndex], chapters: currentChapters };
+                  setSubjects(updatedSubjects);
+                }} 
+              />
+            </div>
+          )}
+
           {/* ── Settings Tab ── */}
+
           {activeTab === 'settings' && (
             <div className="p-6 md:p-8 max-w-2xl space-y-8">
               <div>
@@ -1762,7 +1953,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                       <p className="font-bold text-on-surface">Premium Course</p>
                       <IconCrown size={15} className="text-amber-400" />
                     </div>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Require subscription for full access. Free users can only learn sample items.</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">Require subscription for full access. Free users can only learn sample chapters.</p>
                   </div>
                   <button
                     onClick={() => setMeta(m => ({ ...m, isPremium: !m.isPremium }))}

@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconArrowRight } from '@tabler/icons-react';
 import StudyDashboard from './StudyDashboard';
 import Button from './ui/Button';
 import heroVideo from '../assets/vid1.mp4';
 
 export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeClick }) {
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden w-full pt-40 pb-44 md:pb-60">
       {/* Background Video */}
@@ -33,9 +35,12 @@ export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeCli
             Curriculum-aligned study songs designed to boost retention and reduce eye strain. Turn hours of reading into minutes of listening.
           </p>
           
-          <div className="pt-4">
-            <Button size="lg" className="group">
+          <div className="pt-4 flex flex-col sm:flex-row gap-4">
+            <Button size="lg" className="group" onClick={() => navigate('/library')}>
               Start Listening <IconArrowRight size={20} className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+            </Button>
+            <Button size="lg" variant="secondary" className="group" onClick={() => navigate('/course')}>
+              Explore Courses
             </Button>
           </div>
         </div>

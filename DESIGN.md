@@ -11,6 +11,8 @@ colors:
   on-primary: "#ffffff"
   on-background-light: "#0d1c2e"
   on-background-dark: "#dae2ff"
+  info: "#8b5cf6"
+  success: "#10b981"
 typography:
   display:
     fontFamily: "Outfit, sans-serif"

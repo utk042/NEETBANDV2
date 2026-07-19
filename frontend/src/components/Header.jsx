@@ -122,7 +122,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
               className="focus-visible:outline-none rounded-xl active:scale-[0.98] transition-transform duration-200"
               aria-label="NeetBand Home"
             >
-              <img alt="NeetBand Logo" className="h-14 md:h-16 w-[122px] md:w-[139px] object-contain transition-[height,width] duration-300" src={logoImg} width={512} height={236}/>
+              <img alt="NeetBand Logo" className="h-16 md:h-20 w-[139px] md:w-[174px] object-contain transition-[height,width] duration-300" src={logoImg} width={512} height={236}/>
             </button>
           </div>
           

@@ -26,6 +26,7 @@ const LoginSignup = lazyWithRetry(() => import('../components/LoginSignup'));
 const AuthCallback = lazyWithRetry(() => import('../components/AuthCallback'));
 const ResetPassword = lazyWithRetry(() => import('../components/ResetPassword'));
 import SyllabusLibrary from '../components/SyllabusLibrary';
+import CourseCarousel from '../components/CourseCarousel';
 const LibraryPage = lazyWithRetry(() => import('../components/LibraryPage'));
 const SongLibrary = lazyWithRetry(() => import('../components/SongLibrary'));
 import GoToTop from '../components/GoToTop';
@@ -43,9 +44,11 @@ const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeChec
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useDialog } from '../contexts/DialogContext';
 
 function FeedGuard({ user, isAuthLoading, setPostLoginRedirect }) {
   const navigate = useNavigate();
+  const { alert: dialogAlert } = useDialog();
   
   useEffect(() => {
     if (!isAuthLoading) {
@@ -53,11 +56,12 @@ function FeedGuard({ user, isAuthLoading, setPostLoginRedirect }) {
         setPostLoginRedirect('feed');
         navigate('/login', { replace: true });
       } else if (!user.isPremium && user.role !== 'admin' && user.role !== 'owner') {
-        alert("Premium access required. Redirecting to checkout...");
-        navigate('/checkout', { replace: true });
+        dialogAlert("Premium Required", "Premium access required. Redirecting to checkout...").then(() => {
+          navigate('/checkout', { replace: true });
+        });
       }
     }
-  }, [user, isAuthLoading, navigate, setPostLoginRedirect]);
+  }, [user, isAuthLoading, navigate, setPostLoginRedirect, dialogAlert]);
 
   if (isAuthLoading || !user || !user.isLoggedIn || (!user.isPremium && user.role !== 'admin' && user.role !== 'owner')) {
     return (
@@ -179,6 +183,7 @@ export default function UserRoutes() {
             <Route path="/" element={<>
               <Hero currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
               <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
+              <CourseCarousel lmsCourses={lmsCourses} />
               <Features />
               <StatsSection appReady={!isLoading} />
               <Pricing onUpgrade={handleUpgradeClick} user={user} />
@@ -221,8 +226,16 @@ export default function UserRoutes() {
                 navigate(`/course/${course._id}`);
               }} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onUpgradeClick={handleUpgradeClick} queue={queue} setQueue={setQueue} handleNext={handleNext} handlePrev={handlePrev} handleSeek={handleSeek} />} />
 
-            <Route path="/course/:courseId" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
-            <Route path="/course/:courseId/:itemType/:subjectIdx/:chapterIdx/:itemIdx" element={<CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />} />
+            <Route path="/course/:courseId" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Course Player" loginRoute="/login">
+                <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
+              </ProtectedRoute>
+            } />
+            <Route path="/course/:courseId/:itemType/:subjectIdx/:chapterIdx/:itemIdx" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Course Player" loginRoute="/login">
+                <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
+              </ProtectedRoute>
+            } />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub /></div>} />
@@ -241,6 +254,8 @@ export default function UserRoutes() {
                 if (postLoginRedirect) {
                   navigate(`/${postLoginRedirect}`);
                   setPostLoginRedirect(null);
+                } else if (location.state?.from?.pathname) {
+                  navigate(location.state.from.pathname);
                 } else {
                   navigate('/dashboard');
                 }

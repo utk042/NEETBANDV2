@@ -46,10 +46,6 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
     }
 
     const parseTTML = (text) => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'text/xml');
-      const pTags = doc.getElementsByTagName('p');
-      const parsed = [];
       const parseTime = (timeStr) => {
         if (!timeStr) return 0;
         const parts = timeStr.split(':');
@@ -57,14 +53,52 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
         if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
         return parseFloat(timeStr);
       };
-      for (let i = 0; i < pTags.length; i++) {
-        const p = pTags[i];
-        const begin = parseTime(p.getAttribute('begin'));
-        const endStr = p.getAttribute('end');
-        const end = endStr ? parseTime(endStr) : begin + 5;
-        const text = p.textContent.trim();
-        if (text) parsed.push({ begin, end, text });
+
+      const extractFromTags = (pTags) => {
+        const parsed = [];
+        for (let i = 0; i < pTags.length; i++) {
+          const p = pTags[i];
+          const beginAttr = p.getAttribute('begin');
+          if (!beginAttr) continue;
+          const begin = parseTime(beginAttr);
+          const endStr = p.getAttribute('end');
+          const end = endStr ? parseTime(endStr) : begin + 5;
+          const textContent = p.textContent.trim();
+          if (textContent) parsed.push({ begin, end, text: textContent });
+        }
+        return parsed;
+      };
+
+      let parsed = [];
+      try {
+        const parser = new DOMParser();
+        let doc = parser.parseFromString(text, 'text/xml');
+        let pTags = doc.getElementsByTagName('p');
+        
+        if (!pTags || pTags.length === 0) {
+          doc = parser.parseFromString(text, 'text/html');
+          pTags = doc.getElementsByTagName('p');
+        }
+        
+        parsed = extractFromTags(pTags);
+      } catch (e) {
+        console.error("DOMParser error for TTML:", e);
       }
+
+      if (parsed.length === 0) {
+        const regex = /<p\s+[^>]*begin="([^"]+)"[^>]*>([\s\S]*?)<\/p>/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const begin = parseTime(match[1]);
+          const endMatch = match[0].match(/end="([^"]+)"/i);
+          const endStr = endMatch ? endMatch[1] : null;
+          const end = endStr ? parseTime(endStr) : begin + 5;
+          let rawText = match[2].replace(/<[^>]+>/g, '').trim();
+          rawText = rawText.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          if (rawText) parsed.push({ begin, end, text: rawText });
+        }
+      }
+
       return parsed;
     };
 

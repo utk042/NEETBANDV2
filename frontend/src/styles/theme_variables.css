@@ -79,6 +79,8 @@
   --color-primary-container: 201 162 39; /* #c9a227 */
   --color-tertiary-container: 163 167 169; /* #a3a7a9 */
   --color-surface-variant-hover: 194 214 245; /* #c2d6f5 */
+  --color-info: 139 92 246; /* #8b5cf6 */
+  --color-success: 16 185 129; /* #10b981 */
 
   /* Rounded Scale from DESIGN.md */
   --rounded-sm: 0.25rem;
@@ -182,4 +184,6 @@
   --color-primary-container: 201 162 39; /* #c9a227 */
   --color-tertiary-container: 146 163 237; /* #92a3ed */
   --color-surface-variant-hover: 54 66 98; /* #364262 */
+  --color-info: 167 139 250; /* #a855f7 */
+  --color-success: 52 211 153; /* #34d399 */
 }

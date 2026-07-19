@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
   IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture
@@ -17,8 +18,9 @@ export default function FullPlayerModal({ isOpen, onClose }) {
   } = usePlayer();
   const { user } = useUserAuth();
 
+  const navigate = useNavigate();
   const [lyrics, setLyrics] = useState([]);
-  const [showLyrics, setShowLyrics] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(true);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
@@ -79,10 +81,6 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     }
 
     const parseTTML = (text) => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'text/xml');
-      const pTags = doc.getElementsByTagName('p');
-      const parsed = [];
       const parseTime = (timeStr) => {
         if (!timeStr) return 0;
         const parts = timeStr.split(':');
@@ -90,14 +88,52 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
         return parseFloat(timeStr);
       };
-      for (let i = 0; i < pTags.length; i++) {
-        const p = pTags[i];
-        const begin = parseTime(p.getAttribute('begin'));
-        const endStr = p.getAttribute('end');
-        const end = endStr ? parseTime(endStr) : begin + 5;
-        const text = p.textContent.trim();
-        if (text) parsed.push({ begin, end, text });
+
+      const extractFromTags = (pTags) => {
+        const parsed = [];
+        for (let i = 0; i < pTags.length; i++) {
+          const p = pTags[i];
+          const beginAttr = p.getAttribute('begin');
+          if (!beginAttr) continue;
+          const begin = parseTime(beginAttr);
+          const endStr = p.getAttribute('end');
+          const end = endStr ? parseTime(endStr) : begin + 5;
+          const textContent = p.textContent.trim();
+          if (textContent) parsed.push({ begin, end, text: textContent });
+        }
+        return parsed;
+      };
+
+      let parsed = [];
+      try {
+        const parser = new DOMParser();
+        let doc = parser.parseFromString(text, 'text/xml');
+        let pTags = doc.getElementsByTagName('p');
+        
+        if (!pTags || pTags.length === 0) {
+          doc = parser.parseFromString(text, 'text/html');
+          pTags = doc.getElementsByTagName('p');
+        }
+        
+        parsed = extractFromTags(pTags);
+      } catch (e) {
+        console.error("DOMParser error for TTML:", e);
       }
+
+      if (parsed.length === 0) {
+        const regex = /<p\s+[^>]*begin="([^"]+)"[^>]*>([\s\S]*?)<\/p>/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const begin = parseTime(match[1]);
+          const endMatch = match[0].match(/end="([^"]+)"/i);
+          const endStr = endMatch ? endMatch[1] : null;
+          const end = endStr ? parseTime(endStr) : begin + 5;
+          let rawText = match[2].replace(/<[^>]+>/g, '').trim();
+          rawText = rawText.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          if (rawText) parsed.push({ begin, end, text: rawText });
+        }
+      }
+
       return parsed;
     };
 
@@ -288,14 +324,21 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               <IconPictureInPicture size={28} />
             </button>
           )}
-          <button 
-            onClick={() => setShowLyrics(!showLyrics)}
-            className={`p-2 rounded-full transition-colors ${showLyrics ? 'text-primary bg-primary/10' : 'text-on-surface hover:text-primary'} ${!displayTrack.lyricsUrl && 'opacity-50 cursor-not-allowed'}`}
-            disabled={!displayTrack.lyricsUrl}
-            title={displayTrack.lyricsUrl ? "Toggle Lyrics (TTML/LRC/SRT/TXT)" : "No lyrics available"}
-          >
-            <IconMicrophone2 size={28} />
-          </button>
+          {displayTrack.courseId && (
+            <button 
+              onClick={() => {
+                onClose();
+                const targetId = typeof displayTrack.courseId === 'object' && displayTrack.courseId !== null ? displayTrack.courseId._id : displayTrack.courseId;
+                navigate(`/course/${targetId}`);
+              }}
+              className="w-11 h-11 flex items-center justify-center rounded-full transition-colors bg-surface-container-highest hover:bg-primary/20 text-on-surface hover:text-primary shadow-sm ring-1 ring-outline/10"
+              title="Go to Related Course"
+            >
+              <div className="flex items-center justify-center font-black text-[18px] tracking-tighter">
+                Q<span className="text-primary text-[20px]">3</span>
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
@@ -308,12 +351,12 @@ export default function FullPlayerModal({ isOpen, onClose }) {
             <img 
               src={displayTrack.cover || defaultCover} 
               alt={displayTrack.title} 
-              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${showLyrics ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${(showLyrics && lyrics.length > 0) ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
               onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
             
             {/* Lyrics Overlay */}
             <div 
-              className={`absolute inset-0 z-10 transition-opacity duration-500 ${showLyrics ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute inset-0 z-10 transition-opacity duration-500 ${(showLyrics && lyrics.length > 0) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             >
               <div 
                 ref={lyricsContainerRef}
@@ -352,7 +395,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            <div className={`absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none transition-opacity duration-500 ${showLyrics ? 'opacity-0' : 'opacity-100'}`}></div>
+            <div className={`absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none transition-opacity duration-500 ${(showLyrics && lyrics.length > 0) ? 'opacity-0' : 'opacity-100'}`}></div>
           </div>
         </div>
 

@@ -7,6 +7,8 @@ import {
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff } from '@tabler/icons-react';
 import CourseDesigner from './CourseDesigner';
+import SearchableSelect from '../ui/SearchableSelect';
+import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
 
 export default function ManageLMS({ subTab = 'courses', user }) {
   const { confirm, toast } = useDialog();
@@ -25,6 +27,8 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   const [designingCourse, setDesigningCourse] = useState(null);
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  
+  const { classes: existingClasses, subjects: existingSubjects, classToSubjects } = useClassAndSubjectOptions();
 
   useEffect(() => {
     if (subTab === 'courses') {
@@ -191,15 +195,24 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   };
 
   const handleDeleteCourse = async (id) => {
-    if (!await confirm("Delete Course", "Are you sure you want to delete this course?")) return;
-    try {
-      await deleteCourse(id);
-      fetchCourses();
-      toast.success("Course deleted successfully");
-    } catch (err) {
-      toast.error(err.message);
+    if (await confirm('Are you sure you want to delete this course?')) {
+      try {
+        await deleteCourse(id);
+        setCourses(courses.filter(c => c._id !== id));
+        toast.success('Course deleted successfully');
+      } catch (err) {
+        toast.error('Failed to delete course');
+      }
     }
   };
+
+  const availableSubjects = formData.class && classToSubjects[formData.class]
+    ? classToSubjects[formData.class]
+    : existingSubjects;
+
+  if (designingCourse) {
+    return <CourseDesigner course={designingCourse} onBack={() => setDesigningCourse(null)} />;
+  }
 
   if (subTab === 'students' || subTab === 'admins') {
     const isAdminsTab = subTab === 'admins';
@@ -599,11 +612,25 @@ export default function ManageLMS({ subTab = 'courses', user }) {
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Class / Grade</label>
-                    <input type="text" required placeholder="e.g. Class 11" className={inputClass} value={formData.class} onChange={e => setFormData({...formData, class: e.target.value})} />
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.class}
+                      onChange={(val) => setFormData({...formData, class: val})}
+                      placeholder="Select or Create Class..."
+                      options={existingClasses.map(c => ({ value: c, label: c }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Subject</label>
-                    <input type="text" required placeholder="e.g. Biology" className={inputClass} value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} />
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.subject}
+                      onChange={(val) => setFormData({...formData, subject: val})}
+                      placeholder="Select or Create Subject..."
+                      options={availableSubjects.map(s => ({ value: s, label: s }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col md:col-span-2">
                     <label className={labelClass}>Summary (Optional)</label>
@@ -658,11 +685,25 @@ export default function ManageLMS({ subTab = 'courses', user }) {
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Class / Grade</label>
-                    <input type="text" required placeholder="e.g. Class 11" className={inputClass} value={formData.class} onChange={e => setFormData({...formData, class: e.target.value})} />
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.class}
+                      onChange={(val) => setFormData({...formData, class: val})}
+                      placeholder="Select or Create Class..."
+                      options={existingClasses.map(c => ({ value: c, label: c }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Subject</label>
-                    <input type="text" required placeholder="e.g. Biology" className={inputClass} value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} />
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.subject}
+                      onChange={(val) => setFormData({...formData, subject: val})}
+                      placeholder="Select or Create Subject..."
+                      options={availableSubjects.map(s => ({ value: s, label: s }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col md:col-span-2">
                     <label className={labelClass}>Summary (Optional)</label>

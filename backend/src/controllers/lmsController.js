@@ -22,6 +22,12 @@ export const getCourses = async (req, res) => {
     if (className) query.class = className;
     if (subject) query.subject = subject;
 
+    // Only admins/owners can see draft courses
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
+    if (!isAdmin) {
+      query.isPublished = true;
+    }
+
     const courses = await Course.find(query).sort('order');
     res.json(courses);
   } catch (error) {
@@ -54,6 +60,13 @@ export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    // Only admins/owners can see draft courses
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
+    if (!isAdmin && !course.isPublished) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
     res.json(course);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -145,11 +158,16 @@ export const submitQuiz = async (req, res) => {
 
 export const getLessonContent = async (req, res) => {
   try {
-    const course = await Course.findOne({ "lessons.items._id": req.params.itemId });
+    const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
-      const lesson = course.lessons.find(l => l.items.id(req.params.itemId));
-      const item = lesson ? lesson.items.id(req.params.itemId) : null;
-      if (item?.isPremium) {
+      let foundItem = null;
+      course.subjects.forEach(s => {
+        s.chapters.forEach(c => {
+          const item = c.items.id(req.params.itemId);
+          if (item) foundItem = item;
+        });
+      });
+      if (foundItem?.isPremium) {
         if (!req.user || !req.user.isPremium) {
           return res.status(403).json({ message: 'Premium content. Upgrade required.' });
         }
@@ -179,11 +197,16 @@ export const updateLessonContent = async (req, res) => {
 
 export const getLessonQuiz = async (req, res) => {
   try {
-    const course = await Course.findOne({ "lessons.items._id": req.params.itemId });
+    const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
-      const lesson = course.lessons.find(l => l.items.id(req.params.itemId));
-      const item = lesson ? lesson.items.id(req.params.itemId) : null;
-      if (item?.isPremium) {
+      let foundItem = null;
+      course.subjects.forEach(s => {
+        s.chapters.forEach(c => {
+          const item = c.items.id(req.params.itemId);
+          if (item) foundItem = item;
+        });
+      });
+      if (foundItem?.isPremium) {
         if (!req.user || !req.user.isPremium) {
           return res.status(403).json({ message: 'Premium content. Upgrade required.' });
         }
@@ -213,11 +236,16 @@ export const updateLessonQuiz = async (req, res) => {
 
 export const getLessonQa = async (req, res) => {
   try {
-    const course = await Course.findOne({ "lessons.items._id": req.params.itemId });
+    const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
-      const lesson = course.lessons.find(l => l.items.id(req.params.itemId));
-      const item = lesson ? lesson.items.id(req.params.itemId) : null;
-      if (item?.isPremium) {
+      let foundItem = null;
+      course.subjects.forEach(s => {
+        s.chapters.forEach(c => {
+          const item = c.items.id(req.params.itemId);
+          if (item) foundItem = item;
+        });
+      });
+      if (foundItem?.isPremium) {
         if (!req.user || !req.user.isPremium) {
           return res.status(403).json({ message: 'Premium content. Upgrade required.' });
         }
@@ -245,3 +273,61 @@ export const updateLessonQa = async (req, res) => {
   }
 };
 
+// --- PROGRESS TRACKING ---
+
+export const getUserCourseProgress = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const courseProgress = user.progress.find(p => p.courseId.toString() === courseId);
+    
+    if (!courseProgress) {
+      return res.json({ completedItems: [] });
+    }
+
+    res.json({ completedItems: courseProgress.completedItems || [] });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const markItemComplete = async (req, res) => {
+  try {
+    const { courseId, itemId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let courseProgress = user.progress.find(p => p.courseId.toString() === courseId);
+    
+    if (!courseProgress) {
+      // Create progress entry if it doesn't exist
+      user.progress.push({
+        courseId: courseId,
+        completed: false,
+        score: 0,
+        completedItems: [itemId]
+      });
+    } else {
+      // Add to completedItems if not already there
+      if (!courseProgress.completedItems) {
+        courseProgress.completedItems = [];
+      }
+      const itemExists = courseProgress.completedItems.some(id => id.toString() === itemId);
+      if (!itemExists) {
+        courseProgress.completedItems.push(itemId);
+      }
+    }
+
+    await user.save();
+
+    res.json({ message: 'Item marked as complete' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

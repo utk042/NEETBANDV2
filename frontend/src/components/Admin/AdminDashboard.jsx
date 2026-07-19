@@ -13,6 +13,7 @@ import SongAnalyticsDashboard from './SongAnalyticsDashboard';
 import ManageNewsletter from './ManageNewsletter';
 import ManageBookOrders from './ManageBookOrders';
 import ManageEyeCheckups from './ManageEyeCheckups';
+import AdSettings from './AdSettings';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -218,6 +219,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconChartBar size={20} stroke={2.5} /> Song Analytics
+          </button>
+
+          <button
+            onClick={() => changeTab('ad-settings')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'ad-settings' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconSettings size={20} stroke={2.5} /> Ad Settings
           </button>
           
           <button 
@@ -608,6 +620,12 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           {activeTab === 'song-analytics' && (
             <div className="max-w-6xl mx-auto pb-8">
               <SongAnalyticsDashboard />
+            </div>
+          )}
+
+          {activeTab === 'ad-settings' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <AdSettings />
             </div>
           )}
 

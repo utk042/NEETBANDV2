@@ -254,13 +254,29 @@ export const deleteCourse = async (id) => {
 
 // --- LESSON DETAILS ---
 export const getLessonContent = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/content`, { headers: getHeaders() });
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/content`, { headers: getHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+// Course Progress
+export const getCourseProgress = async (courseId) => {
+  const res = await fetch(`${API_URL}/lms/courses/${courseId}/progress`, { headers: getHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const markItemComplete = async (courseId, itemId) => {
+  const res = await fetch(`${API_URL}/lms/courses/${courseId}/items/${itemId}/complete`, { 
+    method: 'POST',
+    headers: getHeaders()
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateLessonContent = async (itemId, content) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/content`, {
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/content`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ content }),
@@ -270,13 +286,13 @@ export const updateLessonContent = async (itemId, content) => {
 };
 
 export const getLessonQuiz = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/quiz`, { headers: getHeaders() });
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/quiz`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateLessonQuiz = async (itemId, questions) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/quiz`, {
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/quiz`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ questions }),
@@ -286,13 +302,13 @@ export const updateLessonQuiz = async (itemId, questions) => {
 };
 
 export const getLessonQa = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/qa`, { headers: getHeaders() });
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/qa`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateLessonQa = async (itemId, qas) => {
-  const res = await fetch(`${API_URL}/lms/lessons/item/${itemId}/qa`, {
+  const res = await fetch(`${API_URL}/lms/items/${itemId}/qa`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ qas }),
@@ -359,20 +375,48 @@ export const deleteAdminStudent = async (id) => {
 };
 
 // --- FILE UPLOADS ---
-export const uploadFile = async (file, type = 'others') => {
-  const formData = new FormData();
-  formData.append('type', type);
-  formData.append('file', file);
+export const uploadFile = (file, type = 'others', onProgress) => {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('file', file);
 
-  const res = await fetch(`${API_URL}/upload`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('lms_token')}`
-    },
-    body: formData,
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/upload`);
+    
+    const token = localStorage.getItem('lms_token') || localStorage.getItem('user_token');
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentCompleted = Math.round((event.loaded * 100) / event.total);
+          onProgress(percentCompleted);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response);
+        } catch (e) {
+          reject(new Error('Invalid JSON response'));
+        }
+      } else {
+        reject(new Error(xhr.responseText || 'Upload failed'));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error occurred during upload'));
+    };
+
+    xhr.send(formData);
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json(); // returns { url: '/uploads/...' }
 };
 
 export const parseDocumentFile = async (file) => {

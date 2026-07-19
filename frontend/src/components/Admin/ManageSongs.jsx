@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { getSongs, createSong, updateSong, deleteSong, uploadFile } from '../../services/api';
+import { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
 
@@ -130,36 +130,44 @@ const WaveformSlider = ({ positions, onChange, audioUrl }) => {
   );
 };
 
+import SearchableSelect from '../ui/SearchableSelect';
+import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
+
 export default function ManageSongs() {
   const { toast, confirm } = useDialog();
   const [songs, setSongs] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90]
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90]
   });
   const [editingSongId, setEditingSongId] = useState(null);
 
-  const existingSubjects = useMemo(() => {
-    const subjects = songs.map(s => s.subject).filter(Boolean);
-    return [...new Set(subjects)].sort();
-  }, [songs]);
+  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
 
-  const existingClasses = useMemo(() => {
-    const classes = songs.map(s => s.class).filter(Boolean);
-    return [...new Set(classes)].sort();
-  }, [songs]);
+  const [uploadProgress, setUploadProgress] = useState({});
 
   const handleFileUpload = async (e, field, folderType) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const res = await uploadFile(file, folderType);
+      setUploadProgress(prev => ({ ...prev, [field]: 0 }));
+      const res = await uploadFile(file, folderType, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [field]: progress }));
+      });
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const fullUrl = `${backendUrl}${res.url}`;
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
       toast.success("File uploaded successfully");
     } catch (err) {
       toast.error("Failed to upload file: " + err.message);
+    } finally {
+      setUploadProgress(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+      e.target.value = null;
     }
   };
 
@@ -176,7 +184,7 @@ export default function ManageSongs() {
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
-    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
+    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
   };
@@ -188,6 +196,7 @@ export default function ManageSongs() {
       subject: song.subject || '',
       chapter: song.chapter || '',
       chapterNumber: song.chapterNumber || '',
+      courseId: typeof song.courseId === 'object' && song.courseId !== null ? song.courseId._id : (song.courseId || ''),
       audioUrl: song.audioUrl || '',
       thumbnailUrl: song.thumbnailUrl || '',
       lyricsUrl: song.lyricsUrl || '',
@@ -213,7 +222,17 @@ export default function ManageSongs() {
 
   useEffect(() => {
     fetchSongs();
+    fetchCourses();
   }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const data = await getCourses();
+      setCourses(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchSongs = async () => {
     try {
@@ -229,14 +248,19 @@ export default function ManageSongs() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData };
+      if (!payload.courseId) {
+        payload.courseId = null;
+      }
+
       if (editingSongId) {
-        await updateSong(editingSongId, formData);
+        await updateSong(editingSongId, payload);
         toast.success("Song updated successfully");
       } else {
-        await createSong(formData);
+        await createSong(payload);
         toast.success("Song added successfully");
       }
-      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
+      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -401,25 +425,64 @@ export default function ManageSongs() {
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Class / Grade <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                    <input type="text" list="existing-classes" placeholder="e.g. Class 11" className={inputClass} value={formData.class} onChange={e => setFormData({...formData, class: e.target.value})} />
-                    <datalist id="existing-classes">
-                      {existingClasses.map(c => <option key={c} value={c} />)}
-                    </datalist>
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.class}
+                      onChange={(val) => setFormData({...formData, class: val})}
+                      placeholder="Select or Create Class..."
+                      options={existingClasses.map(c => ({ value: c, label: c }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Subject <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                    <input type="text" list="existing-subjects" placeholder="e.g. Biology" className={inputClass} value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} />
-                    <datalist id="existing-subjects">
-                      {existingSubjects.map(s => <option key={s} value={s} />)}
-                    </datalist>
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.subject}
+                      onChange={(val) => setFormData({...formData, subject: val})}
+                      placeholder="Select or Create Subject..."
+                      options={availableSubjects.map(s => ({ value: s, label: s }))}
+                      creatable={true}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Chapter Name <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                    <input type="text" placeholder="e.g. Genetics & Evolution" className={inputClass} value={formData.chapter} onChange={e => setFormData({...formData, chapter: e.target.value})} />
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.chapter}
+                      placeholder="Select or Create Chapter..."
+                      options={availableChapters.map(ch => ({ value: ch, label: ch }))}
+                      creatable={true}
+                      onChange={val => {
+                        const newChapter = val;
+                        let nextNumber = formData.chapterNumber;
+                        if (newChapter) {
+                          const songsInChapter = songs.filter(s => s.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase());
+                          const originalSong = editingSongId ? songs.find(s => s._id === editingSongId) : null;
+                          
+                          if (originalSong && originalSong.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase()) {
+                            nextNumber = originalSong.chapterNumber || Math.max(1, songsInChapter.length);
+                          } else {
+                            nextNumber = songsInChapter.length + 1;
+                          }
+                        }
+                        setFormData({...formData, chapter: newChapter, chapterNumber: nextNumber});
+                      }} 
+                    />
                   </div>
                   <div className="flex flex-col">
-                    <label className={labelClass}>Chapter Number <span className="opacity-60 lowercase font-normal">(for access logic)</span></label>
+                    <label className={labelClass}>Chapter Number <span className="opacity-60 lowercase font-normal">(auto-fetched)</span></label>
                     <input type="number" placeholder="e.g. 1" className={inputClass} value={formData.chapterNumber} onChange={e => setFormData({...formData, chapterNumber: e.target.value === '' ? '' : Number(e.target.value)})} />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className={labelClass}>Related Course <span className="opacity-60 lowercase font-normal">(optional)</span></label>
+                    <SearchableSelect 
+                      className={inputClass}
+                      value={formData.courseId}
+                      onChange={(val) => setFormData({...formData, courseId: val})}
+                      placeholder="Select a related course"
+                      options={courses.map(course => ({ value: course._id, label: course.title }))}
+                    />
                   </div>
                 </div>
 
@@ -445,21 +508,39 @@ export default function ManageSongs() {
                       <div className="flex flex-col">
                         <label className={labelClass}>Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
                         <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
-                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                            <IconUpload size={12} stroke={2.5} /> Upload
-                            <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
-                          </label>
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
+                          {uploadProgress.thumbnailUrl !== undefined ? (
+                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                              <span>{uploadProgress.thumbnailUrl}%</span>
+                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.thumbnailUrl}%` }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                              <IconUpload size={12} stroke={2.5} /> Upload
+                              <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
+                            </label>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col">
                         <label className={labelClass}>Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
                         <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
-                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                            <IconUpload size={12} stroke={2.5} /> Upload
-                            <input type="file" className="hidden" accept=".ttml,.txt,.lrc" onChange={e => handleFileUpload(e, 'lyricsUrl', 'songs/lyrics')} />
-                          </label>
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
+                          {uploadProgress.lyricsUrl !== undefined ? (
+                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                              <span>{uploadProgress.lyricsUrl}%</span>
+                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.lyricsUrl}%` }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                              <IconUpload size={12} stroke={2.5} /> Upload
+                              <input type="file" className="hidden" accept=".ttml,.txt,.lrc" onChange={e => handleFileUpload(e, 'lyricsUrl', 'songs/lyrics')} />
+                            </label>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col">
@@ -480,11 +561,20 @@ export default function ManageSongs() {
                       <div className="flex flex-col">
                         <label className={labelClass}>Watermark Audio URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
                         <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-24`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
-                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                            <IconUpload size={12} stroke={2.5} /> Upload
-                            <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
-                          </label>
+                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
+                          {uploadProgress.watermarkUrl !== undefined ? (
+                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                              <span>{uploadProgress.watermarkUrl}%</span>
+                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                              <IconUpload size={12} stroke={2.5} /> Upload
+                              <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                            </label>
+                          )}
                         </div>
                       </div>
                       

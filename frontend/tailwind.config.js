@@ -56,7 +56,17 @@ export default {
         "on-secondary-container": "rgb(var(--color-on-secondary-container) / <alpha-value>)",
         "primary-container": "rgb(var(--color-primary-container) / <alpha-value>)",
         "tertiary-container": "rgb(var(--color-tertiary-container) / <alpha-value>)",
-        "surface-variant-hover": "rgb(var(--color-surface-variant-hover) / <alpha-value>)"
+        "surface-variant-hover": "rgb(var(--color-surface-variant-hover) / <alpha-value>)",
+        "info": "rgb(var(--color-info) / <alpha-value>)",
+        "success": "rgb(var(--color-success) / <alpha-value>)"
+      },
+      boxShadow: {
+        'sm': '0 2px 10px rgb(var(--color-primary) / 0.05)',
+        'md': '0 4px 20px rgb(var(--color-primary) / 0.08)',
+        'lg': '0 8px 30px rgb(var(--color-primary) / 0.12)',
+        'xl': '0 12px 40px rgb(var(--color-primary) / 0.15)',
+        '2xl': '0 16px 50px rgb(var(--color-primary) / 0.20)',
+        'inner': 'inset 0 2px 4px 0 rgb(var(--color-primary) / 0.05)',
       },
       borderRadius: {
         "DEFAULT": "0.25rem",

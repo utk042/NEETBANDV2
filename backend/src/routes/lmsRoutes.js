@@ -5,7 +5,8 @@ import {
   submitQuiz,
   getLessonContent, updateLessonContent,
   getLessonQuiz, updateLessonQuiz,
-  getLessonQa, updateLessonQa
+  getLessonQa, updateLessonQa,
+  getUserCourseProgress, markItemComplete
 } from '../controllers/lmsController.js';
 import { protect, authorize, optionalAuth } from '../middlewares/authMiddleware.js';
 
@@ -13,11 +14,11 @@ const router = express.Router();
 
 // Courses
 router.route('/courses')
-  .get(getCourses)
+  .get(optionalAuth, getCourses)
   .post(protect, authorize('admin', 'owner'), createCourse);
 
 router.route('/courses/:id')
-  .get(getCourseById)
+  .get(optionalAuth, getCourseById)
   .put(protect, authorize('admin', 'owner'), updateCourse)
   .delete(protect, authorize('admin', 'owner'), deleteCourse);
 
@@ -32,17 +33,26 @@ router.route('/quizzes/course/:courseId')
 router.route('/quizzes/submit')
   .post(protect, submitQuiz);
 
-// Dedicated Lesson Details Endpoints
-router.route('/lessons/item/:itemId/content')
+// --- DEDICATED LESSON DETAILS (Notes, Quiz, QA) ---
+// We use itemId to fetch the specific notes/quiz/qa associated with that item.
+
+router.route('/items/:itemId/content')
   .get(optionalAuth, getLessonContent)
   .put(protect, authorize('admin', 'owner'), updateLessonContent);
 
-router.route('/lessons/item/:itemId/quiz')
+router.route('/items/:itemId/quiz')
   .get(optionalAuth, getLessonQuiz)
   .put(protect, authorize('admin', 'owner'), updateLessonQuiz);
 
-router.route('/lessons/item/:itemId/qa')
+router.route('/items/:itemId/qa')
   .get(optionalAuth, getLessonQa)
   .put(protect, authorize('admin', 'owner'), updateLessonQa);
+
+// --- PROGRESS TRACKING ---
+router.route('/courses/:courseId/progress')
+  .get(protect, getUserCourseProgress);
+
+router.route('/courses/:courseId/items/:itemId/complete')
+  .post(protect, markItemComplete);
 
 export default router;

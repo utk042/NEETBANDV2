@@ -231,16 +231,16 @@ export default function AdminAffiliates() {
                   </td>
                   <td className="p-4 font-bold text-green-600">₹{totalEarned}</td>
                   <td className="p-4 flex items-center justify-end gap-2">
-                    <button onClick={() => handleOpenReferralModal(affiliate)} className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-lg" title="Manage Referrals">
+                    <button aria-label="Manage Referrals" onClick={() => handleOpenReferralModal(affiliate)} className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center" title="Manage Referrals">
                       <IconUsers size={18} />
                     </button>
-                    <button onClick={() => handleOpenWalletModal(affiliate)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg" title="Adjust Wallet">
+                    <button aria-label="Adjust Wallet" onClick={() => handleOpenWalletModal(affiliate)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center" title="Adjust Wallet">
                       <IconWallet size={18} />
                     </button>
-                    <button onClick={() => handleOpenModal(affiliate)} className="p-2 text-primary hover:bg-primary/10 rounded-lg" title="Edit">
+                    <button aria-label="Edit Affiliate" onClick={() => handleOpenModal(affiliate)} className="p-2 text-primary hover:bg-primary/10 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit">
                       <IconEdit size={18} />
                     </button>
-                    <button onClick={() => handleDelete(affiliate._id)} className="p-2 text-error hover:bg-error/10 rounded-lg" title="Delete">
+                    <button aria-label="Delete Affiliate" onClick={() => handleDelete(affiliate._id)} className="p-2 text-error hover:bg-error/10 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete">
                       <IconTrash size={18} />
                     </button>
                   </td>
@@ -446,7 +446,7 @@ export default function AdminAffiliates() {
                             <p className="text-xs text-on-surface-variant truncate">{email}</p>
                             <p className="text-[10px] text-primary font-bold mt-1 uppercase tracking-wider">{ref.plan === 'none' ? 'Registered' : ref.plan.replace('_', ' ')}</p>
                           </div>
-                          <button onClick={() => handleDeleteReferral(currentAffiliate._id, ref._id)} className="p-1.5 text-error hover:bg-error/10 rounded-lg flex-shrink-0 ml-2" title="Remove Referral">
+                          <button aria-label="Remove Referral" onClick={() => handleDeleteReferral(currentAffiliate._id, ref._id)} className="p-1.5 text-error hover:bg-error/10 rounded-lg flex-shrink-0 ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Remove Referral">
                             <IconUserMinus size={16} />
                           </button>
                         </div>

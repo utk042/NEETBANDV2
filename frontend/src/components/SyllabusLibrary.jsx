@@ -3,6 +3,7 @@ import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled,
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
+import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
 
 
 export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite, onSeek }) {
@@ -58,16 +59,15 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
     [...Array(90)].map(() => (Math.random() * 0.5).toFixed(2))
   );
 
-  const chaptersList = React.useMemo(() => {
-    const chapters = new Set();
-    tracks.forEach(track => {
-      if (!track.chapter) return;
-      const classMatch = selectedClass === 'All' || track.grade === selectedClass || track.class === selectedClass;
-      const subjectMatch = selectedSubject === 'All' || track.subject?.toLowerCase() === selectedSubject.toLowerCase();
-      if (classMatch && subjectMatch) chapters.add(track.chapter);
-    });
-    return ['All', ...Array.from(chapters)];
-  }, [tracks, selectedClass, selectedSubject]);
+  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
+
+  const availableSubjects = selectedClass !== 'All' && classToSubjects[selectedClass]
+    ? classToSubjects[selectedClass]
+    : existingSubjects;
+
+  const availableChapters = selectedSubject !== 'All' && subjectToChapters[selectedSubject]
+    ? subjectToChapters[selectedSubject]
+    : existingChapters;
 
   const filteredTracks = React.useMemo(() => {
     return tracks.filter(track => {
@@ -76,7 +76,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
       const chapterMatch = selectedChapter === 'All' || track.chapter === selectedChapter;
       const searchMatch = !searchQuery || 
         track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        track.chapter.toLowerCase().includes(searchQuery.toLowerCase());
+        track.chapter?.toLowerCase().includes(searchQuery.toLowerCase());
       return classMatch && subjectMatch && chapterMatch && searchMatch;
     });
   }, [tracks, selectedClass, selectedSubject, selectedChapter, searchQuery]);
@@ -116,23 +116,24 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 aria-label="Select Class"
                 className={`px-5 py-2.5 rounded-full border font-label-md text-sm flex items-center gap-2 transition-[colors,border-color] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedClass !== 'All' ? 'border-primary/50 text-primary bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)]' : 'border-[var(--border-floating-card)] text-on-surface bg-surface hover:bg-surface-container hover:border-primary/50'}`}
               >
-                {selectedClass === 'All' ? 'All Classes' : selectedClass} 
-                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'class' ? 'rotate-180' : ''}`} />
+                <span className="truncate max-w-[120px]">{selectedClass === 'All' ? 'All Classes' : selectedClass}</span>
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 shrink-0 ${openDropdown === 'class' ? 'rotate-180' : ''}`} />
               </button>
               {openDropdown === 'class' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  {['All', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
+                  {['All', ...existingClasses].map((cls) => (
                     <li
                       key={cls}
                       role="option"
                       aria-selected={selectedClass === cls}
                       tabIndex={0}
-                      onClick={() => { setSelectedClass(cls); setSelectedChapter('All'); setOpenDropdown(null); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedClass(cls); setSelectedChapter('All'); setOpenDropdown(null); } }}
-                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedClass === cls ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      onClick={() => { setSelectedClass(cls); setSelectedSubject('All'); setSelectedChapter('All'); setOpenDropdown(null); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedClass(cls); setSelectedSubject('All'); setSelectedChapter('All'); setOpenDropdown(null); } }}
+                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedClass === cls ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      title={cls}
                     >
                       {cls}
                     </li>
@@ -150,15 +151,15 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 aria-label="Select Subject"
                 className={`px-5 py-2.5 rounded-full border font-label-md text-sm flex items-center gap-2 transition-[colors,border-color] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedSubject !== 'All' ? 'border-primary/50 text-primary bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)]' : 'border-[var(--border-floating-card)] text-on-surface bg-surface hover:bg-surface-container hover:border-primary/50'}`}
               >
-                {selectedSubject === 'All' ? 'All Subjects' : selectedSubject}
-                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'subject' ? 'rotate-180' : ''}`} />
+                <span className="truncate max-w-[120px]">{selectedSubject === 'All' ? 'All Subjects' : selectedSubject}</span>
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 shrink-0 ${openDropdown === 'subject' ? 'rotate-180' : ''}`} />
               </button>
               {openDropdown === 'subject' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  {['All', 'Biology', 'Physics', 'Chemistry'].map((sub) => (
+                  {['All', ...availableSubjects].map((sub) => (
                     <li
                       key={sub}
                       role="option"
@@ -166,7 +167,8 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                       tabIndex={0}
                       onClick={() => { setSelectedSubject(sub); setSelectedChapter('All'); setOpenDropdown(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedSubject(sub); setSelectedChapter('All'); setOpenDropdown(null); } }}
-                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 ${selectedSubject === sub ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedSubject === sub ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      title={sub}
                     >
                       {sub}
                     </li>
@@ -182,17 +184,17 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 aria-haspopup="listbox"
                 aria-expanded={openDropdown === 'chapter'}
                 aria-label="Select Chapter"
-                className="px-5 py-2.5 rounded-full border border-primary/50 text-primary font-label-md text-sm flex items-center gap-2 bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)] transition-[colors,border-color,box-shadow] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+                className={`px-5 py-2.5 rounded-full border font-label-md text-sm flex items-center gap-2 transition-[colors,border-color] duration-200 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer ${selectedChapter !== 'All' ? 'border-primary/50 text-primary bg-primary/10 shadow-[0_0_15px_rgba(201,162,39,0.05)]' : 'border-[var(--border-floating-card)] text-on-surface bg-surface hover:bg-surface-container hover:border-primary/50'}`}
               >
-                {selectedChapter === 'All' ? 'All Chapters' : selectedChapter}
-                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 ${openDropdown === 'chapter' ? 'rotate-180' : ''}`} />
+                <span className="truncate max-w-[150px]">{selectedChapter === 'All' ? 'All Chapters' : selectedChapter}</span>
+                <IconChevronDown size={18} className={`text-primary transition-transform duration-200 shrink-0 ${openDropdown === 'chapter' ? 'rotate-180' : ''}`} />
               </button>
               {openDropdown === 'chapter' && (
                 <ul 
                   role="listbox" 
-                  className="absolute top-full right-0 mt-2 w-64 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                  className="absolute top-full left-0 mt-2 w-48 bg-surface-container border border-outline/10 rounded-2xl shadow-2xl z-40 py-2 outline-none max-h-60 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  {chaptersList.map((chap) => (
+                  {['All', ...availableChapters].map((chap) => (
                     <li
                       key={chap}
                       role="option"
@@ -201,6 +203,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                       onClick={() => { setSelectedChapter(chap); setOpenDropdown(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedChapter(chap); setOpenDropdown(null); } }}
                       className={`px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-primary/10 cursor-pointer transition-colors outline-none focus-visible:bg-primary/10 truncate ${selectedChapter === chap ? 'text-primary font-bold bg-primary/5' : ''}`}
+                      title={chap}
                     >
                       {chap}
                     </li>

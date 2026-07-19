@@ -485,7 +485,7 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          <img src={track.cover || track.image} alt={track.title || "Track cover"} className="w-full h-full object-cover" loading="lazy" />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         
@@ -576,7 +576,7 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          <img src={track.cover || track.image} alt={track.title || "Track cover"} className="w-full h-full object-cover" loading="lazy" />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         

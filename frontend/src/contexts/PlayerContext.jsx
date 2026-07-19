@@ -34,7 +34,8 @@ export function PlayerProvider({ children, user }) {
   const { confirm } = useDialog();
 
   const audioRef = useRef(null); // main audio element (in DOM via PlayerProvider render)
-  const adAudioRef = useRef(null); // ad audio element
+  const adAudioRef = useRef(null); // ad audio element (pre-roll)
+  const midRollAudioRef = useRef(null); // mid-roll ad audio element
   const watermarkAudioRef = useRef(null); // watermark audio element
   const pipVideoRef = useRef(null); // hidden video for PIP
   const canvasRef = useRef(null); // canvas for album art
@@ -42,6 +43,12 @@ export function PlayerProvider({ children, user }) {
 
   // Drop-off tracking
   const lastDropOffSegment = useRef(-1);
+
+  // Global Ad Config state
+  const [adConfig, setAdConfig] = useState(null);
+  const [playedAudioRolls, setPlayedAudioRolls] = useState([]);
+  const [playedPopups, setPlayedPopups] = useState([]);
+  const [showConfigPopup, setShowConfigPopup] = useState(false);
 
   // Fetch songs on mount
   useEffect(() => {
@@ -81,6 +88,14 @@ export function PlayerProvider({ children, user }) {
       .catch(() => setAdAudioUrls([]));
   }, []);
 
+  // Fetch global Ad Config
+  useEffect(() => {
+    fetch(`${API_URL}/api/ad-config`)
+      .then(r => r.json())
+      .then(data => setAdConfig(data))
+      .catch(() => setAdConfig(null));
+  }, []);
+
   // Sync volume & mute to audio element
   useEffect(() => {
     if (audioRef.current) {
@@ -105,11 +120,14 @@ export function PlayerProvider({ children, user }) {
       }
     }
 
-    // Guest user restriction (only 1 free song, max 20%)
-    if (!user?.isLoggedIn && pct >= 0.2 && currentTrack.chapterNumber !== 1) {
+    // Guest user restriction (only 1st song of every chapter is free up to 20%)
+    const isFirstSongOfChapter = globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === (currentTrack._id || currentTrack.id);
+
+    if (!user?.isLoggedIn && pct >= 0.2) {
+      // Whether it's the 1st song or somehow a bypassed 2nd song, cut off at 20%
       audioRef.current.pause();
       setIsPlaying(false);
-      confirm("Login Required", "You need to login to access more", {
+      confirm("Login Required", "Please login to continue listening.", {
         showCancel: false,
         confirmText: 'Login',
         confirmClass: 'bg-primary hover:bg-primary/95'
@@ -134,7 +152,38 @@ export function PlayerProvider({ children, user }) {
         }
       }
     }
-  }, [currentTrack, user, playedWatermarks, confirm]);
+
+    // Unified Audio Roll & Popup Ad Logic (Guests & Non-Premium)
+    if (!user?.isPremium && adConfig) {
+      const pct100 = pct * 100;
+
+      // Audio Roll Check
+      if (adConfig.audioRollPositions && adConfig.audioRollUrl) {
+        const audioPos = adConfig.audioRollPositions.find(p => pct100 >= p && pct100 < p + 2);
+        if (audioPos !== undefined && !playedAudioRolls.includes(audioPos)) {
+          setPlayedAudioRolls(prev => [...prev, audioPos]);
+          // Pause main audio, play audio roll ad
+          audioRef.current.pause();
+          setIsPlaying(false);
+          
+          if (midRollAudioRef.current) {
+            midRollAudioRef.current.src = adConfig.audioRollUrl;
+            midRollAudioRef.current.currentTime = 0;
+            midRollAudioRef.current.play().catch(e => console.error(e));
+          }
+        }
+      }
+
+      // Popup Check
+      if (adConfig.popupPositions && adConfig.popupHtml) {
+        const popupPos = adConfig.popupPositions.find(p => pct100 >= p && pct100 < p + 2);
+        if (popupPos !== undefined && !playedPopups.includes(popupPos)) {
+          setPlayedPopups(prev => [...prev, popupPos]);
+          setShowConfigPopup(true);
+        }
+      }
+    }
+  }, [currentTrack, user, playedWatermarks, playedAudioRolls, playedPopups, adConfig, confirm, globalTracks]);
 
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) setDuration(audioRef.current.duration);
@@ -143,21 +192,18 @@ export function PlayerProvider({ children, user }) {
   // Play ad sequence then the actual track
   const playWithAds = useCallback(async (track) => {
     // Guest Limit check
-    if (!user?.isLoggedIn && track.chapterNumber !== 1) {
-      const guestPlayed = localStorage.getItem('guest_played_song_id');
-      const trackId = track._id || track.id;
-      if (guestPlayed && guestPlayed !== trackId) {
-        confirm("Login Required", "You need to login to access more", {
-          showCancel: false,
-          confirmText: 'Login',
-          confirmClass: 'bg-primary hover:bg-primary/95'
-        }).then(res => {
-          if (res) window.location.href = '/login';
-        });
-        return;
-      } else {
-        localStorage.setItem('guest_played_song_id', trackId);
-      }
+    const isFirstSongOfChapter = globalTracks.find(t => t.chapter === track.chapter)?.id === (track._id || track.id);
+    
+    if (!user?.isLoggedIn && !isFirstSongOfChapter) {
+      // Guests cannot play anything except the 1st song of a chapter
+      confirm("Login Required", "Please login to access more songs.", {
+        showCancel: false,
+        confirmText: 'Login',
+        confirmClass: 'bg-primary hover:bg-primary/95'
+      }).then(res => {
+        if (res) window.location.href = '/login';
+      });
+      return;
     }
 
     const isPremium = user?.isPremium;
@@ -175,7 +221,7 @@ export function PlayerProvider({ children, user }) {
     setCurrentAdIndex(0);
     setIsPlayingAd(true);
     setIsPlaying(false);
-  }, [adAudioUrls, user, confirm]);
+  }, [adAudioUrls, user, confirm, globalTracks]);
 
   // Handle ad ended
   const handleAdEnded = useCallback(() => {
@@ -347,6 +393,9 @@ export function PlayerProvider({ children, user }) {
     audioRef.current.load();
     lastDropOffSegment.current = -1;
     setPlayedWatermarks([]); // reset played watermarks
+    setPlayedAudioRolls([]); // reset ad triggers
+    setPlayedPopups([]);
+    setShowConfigPopup(false);
     if (isPlaying) {
       audioRef.current.play().catch(() => setIsPlaying(false));
     }
@@ -379,6 +428,7 @@ export function PlayerProvider({ children, user }) {
     togglePlay, handleTrackSelect, handleNext, handlePrev, handleSeek,
     handleShare, requestPip,
     audioRef, // expose for components that need direct access
+    showConfigPopup, setShowConfigPopup, adConfig // expose popup state
   };
 
   // Update Media Session API
@@ -411,6 +461,17 @@ export function PlayerProvider({ children, user }) {
         ref={adAudioRef}
         onEnded={handleAdEnded}
         preload="metadata"
+        style={{ display: 'none' }}
+      />
+      <audio
+        ref={midRollAudioRef}
+        onEnded={() => {
+          if (audioRef.current) {
+            audioRef.current.play().catch(e => console.error(e));
+            setIsPlaying(true);
+          }
+        }}
+        preload="auto"
         style={{ display: 'none' }}
       />
       <audio
@@ -450,6 +511,25 @@ export function PlayerProvider({ children, user }) {
         shareUrl={window.location.href}
         title={currentTrack?.title}
       />
+      
+      {/* HTML Config Popup Modal */}
+      {showConfigPopup && adConfig?.popupHtml && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-surface relative border border-outline-variant/30 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setShowConfigPopup(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors z-10"
+            >
+              ✕
+            </button>
+            <div 
+              className="p-6 pt-10"
+              dangerouslySetInnerHTML={{ __html: adConfig.popupHtml }} 
+            />
+          </div>
+        </div>
+      )}
+
       {children}
     </PlayerContext.Provider>
   );

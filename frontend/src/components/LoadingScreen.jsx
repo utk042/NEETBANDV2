@@ -65,7 +65,7 @@ export default function LoadingScreen({ onComplete }) {
         <img
           src={logoImg}
           alt="NeetBand Logo"
-          className="h-24 md:h-28 w-auto object-contain"
+          className="h-28 md:h-32 w-auto object-contain"
           width={512}
           height={236}
         />

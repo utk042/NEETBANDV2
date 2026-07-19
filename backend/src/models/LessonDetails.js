@@ -16,19 +16,19 @@ const qaSchema = new mongoose.Schema({
 
 // Model for Item Text/Notes
 const lessonContentSchema = new mongoose.Schema({
-  itemId:  { type: mongoose.Schema.Types.ObjectId, required: true, unique: true, index: true },
+  itemId:  { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   content: { type: String, default: '' }
 }, { timestamps: true });
 
 // Model for Item Quizzes
 const lessonQuizSchema = new mongoose.Schema({
-  itemId:    { type: mongoose.Schema.Types.ObjectId, required: true, unique: true, index: true },
+  itemId:    { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   questions: [questionSchema]
 }, { timestamps: true });
 
 // Model for Item Q&A Lists
 const lessonQaSchema = new mongoose.Schema({
-  itemId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true, index: true },
+  itemId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   qas:    [qaSchema]
 }, { timestamps: true });
 

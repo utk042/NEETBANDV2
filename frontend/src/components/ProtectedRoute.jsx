@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 export default function ProtectedRoute({ 
   isAuthLoading, 
@@ -8,6 +8,8 @@ export default function ProtectedRoute({
   portalName = 'this area', 
   loginRoute = '/login' 
 }) {
+  const location = useLocation();
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -17,7 +19,7 @@ export default function ProtectedRoute({
   }
 
   if (!isLoggedIn) {
-    return <Navigate to={loginRoute} replace />;
+    return <Navigate to={loginRoute} state={{ from: location }} replace />;
   }
 
   return children;

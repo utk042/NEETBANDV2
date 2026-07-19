@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconBolt, IconBrain, IconMusic } from '@tabler/icons-react';
+import { IconBolt, IconBrain, IconMusic, IconUsers, IconTrophy } from '@tabler/icons-react';
 
 export default function StudyDashboard() {
   const handleMouseMove = (e) => {
@@ -11,7 +11,7 @@ export default function StudyDashboard() {
   };
 
   return (
-    <div className="relative w-full max-w-[360px] h-[320px] mx-auto md:mr-0 z-10 select-none">
+    <div className="relative w-full max-w-[360px] h-[400px] mx-auto md:mr-0 z-10 select-none">
 
       {/* Floating Card 1: Speed */}
       <div
@@ -87,6 +87,31 @@ export default function StudyDashboard() {
           <div>
             <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">2000+</div>
             <div className="text-[11px] text-on-surface-variant mt-1">Study Songs</div>
+          </div>
+        </div>
+      </div>
+      {/* Floating Card 4: Users */}
+      <div
+        data-gsap="dash-card"
+        onMouseMove={handleMouseMove}
+        className="absolute top-[280px] left-[30px] w-[210px] p-4 bg-surface rounded-2xl border border-outline/20 shadow-md transform rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+      >
+        {/* Background Glow Container */}
+        <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden z-0">
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            style={{
+              background: 'radial-gradient(160px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgb(var(--color-primary-container) / 0.18), transparent 80%)'
+            }}
+          />
+        </div>
+        <div className="relative z-10 flex items-center gap-4 w-full h-full">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <IconTrophy size={20} />
+          </div>
+          <div>
+            <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">#1</div>
+            <div className="text-[11px] text-on-surface-variant mt-1">Study Platform</div>
           </div>
         </div>
       </div>
