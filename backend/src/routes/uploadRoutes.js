@@ -21,9 +21,28 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename(req, file, cb) {
+    let ext = path.extname(file.originalname).toLowerCase();
+    
+    // Some browsers/OS might map mp3 to .mpeg extension or no extension
+    if (ext === '.mpeg' || ext === '') {
+      if (file.mimetype === 'audio/mpeg' || file.mimetype === 'audio/mp3') {
+        ext = '.mp3';
+      } else if (file.mimetype === 'audio/wav') {
+        ext = '.wav';
+      } else if (file.mimetype === 'audio/flac') {
+        ext = '.flac';
+      } else if (file.mimetype === 'audio/aac') {
+        ext = '.aac';
+      } else if (file.mimetype === 'audio/ogg') {
+        ext = '.ogg';
+      } else if (file.mimetype === 'audio/mp4') {
+        ext = '.m4a';
+      }
+    }
+
     cb(
       null,
-      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
+      `${file.fieldname}-${Date.now()}${ext}`
     );
   },
 });

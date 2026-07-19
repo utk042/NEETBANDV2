@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
+import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
 
@@ -138,8 +138,9 @@ export default function ManageSongs() {
   const [songs, setSongs] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adConfig, setAdConfig] = useState({ watermarkUrl: '', watermarkPositions: [20, 50, 90] });
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90]
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: '', watermarkPositions: [20, 50, 90]
   });
   const [editingSongId, setEditingSongId] = useState(null);
 
@@ -192,7 +193,7 @@ export default function ManageSongs() {
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
-    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
+    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
   };
@@ -231,7 +232,28 @@ export default function ManageSongs() {
   useEffect(() => {
     fetchSongs();
     fetchCourses();
+    fetchAdConfig();
   }, []);
+
+  const fetchAdConfig = async () => {
+    try {
+      const res = await api.get('/api/ad-config');
+      const data = res.data;
+      if (data) {
+        const config = {
+          watermarkUrl: data.audioRollUrl || '',
+          watermarkPositions: data.audioRollPositions || [20, 50, 90]
+        };
+        setAdConfig(config);
+        // Also update formData if not editing
+        if (!editingSongId && !isAddSongModalOpen) {
+          setFormData(prev => ({ ...prev, watermarkUrl: config.watermarkUrl, watermarkPositions: config.watermarkPositions }));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching ad config', err);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
@@ -268,7 +290,7 @@ export default function ManageSongs() {
         await createSong(payload);
         toast.success("Song added successfully");
       }
-      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: true, watermarkUrl: '', watermarkPositions: [20, 50, 90] });
+      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -507,7 +529,7 @@ export default function ManageSongs() {
                         <input type="url" required placeholder="https://..." className={`${inputClass} pr-24`} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
                         <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
                           <IconUpload size={12} stroke={2.5} /> Upload
-                          <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
+                          <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
                         </label>
                       </div>
                     </div>
@@ -580,7 +602,7 @@ export default function ManageSongs() {
                           ) : (
                             <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
                               <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                              <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
                             </label>
                           )}
                         </div>
