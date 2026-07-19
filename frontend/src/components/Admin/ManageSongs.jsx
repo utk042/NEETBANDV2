@@ -145,6 +145,14 @@ export default function ManageSongs() {
 
   const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
 
+  const availableSubjects = formData.class && classToSubjects[formData.class]
+    ? classToSubjects[formData.class]
+    : existingSubjects;
+
+  const availableChapters = formData.subject && subjectToChapters[formData.subject]
+    ? subjectToChapters[formData.subject]
+    : existingChapters;
+
   const [uploadProgress, setUploadProgress] = useState({});
 
   const handleFileUpload = async (e, field, folderType) => {

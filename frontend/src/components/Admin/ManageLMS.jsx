@@ -211,7 +211,16 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     : existingSubjects;
 
   if (designingCourse) {
-    return <CourseDesigner course={designingCourse} onBack={() => setDesigningCourse(null)} />;
+    return (
+      <CourseDesigner
+        course={designingCourse}
+        onClose={() => setDesigningCourse(null)}
+        onSaved={(updated) => {
+          setCourses(prev => prev.map(c => c._id === updated._id ? updated : c));
+          setDesigningCourse(updated);
+        }}
+      />
+    );
   }
 
   if (subTab === 'students' || subTab === 'admins') {
