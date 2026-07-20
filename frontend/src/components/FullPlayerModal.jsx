@@ -218,7 +218,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         console.error('Failed to load lyrics:', err);
         setLyrics([]);
       });
-  }, [displayTrack.lyricsUrl]);
+  }, [displayTrack?.lyricsUrl]);
 
   // Find active lyric index
   const activeLyricIndex = lyrics.findIndex(l => currentSeconds >= l.begin && currentSeconds <= l.end);

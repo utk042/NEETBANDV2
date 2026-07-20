@@ -496,6 +496,7 @@ export function PlayerProvider({ children, user }) {
             audioRef.current.play().catch(e => console.error(e));
             setIsPlaying(true);
           }
+          setShowConfigPopup(false);
         }}
         preload="auto"
         style={{ display: 'none' }}
