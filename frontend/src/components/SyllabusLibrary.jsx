@@ -30,11 +30,11 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
   }, []);
 
   const displayTrack = currentTrack || tracks[0] || {
-    id: 1,
-    title: "Mendelian Genetics Anthem",
-    chapter: "Genetics & Evolution",
-    duration: "4:20",
-    durationSeconds: 260,
+    id: 'empty',
+    title: "No songs available",
+    chapter: "-",
+    duration: "0:00",
+    durationSeconds: 0,
     cover: ""
   };
 
@@ -45,8 +45,8 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
   };
 
   const currentSeconds = currentTime || 0;
-  const totalSeconds = displayTrack.durationSeconds || 260;
-  const progressPercent = Math.min((currentSeconds / totalSeconds) * 100, 100);
+  const totalSeconds = displayTrack.durationSeconds || 0;
+  const progressPercent = totalSeconds > 0 ? Math.min((currentSeconds / totalSeconds) * 100, 100) : 0;
 
   // Maintain consistent wave shapes between renders
   const waveformHeights = useRef(
@@ -233,7 +233,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   
                   <div className="flex flex-col min-w-0 justify-center">
                     <span className="text-lg md:text-2xl font-headline-lg font-bold leading-tight tracking-tight truncate text-on-secondary dark:text-on-primary">
-                      {`0${tracks.findIndex(t => t.id === displayTrack.id) + 1} ${displayTrack.title}`}
+                      {tracks.findIndex(t => t.id === displayTrack.id) >= 0 ? `0${tracks.findIndex(t => t.id === displayTrack.id) + 1} ` : ''}{displayTrack.title}
                     </span>
                     <span className="text-xs md:text-base font-medium text-on-secondary/80 dark:text-on-primary/80 truncate mt-0.5">
                       {displayTrack.chapter}
@@ -504,7 +504,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
             
             {filteredTracks.length === 0 && (
               <div className="text-center py-10 text-on-surface-variant opacity-60">
-                No tracks found matching "{searchQuery}"
+                {searchQuery ? `No tracks found matching "${searchQuery}"` : "No songs to play"}
               </div>
             )}
           </div>

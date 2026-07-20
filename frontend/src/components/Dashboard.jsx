@@ -17,16 +17,17 @@ import { Card, CardHeader, CardBody } from './ui/Card';
 export default function Dashboard({ 
   navigate, 
   onLogout,
-  tracks, 
+  tracks = [], 
   currentTrack, 
   isPlaying, 
   onTrackSelect, 
   currentTime, 
-  favoritedTrackIds, 
+  favoritedTrackIds = [], 
   onToggleFavorite,
   user,
   setUser,
-  recentlyPlayedTrackIds
+  recentlyPlayedTrackIds = [],
+  onUpgradeClick
 }) {
   // Load user details with defaults
   const profileName = user?.name || '';
@@ -283,7 +284,8 @@ export default function Dashboard({
                   <Button 
                     onClick={() => {
                       if (!user?.isPremium) {
-                        setIsPremiumModalOpen(true);
+                        if (onUpgradeClick) onUpgradeClick();
+                        else navigate('/checkout');
                       } else {
                         navigate('/offers/book');
                       }
@@ -313,7 +315,8 @@ export default function Dashboard({
                   <Button 
                     onClick={() => {
                       if (!user?.isPremium) {
-                        setIsPremiumModalOpen(true);
+                        if (onUpgradeClick) onUpgradeClick();
+                        else navigate('/checkout');
                       } else {
                         navigate('/offers/eye-checkup');
                       }
@@ -409,7 +412,7 @@ export default function Dashboard({
                 
                 <div className="shrink-0 flex flex-col items-start md:items-end gap-4 px-8 pb-8 md:p-12">
                   {!user?.isPremium ? (
-                    <Button onClick={() => navigate('/pricing')} size="lg" className="w-full md:w-auto">
+                    <Button onClick={() => navigate('/checkout')} size="lg" className="w-full md:w-auto whitespace-nowrap">
                       Upgrade to Premium
                     </Button>
                   ) : (

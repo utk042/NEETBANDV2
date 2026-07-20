@@ -11,11 +11,15 @@ const adConfigSchema = new mongoose.Schema({
   },
   popupPositions: {
     type: [Number],
-    default: [20, 50, 90], // Percentages
+    default: [10, 40, 75], // Percentages
   },
   popupHtml: {
     type: String, // HTML content for the popup
     default: '',
+  },
+  guestAdUrl: {
+    type: String,
+    default: 'C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg',
   },
 }, { timestamps: true });
 

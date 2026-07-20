@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconX, IconCrownFilled } from '@tabler/icons-react';
 
-export default function PremiumModal({ isOpen, onClose }) {
+export default function PremiumModal({ isOpen, onClose, onUpgrade }) {
   if (!isOpen) return null;
 
   return (
@@ -23,14 +23,17 @@ export default function PremiumModal({ isOpen, onClose }) {
           <IconCrownFilled size={36} className="text-primary" />
         </div>
 
-        <h3 className="font-headline-md text-2xl text-on-surface mb-3 font-bold">Premium Study Song</h3>
+        <h3 className="font-headline-md text-2xl text-on-surface mb-3 font-bold">Premium Access Required</h3>
         <p className="font-body-md text-on-surface-variant text-base mb-8 max-w-sm mx-auto">
-          Unlock this track and over 2,000+ curriculum-aligned study beats, offline downloads, and mock quizzes with Premium Scholar.
+          Unlock exclusive features, premium study tracks, offline downloads, free eye checkups, and exclusive book discounts with Premium Scholar.
         </p>
 
         <div className="flex flex-col gap-3">
           <button 
-            onClick={onClose}
+            onClick={() => {
+              if (onUpgrade) onUpgrade();
+              else onClose();
+            }}
             className="w-full bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed text-on-primary font-label-md py-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] active:translate-y-[1px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             Upgrade to Premium

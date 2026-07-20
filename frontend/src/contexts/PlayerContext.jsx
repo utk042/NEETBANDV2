@@ -37,6 +37,8 @@ export function PlayerProvider({ children, user }) {
   const adAudioRef = useRef(null); // ad audio element (pre-roll)
   const midRollAudioRef = useRef(null); // mid-roll ad audio element
   const watermarkAudioRef = useRef(null); // watermark audio element
+  const guestAdAudioRef = useRef(null); // guest ad audio element
+  const [playedGuestAd, setPlayedGuestAd] = useState(false);
   const pipVideoRef = useRef(null); // hidden video for PIP
   const canvasRef = useRef(null); // canvas for album art
   const animFrameRef = useRef(null);
@@ -105,6 +107,16 @@ export function PlayerProvider({ children, user }) {
 
 
 
+  const showGuestLoginPrompt = useCallback(() => {
+    confirm("Login Required", "Please login to continue listening.", {
+      showCancel: false,
+      confirmText: 'Login',
+      confirmClass: 'bg-primary hover:bg-primary/95'
+    }).then(res => {
+      if (res) window.location.href = '/login';
+    });
+  }, [confirm]);
+
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
     if (!audioRef.current || !currentTrack) return;
@@ -124,16 +136,27 @@ export function PlayerProvider({ children, user }) {
     const isFirstSongOfChapter = globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === (currentTrack._id || currentTrack.id);
 
     if (!user?.isLoggedIn && pct >= 0.2) {
-      // Whether it's the 1st song or somehow a bypassed 2nd song, cut off at 20%
-      audioRef.current.pause();
-      setIsPlaying(false);
-      confirm("Login Required", "Please login to continue listening.", {
-        showCancel: false,
-        confirmText: 'Login',
-        confirmClass: 'bg-primary hover:bg-primary/95'
-      }).then(res => {
-        if (res) window.location.href = '/login';
-      });
+      if (!playedGuestAd) {
+        setPlayedGuestAd(true);
+        audioRef.current.pause();
+        setIsPlaying(false);
+
+        if (guestAdAudioRef.current && adConfig?.guestAdUrl) {
+          const url = adConfig.guestAdUrl;
+          let finalUrl = url;
+          if (!url.startsWith('http') && !url.match(/^[a-zA-Z]:\\/)) {
+            finalUrl = `${API_URL}${url}`;
+          }
+          guestAdAudioRef.current.src = finalUrl;
+          guestAdAudioRef.current.currentTime = 0;
+          guestAdAudioRef.current.play().catch(e => {
+            console.error('Failed to play guest ad', e);
+            showGuestLoginPrompt();
+          });
+        } else {
+          showGuestLoginPrompt();
+        }
+      }
       return;
     }
 
@@ -167,7 +190,8 @@ export function PlayerProvider({ children, user }) {
           setIsPlaying(false);
           
           if (midRollAudioRef.current) {
-            midRollAudioRef.current.src = adConfig.audioRollUrl;
+            const url = adConfig.audioRollUrl;
+            midRollAudioRef.current.src = url.startsWith('http') ? url : `${API_URL}${url}`;
             midRollAudioRef.current.currentTime = 0;
             midRollAudioRef.current.play().catch(e => console.error(e));
           }
@@ -394,6 +418,7 @@ export function PlayerProvider({ children, user }) {
     lastDropOffSegment.current = -1;
     setPlayedWatermarks([]); // reset played watermarks
     setPlayedAudioRolls([]); // reset ad triggers
+    setPlayedGuestAd(false); // reset guest ad trigger
     setPlayedPopups([]);
     setShowConfigPopup(false);
     if (isPlaying) {
@@ -404,8 +429,9 @@ export function PlayerProvider({ children, user }) {
   // When ad index changes and ads are playing, update ad audio src
   useEffect(() => {
     if (!isPlayingAd || !adAudioRef.current) return;
-    const url = adAudioUrls[currentAdIndex];
-    if (!url) { handleAdEnded(); return; }
+    const rawUrl = adAudioUrls[currentAdIndex];
+    if (!rawUrl) { handleAdEnded(); return; }
+    const url = rawUrl.startsWith('http') ? rawUrl : `${API_URL}${rawUrl}`;
     adAudioRef.current.src = url;
     adAudioRef.current.load();
     adAudioRef.current.play().catch(() => handleAdEnded());
@@ -482,29 +508,17 @@ export function PlayerProvider({ children, user }) {
         preload="auto"
         style={{ display: 'none' }}
       />
+      <audio
+        ref={guestAdAudioRef}
+        onEnded={showGuestLoginPrompt}
+        preload="auto"
+        style={{ display: 'none' }}
+      />
       {/* Hidden video + canvas for PIP */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       <video ref={pipVideoRef} style={{ display: 'none' }} muted playsInline />
       {/* Ad banner overlay when ad is playing */}
-      {isPlayingAd && (
-        <div
-          style={{
-            position: 'fixed', bottom: 96, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(13,27,42,0.95)', border: '1px solid rgba(236,194,70,0.3)',
-            borderRadius: 12, padding: '10px 20px', zIndex: 9999,
-            color: '#ecc246', fontSize: 13, fontWeight: 700, backdropFilter: 'blur(10px)',
-            display: 'flex', alignItems: 'center', gap: 10,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-            pointerEvents: 'none',
-          }}
-        >
-          <span
-            className="animate-pulse"
-            style={{ width: 8, height: 8, borderRadius: '50%', background: '#ecc246', display: 'inline-block' }}
-          />
-          Ad {currentAdIndex + 1} of {adAudioUrls.length} — Song plays after
-        </div>
-      )}
+      {/* Removed per user request */}
       <SharePopup 
         isOpen={showSharePopup} 
         onClose={() => setShowSharePopup(false)} 

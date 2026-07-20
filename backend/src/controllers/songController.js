@@ -1,4 +1,5 @@
 import Song from '../models/Song.js';
+import AdConfig from '../models/AdConfig.js';
 
 // @desc    Create a new song
 // @route   POST /api/songs
@@ -80,16 +81,20 @@ export const deleteSong = async (req, res) => {
   }
 };
 
-// @desc    Get ad URLs from env
+// @desc    Get ad URLs from config
 // @route   GET /api/ads
 // @access  Public
 export const getAds = async (req, res) => {
-  const ads = [
-    process.env.AD_URL_1,
-    process.env.AD_URL_2,
-    process.env.AD_URL_3,
-  ].filter(Boolean);
-  res.json({ ads });
+  try {
+    const config = await AdConfig.findOne();
+    if (config && config.audioRollUrl) {
+      return res.json({ ads: [config.audioRollUrl] });
+    }
+  } catch (error) {
+    console.error("Error fetching ad config for pre-roll ads:", error);
+  }
+
+  res.json({ ads: [] });
 };
 
 // @desc    Record a play event for a song

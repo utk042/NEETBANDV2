@@ -2,7 +2,7 @@ import React from 'react';
 import { IconDiscount, IconBook, IconBrandWhatsapp, IconBellRinging, IconStethoscope, IconEyeglass, IconArmchair } from '@tabler/icons-react';
 import bookCoverImg from '../assets/book_cover.png';
 
-export default function StudentHub() {
+export default function StudentHub({ user, onUpgradeClick }) {
   const notices = [
     { id: 1, title: "CBSE Class 12 Date Sheet Revised", date: "Oct 24, 2024", tag: "Exam Alert" },
     { id: 2, title: "NEET UG 2025 Registration Opens", date: "Nov 01, 2024", tag: "Important" },
@@ -77,7 +77,12 @@ export default function StudentHub() {
                 </div>
                 <h4 className="font-headline-md text-xl font-bold text-on-surface mb-2">Posture Correction Chair</h4>
                 <p className="font-body-md text-sm text-on-surface-variant mb-6">Ergonomic seating designed for 10+ hours of study. 20% off for NeetBand users.</p>
-                <a href="#" className="font-label-md text-sm text-primary font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-1 group/link">Claim Offer <span className="group-hover/link:translate-x-1 transition-transform">&rarr;</span></a>
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  if (!user?.isPremium && onUpgradeClick) {
+                    onUpgradeClick();
+                  }
+                }} className="font-label-md text-sm text-primary font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-1 group/link">Claim Offer <span className="group-hover/link:translate-x-1 transition-transform">&rarr;</span></a>
               </div>
               <div className="bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-6 md:p-8 hover:border-primary/30 transition-all duration-300 group">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform text-primary">
@@ -85,7 +90,12 @@ export default function StudentHub() {
                 </div>
                 <h4 className="font-headline-md text-xl font-bold text-on-surface mb-2">Blue-Light Blockers</h4>
                 <p className="font-body-md text-sm text-on-surface-variant mb-6">Medical-grade blue light filtering glasses. Buy 1 Get 1 Free.</p>
-                <a href="#" className="font-label-md text-sm text-primary font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-1 group/link">Claim Offer <span className="group-hover/link:translate-x-1 transition-transform">&rarr;</span></a>
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  if (!user?.isPremium && onUpgradeClick) {
+                    onUpgradeClick();
+                  }
+                }} className="font-label-md text-sm text-primary font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-1 group/link">Claim Offer <span className="group-hover/link:translate-x-1 transition-transform">&rarr;</span></a>
               </div>
             </div>
 

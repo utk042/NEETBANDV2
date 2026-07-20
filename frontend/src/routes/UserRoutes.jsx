@@ -192,7 +192,7 @@ export default function UserRoutes() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Dashboard" loginRoute="/login">
-                <Dashboard navigate={navigate} onLogout={logout} tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} />
+                <Dashboard navigate={navigate} onLogout={logout} tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} onUpgradeClick={() => setIsPremiumModalOpen(true)} />
               </ProtectedRoute>
             } />
             
@@ -238,7 +238,7 @@ export default function UserRoutes() {
             } />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
-            <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub /></div>} />
+            <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
             <Route path="/library" element={<SongLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} />} />
             <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
             <Route path="/blog" element={<Blog user={user} />} />
@@ -292,7 +292,7 @@ export default function UserRoutes() {
 
       <PWAInstallPrompt />
 
-      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
+      <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { setIsPremiumModalOpen(false); handleUpgradeClick(); }} />
       
       <FullPlayerModal isOpen={isFullPlayerOpen} onClose={() => setIsFullPlayerOpen(false)} />
 

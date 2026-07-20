@@ -18,7 +18,7 @@ export const getAdConfig = async (req, res) => {
 // Update the global Ad Config
 export const updateAdConfig = async (req, res) => {
   try {
-    const { audioRollPositions, audioRollUrl, popupPositions, popupHtml } = req.body;
+    const { audioRollPositions, audioRollUrl, popupPositions, popupHtml, guestAdUrl } = req.body;
     
     let config = await AdConfig.findOne();
     if (!config) {
@@ -29,6 +29,7 @@ export const updateAdConfig = async (req, res) => {
     if (audioRollUrl !== undefined) config.audioRollUrl = audioRollUrl;
     if (popupPositions !== undefined) config.popupPositions = popupPositions;
     if (popupHtml !== undefined) config.popupHtml = popupHtml;
+    if (guestAdUrl !== undefined) config.guestAdUrl = guestAdUrl;
 
     await config.save();
     res.json(config);

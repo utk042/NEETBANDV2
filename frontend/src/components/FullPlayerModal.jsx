@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
-  IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture
+  IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture, IconMusic
 } from '@tabler/icons-react';
 import defaultCover from '../assets/dna_replication_thumbnail.png';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -62,20 +62,14 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     transition: 'none'
   } : {};
 
-  const displayTrack = currentTrack || {
-    title: "DNA Replication",
-    chapter: "Molecular Basis of Inheritance",
-    cover: defaultCover,
-    duration: "6:12",
-    durationSeconds: 372
-  };
+  const displayTrack = currentTrack;
 
   const currentSeconds = currentTime || 0;
-  const totalSeconds = displayTrack.durationSeconds || 372;
+  const totalSeconds = displayTrack?.durationSeconds || 1;
   const progressPercent = Math.min((currentSeconds / totalSeconds) * 100, 100);
 
   useEffect(() => {
-    if (!displayTrack.lyricsUrl) {
+    if (!displayTrack?.lyricsUrl) {
       setLyrics([]);
       return;
     }
@@ -271,6 +265,33 @@ export default function FullPlayerModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  if (!displayTrack) {
+    return (
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={modalStyle}
+        className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar"
+      >
+        <div className="flex justify-between items-center p-4 md:px-8 shrink-0 relative">
+          <div className="flex-1 flex justify-start z-10">
+            <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
+              <IconChevronDown size={32} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <IconMusic size={64} className="text-on-surface-variant mb-6 opacity-50" />
+          <h2 className="text-2xl font-bold text-on-surface mb-2">No song to play</h2>
+          <p className="text-on-surface-variant text-center max-w-sm">
+            Play a track from your library or a course module to see it here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       onTouchStart={handleTouchStart}
@@ -305,15 +326,17 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         }
       ` }} />
       {/* Header */}
-      <div className="flex justify-between items-center p-4 md:px-8 shrink-0">
-        <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
-          <IconChevronDown size={32} />
-        </button>
-        <div className="flex flex-col items-center">
-          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Now Playing</span>
-          <span className="text-sm font-semibold text-primary">{displayTrack.chapter || "NeetBand"}</span>
+      <div className="flex justify-between items-center p-4 md:px-8 shrink-0 relative">
+        <div className="flex-1 flex justify-start z-10">
+          <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
+            <IconChevronDown size={32} />
+          </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-0 w-[60%] text-center">
+          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest truncate w-full">Now Playing</span>
+          <span className="text-sm font-semibold text-primary truncate w-full">{displayTrack.chapter || "NeetBand"}</span>
+        </div>
+        <div className="flex-1 flex justify-end items-center gap-2 z-10">
           {user?.isPremium && (
             <button
               onClick={requestPip}
@@ -474,7 +497,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                 className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
-                {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} className="translate-x-1" />}
+                {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
               </button>
               <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Next Track">
                 <IconPlayerSkipForwardFilled size={36} />

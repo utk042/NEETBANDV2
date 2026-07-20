@@ -214,45 +214,50 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         role="dialog"
         aria-modal="true"
         aria-label="Mobile Navigation Menu"
-        className={`md:hidden fixed inset-0 bg-surface z-header-mobile flex flex-col justify-center items-center gap-8 transition-opacity duration-300 ease-in-out ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`md:hidden fixed inset-0 z-header-mobile transition-opacity duration-300 ease-in-out ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
+        {/* Backgrounds */}
+        <div className="absolute inset-0 bg-surface"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container to-surface opacity-95 pointer-events-none"></div> 
         
-        {/* Animated Links */}
-        <div className={`flex flex-col items-center gap-6 py-10 w-full overflow-y-auto max-h-screen transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
-          <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Library</a>
-          <a onClick={(e) => handleNav(e, 'feed')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'feed' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Feed</a>
+        {/* Scrollable Content */}
+        <div className="relative w-full h-full overflow-y-auto flex flex-col justify-start items-center pt-32 pb-12">
+          {/* Animated Links */}
+          <div className={`flex flex-col items-center gap-6 w-full transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+            <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
+            <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Library</a>
+            <a onClick={(e) => handleNav(e, 'feed')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'feed' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Feed</a>
 
-          <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
-          <a onClick={(e) => handleNav(e, 'course')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
-          <a onClick={(e) => handleNav(e, 'contact')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'contact' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Contact Us</a>
-          {!user.isLoggedIn && (
-            <a 
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/login');
-                setMobileMenuOpen(false);
-              }}
-              className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${
-                currentPage === 'login' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'
-              }`}
-              href="#"
-            >
-              Log In
-            </a>
-          )}
+            <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
+            <a onClick={(e) => handleNav(e, 'course')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
+            <a onClick={(e) => handleNav(e, 'contact')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'contact' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Contact Us</a>
+            {!user.isLoggedIn && (
+              <a 
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/login');
+                  setMobileMenuOpen(false);
+                }}
+                className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${
+                  currentPage === 'login' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'
+                }`}
+                href="#"
+              >
+                Log In
+              </a>
+            )}
 
-          {/* Decorative Bottom Elements */}
-          <div className="flex items-center gap-6 mt-4 z-10">
-            <button 
-              onClick={toggleTheme}
-              className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2.5 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
-              aria-label="Toggle Theme"
-            >
-              <IconMoon size={28} className="block dark:hidden" aria-hidden="true" />
-              <IconSun size={28} className="block hidden dark:block" aria-hidden="true" />
-            </button>
+            {/* Decorative Bottom Elements */}
+            <div className="flex items-center gap-6 mt-4 z-10">
+              <button 
+                onClick={toggleTheme}
+                className="text-on-surface-variant hover:text-primary hover:scale-110 transition-[colors,transform] duration-200 p-2.5 rounded-full bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center justify-center" 
+                aria-label="Toggle Theme"
+              >
+                <IconMoon size={28} className="block dark:hidden" aria-hidden="true" />
+                <IconSun size={28} className="block hidden dark:block" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

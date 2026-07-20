@@ -211,8 +211,8 @@ export default function ManageSongs() {
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
       isPremium: song.isPremium !== false,
-      watermarkUrl: song.watermarkUrl || '',
-      watermarkPositions: song.watermarkPositions || [20, 50, 90]
+      watermarkUrl: song.watermarkUrl || adConfig.watermarkUrl || '',
+      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90])
     });
     setEditingSongId(song._id);
     setIsAddSongModalOpen(true);
@@ -240,8 +240,13 @@ export default function ManageSongs() {
       const res = await api.get('/api/ad-config');
       const data = res.data;
       if (data) {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        let wUrl = data.audioRollUrl || '';
+        if (wUrl && !wUrl.startsWith('http')) {
+          wUrl = `${backendUrl}${wUrl}`;
+        }
         const config = {
-          watermarkUrl: data.audioRollUrl || '',
+          watermarkUrl: wUrl,
           watermarkPositions: data.audioRollPositions || [20, 50, 90]
         };
         setAdConfig(config);

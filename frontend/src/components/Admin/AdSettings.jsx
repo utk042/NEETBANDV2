@@ -9,8 +9,9 @@ export default function AdSettings() {
 
   const [audioRollPositions, setAudioRollPositions] = useState([20, 50, 90]);
   const [audioRollUrl, setAudioRollUrl] = useState('');
-  const [popupPositions, setPopupPositions] = useState([20, 50, 90]);
+  const [popupPositions, setPopupPositions] = useState([10, 40, 75]);
   const [popupHtml, setPopupHtml] = useState('');
+  const [guestAdUrl, setGuestAdUrl] = useState('C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg');
 
   // Upload progress state
   const [uploadingAudio, setUploadingAudio] = useState(false);
@@ -26,8 +27,11 @@ export default function AdSettings() {
       if (data) {
         setAudioRollPositions(data.audioRollPositions || [20, 50, 90]);
         setAudioRollUrl(data.audioRollUrl || '');
-        setPopupPositions(data.popupPositions || [20, 50, 90]);
+        setPopupPositions(data.popupPositions || [10, 40, 75]);
         setPopupHtml(data.popupHtml || '');
+        if (data.guestAdUrl !== undefined) {
+          setGuestAdUrl(data.guestAdUrl);
+        }
       }
     } catch (err) {
       console.error('Error fetching ad config', err);
@@ -45,6 +49,7 @@ export default function AdSettings() {
         audioRollUrl,
         popupPositions,
         popupHtml,
+        guestAdUrl,
       });
       alert('Success', 'Ad configuration saved successfully.');
     } catch (err) {
@@ -55,7 +60,7 @@ export default function AdSettings() {
     }
   };
 
-  const handleAudioUpload = async (e) => {
+  const handleAudioUpload = async (e, type = 'roll') => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -70,7 +75,11 @@ export default function AdSettings() {
       const res = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setAudioRollUrl(res.data.url);
+      if (type === 'guest') {
+        setGuestAdUrl(res.data.url);
+      } else {
+        setAudioRollUrl(res.data.url);
+      }
       alert('Success', 'Audio file uploaded successfully.');
     } catch (err) {
       console.error('Upload failed', err);
@@ -116,22 +125,22 @@ export default function AdSettings() {
   }
 
   return (
-    <div className="p-6 text-slate-100 max-w-4xl mx-auto space-y-10">
+    <div className="text-slate-100 max-w-4xl mx-auto space-y-8 md:space-y-10">
       <h1 className="text-3xl font-bold text-primary tracking-tight">Global Advertisement Triggers</h1>
       <p className="text-slate-400">Configure audio and popup advertisements for all songs. These will be shown to guest users and non-premium members.</p>
 
       {/* AUDIO ROLL SECTION */}
-      <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-6">
+      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
         <h2 className="text-2xl font-semibold text-white">Audio Roll Ads</h2>
         <p className="text-slate-400 text-sm">The song will pause at these percentages, play the uploaded audio ad, and then resume.</p>
         
         <div className="space-y-4">
           <label className="block text-sm font-medium text-slate-300">Upload Audio Ad (MP3/WAV)</label>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <input 
               type="file" 
               accept="audio/*" 
-              onChange={handleAudioUpload}
+              onChange={(e) => handleAudioUpload(e, 'roll')}
               className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:bg-primary/90 file:cursor-pointer text-slate-300 cursor-pointer"
             />
             {uploadingAudio && <span className="text-primary animate-pulse text-sm">Uploading...</span>}
@@ -142,7 +151,7 @@ export default function AdSettings() {
               <audio 
                 controls 
                 src={audioRollUrl.startsWith('http') ? audioRollUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${audioRollUrl}`} 
-                className="mt-2 h-8 w-full max-w-md" 
+                className="mt-2 h-10 w-full max-w-full" 
               />
             </div>
           )}
@@ -178,7 +187,7 @@ export default function AdSettings() {
       </div>
 
       {/* POPUP SECTION */}
-      <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-6">
+      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
         <h2 className="text-2xl font-semibold text-white">Popup HTML Ads</h2>
         <p className="text-slate-400 text-sm">The popup will appear at these percentages. It will not pause the music.</p>
         
@@ -227,6 +236,47 @@ export default function AdSettings() {
               +
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* GUEST AD SECTION */}
+      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
+        <h2 className="text-2xl font-semibold text-white">Guest User Ad</h2>
+        <p className="text-slate-400 text-sm">For guest users, the song will pause at 20%, play this ad, and then show the login required popup.</p>
+        
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-slate-300">Upload Guest Audio Ad (MP3/WAV)</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <input 
+              type="file" 
+              accept="audio/*" 
+              onChange={(e) => handleAudioUpload(e, 'guest')}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:bg-primary/90 file:cursor-pointer text-slate-300 cursor-pointer"
+            />
+          </div>
+          
+          <label className="block text-sm font-medium text-slate-300 mt-4">Manual URL / Path</label>
+          <input 
+            type="text" 
+            value={guestAdUrl}
+            onChange={(e) => setGuestAdUrl(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-300 focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+          />
+
+          {guestAdUrl && (
+            <div className="mt-2 text-sm text-green-400 break-all bg-green-400/10 p-3 rounded-lg border border-green-400/20">
+              <strong>Current Ad:</strong> {guestAdUrl}
+              {guestAdUrl.startsWith('http') || guestAdUrl.startsWith('/') ? (
+                <audio 
+                  controls 
+                  src={guestAdUrl.startsWith('http') ? guestAdUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${guestAdUrl}`} 
+                  className="mt-2 h-10 w-full max-w-full" 
+                />
+              ) : (
+                <p className="mt-2 text-yellow-400">Preview not available for local absolute paths.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
