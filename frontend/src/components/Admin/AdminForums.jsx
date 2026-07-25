@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, BarChart2, Paperclip, MessageSquare, Heart, Eye } from 'lucide-react';
 import BlogEditor from './BlogEditor';
+import DragDropWrapper from '../ui/DragDropWrapper';
 import { uploadFile } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 
@@ -59,9 +60,9 @@ const AdminForums = ({ api }) => {
   const [selectedCommentsPost, setSelectedCommentsPost] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = async (e) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileUpload = async (eOrFile) => {
+    const files = eOrFile?.target ? eOrFile.target.files : [eOrFile];
+    if (!files || files.length === 0 || !files[0]) return;
     
     setIsUploading(true);
     try {
@@ -262,35 +263,37 @@ const AdminForums = ({ api }) => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
-                <Paperclip size={16} />
-                Attachments (Comma separated URLs)
-              </label>
-              <label className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1">
-                {isUploading ? (
-                  <span className="animate-pulse">Uploading...</span>
-                ) : (
-                  <>
-                    <span>+ Upload Files</span>
-                    <input 
-                      type="file" 
-                      multiple 
-                      className="hidden" 
-                      onChange={handleFileUpload} 
-                      disabled={isUploading}
-                    />
-                  </>
-                )}
-              </label>
-            </div>
-            <input
-              type="text"
-              value={attachments}
-              onChange={(e) => setAttachments(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              placeholder="https://link.to/file1.pdf, https://link.to/image.png"
-            />
+            <DragDropWrapper onFileDrop={handleFileUpload}>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                  <Paperclip size={16} />
+                  Attachments (Comma separated URLs)
+                </label>
+                <label className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1">
+                  {isUploading ? (
+                    <span className="animate-pulse">Uploading...</span>
+                  ) : (
+                    <>
+                      <span>+ Upload Files</span>
+                      <input 
+                        type="file" 
+                        multiple 
+                        className="hidden" 
+                        onChange={handleFileUpload} 
+                        disabled={isUploading}
+                      />
+                    </>
+                  )}
+                </label>
+              </div>
+              <input
+                type="text"
+                value={attachments}
+                onChange={(e) => setAttachments(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="https://link.to/file1.pdf, https://link.to/image.png"
+              />
+            </DragDropWrapper>
           </div>
 
           <div className="space-y-4 p-4 border border-outline-variant rounded-xl bg-surface-variant/20">

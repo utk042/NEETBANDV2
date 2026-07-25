@@ -337,11 +337,10 @@ export default function Dashboard({
               <IconSchool className="text-primary" size={28} strokeWidth={1.5} /> Enrolled Courses
             </h2>
             
-            {profileData?.progress && profileData.progress.length > 0 ? (
+            {profileData?.progress?.filter(p => p.courseId).length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {profileData.progress.map((prog, index) => {
+                {profileData.progress.filter(p => p.courseId).map((prog, index) => {
                   const course = prog.courseId;
-                  if (!course) return null; // Defensive check
                   const percentage = course.lessons?.length > 0 
                     ? Math.round((prog.score / course.lessons.length) * 100) || 0 
                     : 0;
@@ -377,7 +376,7 @@ export default function Dashboard({
               </div>
             ) : (
               <div className="bg-surface-container-low rounded-[32px] p-8 text-center border border-outline/10">
-                <p className="text-on-surface-variant">You are not enrolled in any courses yet.</p>
+                <p className="text-on-surface-variant">no enrolled courses</p>
               </div>
             )}
           </div>

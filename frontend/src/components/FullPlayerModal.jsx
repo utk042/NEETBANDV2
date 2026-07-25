@@ -400,7 +400,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                       ref={isActive ? activeLyricRef : null}
                       className={`w-full text-center py-4 transition-all duration-500 cursor-pointer ${
                         isActive 
-                          ? 'text-primary text-2xl md:text-3xl font-extrabold scale-110 drop-shadow-[0_0_12px_rgba(201,162,39,0.8)]'
+                          ? 'text-primary text-lg md:text-xl font-semibold drop-shadow-[0_0_12px_rgba(201,162,39,0.8)]'
                           : isPassed
                             ? 'text-white/40 text-lg md:text-xl font-medium'
                             : 'text-white/70 text-lg md:text-xl font-semibold hover:text-white'

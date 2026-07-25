@@ -239,7 +239,7 @@ export default function UserRoutes() {
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
-            <Route path="/library" element={<SongLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} />} />
+            <Route path="/library" element={<SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />} />
             <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />

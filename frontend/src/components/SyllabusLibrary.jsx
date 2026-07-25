@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconPlaylist, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
+import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
@@ -102,8 +102,8 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
       <div className="max-w-container-max mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
           <div data-gsap="syllabus-heading">
-            <h2 className="font-headline-lg font-bold text-headline-lg-mobile md:text-4xl text-on-surface mb-3 text-balance">Browse by Syllabus</h2>
-            <p className="font-body-md font-normal text-lg text-on-surface-variant opacity-80">Find the perfect study track for your current topic.</p>
+            <h2 className="font-headline-lg font-bold text-headline-lg-mobile md:text-4xl text-on-surface mb-3 text-balance">Study Songs</h2>
+            <p className="font-body-md font-normal text-lg text-on-surface-variant opacity-80">Master the NEET syllabus with immersive audio tracks.</p>
           </div>
           
           <div data-gsap="syllabus-filters" ref={dropdownRef} className="flex flex-wrap gap-4 w-full md:w-auto relative z-30">
@@ -350,7 +350,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                     >
                       <IconRepeat size={20} aria-hidden="true" />
                     </button>
-                    <button className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Queue"><IconPlaylist size={20} aria-hidden="true" /></button>
+
                   </div>
                   <div className="hidden lg:block w-px h-4 bg-on-secondary/20 dark:bg-on-primary/20"></div>
                   <button className="hover:text-on-secondary dark:hover:text-on-primary hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-xl flex items-center justify-center" aria-label="Volume"><IconVolume size={20} aria-hidden="true" /></button>
@@ -380,10 +380,11 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
           <div data-gsap="track-list" className="w-full flex flex-col z-10">
             {/* Header */}
             <div className="hidden md:flex px-6 py-3 text-on-surface-variant font-label-sm text-xs uppercase tracking-widest opacity-60 font-semibold border-b border-[var(--border-nav-layout)]">
-              <div className="w-12"></div>
+              <div className="w-14"></div>
               <div className="flex-1">Title</div>
-              <div className="w-24 lg:w-48 text-left">Class</div>
-              <div className="w-32 lg:w-56 text-left">Chapter</div>
+              <div className="w-24 lg:w-40 text-left">Class</div>
+              <div className="w-24 lg:w-40 text-left">Subject</div>
+              <div className="w-20 lg:w-24 text-left">Length</div>
               <div className="w-28 lg:w-32 text-right"></div>
             </div>
 
@@ -416,36 +417,20 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                 >
                   <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                     {/* Play/Pause hover image overlay */}
-                    <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block group-hover:scale-105 transition-transform">
                       <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40} loading="lazy"/>
-                      <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-black/60' : 'bg-black/30 group-hover:bg-black/50'}`}>
                         {isCurrent && isPlaying ? (
                           <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />
                         ) : (
-                          <IconPlayerPlayFilled size={20} className="text-white translate-x-[1px]" aria-hidden="true" />
+                          <IconPlayerPlayFilled size={20} className={`translate-x-[1px] transition-all duration-300 ${isCurrent ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} aria-hidden="true" />
                         )}
                       </div>
-                      {isCurrent && isPlaying && (
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <IconVolume size={20} className="text-primary" aria-hidden="true" />
-                        </div>
-                      )}
                     </div>
                     
-                    {/* Track info & prefix display index */}
-                    <div className="min-w-0 flex-1 flex flex-col">
+                    {/* Track info */}
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="font-headline-md text-[15px] md:text-base group-hover:text-primary transition-colors font-bold flex items-center gap-2 truncate">
-                        <span className={`font-normal transition-colors duration-300 flex items-center flex-shrink-0 w-6 md:w-auto ${isCurrent ? 'text-primary' : 'text-on-surface-variant/80'}`}>
-                          {isCurrent ? (
-                             isPlaying ? (
-                                <IconVolume size={18} className="text-primary flex-shrink-0" aria-hidden="true" />
-                              ) : (
-                                <IconPlayerPlayFilled size={18} className="text-primary flex-shrink-0 translate-x-[1px]" aria-hidden="true" />
-                              )
-                          ) : (
-                            displayIndex
-                          )}
-                        </span>
                         <span className={`truncate ${isCurrent ? 'text-primary' : 'text-on-surface'}`}>{track.title}</span>
                         {track.premium && (
                           <span className="px-1.5 py-[1px] rounded-lg text-[8px] bg-primary/10 text-primary border border-primary/20 tracking-wider flex-shrink-0 font-normal hidden sm:inline-block">
@@ -453,18 +438,23 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-on-surface-variant/70 md:hidden mt-0.5 truncate pl-8">{track.chapter}</span>
+                      <span className="text-xs text-on-surface-variant/70 md:hidden mt-0.5 truncate">{track.subject} • {track.duration || '0:00'}</span>
                     </div>
                   </div>
 
                   {/* Class Column */}
-                  <div className="hidden md:block w-24 lg:w-48 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
+                  <div className="hidden md:block w-24 lg:w-40 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
                     {track.class || track.grade || 'Class 12'}
                   </div>
 
-                  {/* Chapter Column */}
-                  <div className="hidden md:block w-32 lg:w-56 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4" title={track.chapter}>
-                    {track.chapter || '-'}
+                  {/* Subject Column */}
+                  <div className="hidden md:block w-24 lg:w-40 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4" title={track.subject}>
+                    {track.subject || '-'}
+                  </div>
+
+                  {/* Length Column */}
+                  <div className="hidden md:block w-20 lg:w-24 text-left font-body-md text-sm text-on-surface-variant font-medium truncate pr-4">
+                    {track.duration || '0:00'}
                   </div>
                   
                   {/* Action Icons */}

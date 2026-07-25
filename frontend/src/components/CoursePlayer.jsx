@@ -51,7 +51,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const selectedItemIdx = itemIdxParam !== undefined ? parseInt(itemIdxParam, 10) - 1 : null;
 
   // Overview folder drill-down state
-  const [folderLevel, setFolderLevel] = useState('subjects'); 
+  const [folderLevel, setFolderLevel] = useState('chapters'); 
   const [folderSubjectIdx, setFolderSubjectIdx] = useState(null);
   const [folderChapterIdx, setFolderChapterIdx] = useState(null);
 
@@ -385,26 +385,15 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {folderLevel !== 'subjects' && (
+                  {folderLevel !== 'chapters' && (
                     <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-on-surface-variant overflow-x-auto hide-scrollbar">
                       <button 
-                        onClick={() => { setFolderLevel('subjects'); setFolderSubjectIdx(null); setFolderChapterIdx(null); }}
+                        onClick={() => { setFolderLevel('chapters'); setFolderSubjectIdx(null); setFolderChapterIdx(null); }}
                         className="flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap"
                       >
-                        <SubjectIcon size={16} /> Course Contents
+                        <SubjectIcon size={16} /> Chapters
                       </button>
-                      {folderSubjectIdx !== null && (
-                        <>
-                          <IconChevronRight size={14} className="opacity-50 shrink-0" />
-                          <button 
-                            onClick={() => { setFolderLevel('chapters'); setFolderChapterIdx(null); }}
-                            className={`flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap ${folderLevel === 'chapters' ? 'text-on-surface' : ''}`}
-                          >
-                            {course.subjects[folderSubjectIdx]?.title}
-                          </button>
-                        </>
-                      )}
-                      {folderLevel === 'items' && folderChapterIdx !== null && (
+                      {folderLevel === 'items' && folderChapterIdx !== null && folderSubjectIdx !== null && (
                         <>
                           <IconChevronRight size={14} className="opacity-50 shrink-0" />
                           <span className="text-on-surface flex items-center gap-1 whitespace-nowrap">
@@ -415,47 +404,27 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                     </div>
                   )}
 
-                  {folderLevel === 'subjects' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(course?.subjects || []).map((subject, sIdx) => (
-                        <button
-                          key={subject._id || sIdx}
-                          onClick={() => { setFolderSubjectIdx(sIdx); setFolderLevel('chapters'); }}
-                          className="flex items-center gap-4 p-5 rounded-2xl border border-outline/10 bg-surface-container-lowest hover:bg-surface-container-low hover:border-outline/20 transition-all group text-left h-full"
-                        >
-                          <div className="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary group-hover:bg-primary/10 transition-colors shrink-0">
-                            <DynamicIcon name={subject.icon} fallback={IconBook2} size={24} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate text-base">{subject.title}</h3>
-                            <p className="text-[11px] text-on-surface-variant mt-1 font-medium">
-                              {(subject.chapters || []).length} Chapters
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {folderLevel === 'chapters' && folderSubjectIdx !== null && (
+                  {folderLevel === 'chapters' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                      {(course.subjects[folderSubjectIdx]?.chapters || []).map((chapter, cIdx) => (
-                        <button
-                          key={chapter._id || cIdx}
-                          onClick={() => { setFolderChapterIdx(cIdx); setFolderLevel('items'); }}
-                          className="flex items-center gap-4 p-4 rounded-xl border border-outline/10 bg-surface-container-lowest hover:bg-surface-container-low hover:border-outline/20 transition-all group text-left"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary group-hover:bg-primary/10 transition-colors shrink-0">
-                            <DynamicIcon name={chapter.icon} fallback={IconList} size={20} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate text-sm">{chapter.title}</h4>
-                            <p className="text-[11px] text-on-surface-variant mt-0.5 font-medium">
-                              {getChapterItems(chapter).length} Items
-                            </p>
-                          </div>
-                        </button>
-                      ))}
+                      {(course?.subjects || []).flatMap((subject, sIdx) => 
+                        (subject.chapters || []).map((chapter, cIdx) => (
+                          <button
+                            key={chapter._id || `${sIdx}-${cIdx}`}
+                            onClick={() => { setFolderSubjectIdx(sIdx); setFolderChapterIdx(cIdx); setFolderLevel('items'); }}
+                            className="flex items-center gap-4 p-4 rounded-xl border border-outline/10 bg-surface-container-lowest hover:bg-surface-container-low hover:border-outline/20 transition-all group text-left h-full"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary group-hover:bg-primary/10 transition-colors shrink-0">
+                              <DynamicIcon name={chapter.icon} fallback={IconList} size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate text-sm">{chapter.title}</h4>
+                              <p className="text-[11px] text-on-surface-variant mt-0.5 font-medium">
+                                {subject.title} • {getChapterItems(chapter).length} Items
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
                     </div>
                   )}
 

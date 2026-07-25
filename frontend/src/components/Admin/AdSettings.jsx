@@ -9,8 +9,10 @@ export default function AdSettings() {
 
   const [audioRollPositions, setAudioRollPositions] = useState([20, 50, 90]);
   const [audioRollUrl, setAudioRollUrl] = useState('');
+  const [audioRollsEnabled, setAudioRollsEnabled] = useState(true);
   const [popupPositions, setPopupPositions] = useState([10, 40, 75]);
   const [popupHtml, setPopupHtml] = useState('');
+  const [popupsEnabled, setPopupsEnabled] = useState(true);
   const [guestAdUrl, setGuestAdUrl] = useState('C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg');
 
   // Upload progress state
@@ -27,8 +29,10 @@ export default function AdSettings() {
       if (data) {
         setAudioRollPositions(data.audioRollPositions || [20, 50, 90]);
         setAudioRollUrl(data.audioRollUrl || '');
+        setAudioRollsEnabled(data.audioRollsEnabled !== undefined ? data.audioRollsEnabled : true);
         setPopupPositions(data.popupPositions || [10, 40, 75]);
         setPopupHtml(data.popupHtml || '');
+        setPopupsEnabled(data.popupsEnabled !== undefined ? data.popupsEnabled : true);
         if (data.guestAdUrl !== undefined) {
           setGuestAdUrl(data.guestAdUrl);
         }
@@ -47,8 +51,10 @@ export default function AdSettings() {
       await api.put('/api/ad-config', {
         audioRollPositions,
         audioRollUrl,
+        audioRollsEnabled,
         popupPositions,
         popupHtml,
+        popupsEnabled,
         guestAdUrl,
       });
       alert('Success', 'Ad configuration saved successfully.');
@@ -131,8 +137,24 @@ export default function AdSettings() {
 
       {/* AUDIO ROLL SECTION */}
       <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
-        <h2 className="text-2xl font-semibold text-white">Audio Roll Ads</h2>
-        <p className="text-slate-400 text-sm">The song will pause at these percentages, play the uploaded audio ad, and then resume.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Audio Roll Ads</h2>
+            <p className="text-slate-400 text-sm">The song will pause at these percentages, play the uploaded audio ad, and then resume.</p>
+          </div>
+          <label className="flex items-center cursor-pointer gap-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 shrink-0 select-none">
+            <span className={`text-sm font-semibold ${audioRollsEnabled ? 'text-primary' : 'text-slate-400'}`}>
+              {audioRollsEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <input 
+              type="checkbox" 
+              checked={audioRollsEnabled} 
+              onChange={(e) => setAudioRollsEnabled(e.target.checked)} 
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
+          </label>
+        </div>
         
         <div className="space-y-4">
           <label className="block text-sm font-medium text-slate-300">Upload Audio Ad (MP3/WAV)</label>
@@ -188,8 +210,24 @@ export default function AdSettings() {
 
       {/* POPUP SECTION */}
       <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
-        <h2 className="text-2xl font-semibold text-white">Popup HTML Ads</h2>
-        <p className="text-slate-400 text-sm">The popup will appear at these percentages. It will not pause the music.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Popup HTML Ads</h2>
+            <p className="text-slate-400 text-sm">The popup will appear at these percentages. It will not pause the music.</p>
+          </div>
+          <label className="flex items-center cursor-pointer gap-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 shrink-0 select-none">
+            <span className={`text-sm font-semibold ${popupsEnabled ? 'text-primary' : 'text-slate-400'}`}>
+              {popupsEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <input 
+              type="checkbox" 
+              checked={popupsEnabled} 
+              onChange={(e) => setPopupsEnabled(e.target.checked)} 
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
+          </label>
+        </div>
         
         <div className="space-y-4">
           <label className="block text-sm font-medium text-slate-300">Popup Content (HTML / Text)</label>

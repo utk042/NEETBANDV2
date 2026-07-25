@@ -38,6 +38,11 @@ const songSchema = new mongoose.Schema({
     type: Boolean,
     default: false, // If true, non-premium users will hear ads or can't download
   },
+  songType: {
+    type: String,
+    enum: ['Normal', 'Study'],
+    default: 'Study'
+  },
   playCount: { type: Number, default: 0 },
   completionCount: { type: Number, default: 0 },
   shareCount: { type: Number, default: 0 },

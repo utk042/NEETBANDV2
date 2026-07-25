@@ -39,7 +39,7 @@ export default React.memo(function CourseLessonSidebar({
       ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
     `}>
       <div className="p-4 border-b border-outline/10">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Course Contents</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Chapters</p>
         <p className="text-xs text-on-surface-variant/60 mt-0.5">{course?.subjects?.length || 0} subjects · {totalItemsCount} items</p>
       </div>
       {/* Subject Tabs */}

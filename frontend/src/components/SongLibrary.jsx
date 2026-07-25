@@ -25,7 +25,7 @@ export default function SongLibrary({
   });
 
   return (
-    <div className="min-h-screen bg-transparent text-on-surface pt-24 pb-32 transition-colors duration-300 relative overflow-hidden">
+    <div className="min-h-0 bg-transparent text-on-surface pt-24 pb-10 transition-colors duration-300 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
         
         {/* Search Bar */}

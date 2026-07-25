@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { IconLoader2, IconAlertCircle } from '@tabler/icons-react';
-import * as mammoth from 'mammoth';
+import mammoth from 'mammoth/mammoth.browser';
 
 // Setup pdf.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export default function DocumentViewer({ fileUrl, fileType, title }) {
   const [numPages, setNumPages] = useState(null);
@@ -77,10 +74,7 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
           error={
             <div className="flex flex-col items-center justify-center py-20 text-center w-full">
               <IconAlertCircle className="text-error mb-3" size={32} />
-              <p className="text-sm text-on-surface-variant">Failed to load PDF. {error?.message}</p>
-              <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-primary mt-4 hover:underline">
-                Try opening directly
-              </a>
+              <p className="text-sm text-on-surface-variant">Failed to load document. Please try again later.</p>
             </div>
           }
           className="w-full flex flex-col items-center"
@@ -111,10 +105,7 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
         ) : docError ? (
           <div className="flex flex-col items-center justify-center py-20 text-center w-full h-full">
             <IconAlertCircle className="text-error mb-3" size={32} />
-            <p className="text-sm text-on-surface-variant">Failed to load document.</p>
-            <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-primary mt-4 hover:underline">
-              Download File
-            </a>
+            <p className="text-sm text-on-surface-variant">Failed to load document. Please try again later.</p>
           </div>
         ) : (
           <div 

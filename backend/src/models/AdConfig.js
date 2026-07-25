@@ -17,6 +17,14 @@ const adConfigSchema = new mongoose.Schema({
     type: String, // HTML content for the popup
     default: '',
   },
+  audioRollsEnabled: {
+    type: Boolean,
+    default: true,
+  },
+  popupsEnabled: {
+    type: Boolean,
+    default: true,
+  },
   guestAdUrl: {
     type: String,
     default: 'C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg',

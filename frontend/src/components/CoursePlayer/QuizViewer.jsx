@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconBookmark, IconCheck, IconArrowLeft, IconArrowRight, IconSend, IconAlertCircle } from '@tabler/icons-react';
 
+const checkBlankAnswer = (userAns, correctText) => {
+  const u = (userAns || '').toString().trim().toLowerCase();
+  if (!u) return false;
+  const cArr = (correctText || '').toString().split('/').map(s => s.trim().toLowerCase()).filter(Boolean);
+  return cArr.includes(u);
+};
+
 export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }) {
   const navigate = useNavigate();
 
@@ -45,9 +52,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
         const qObj = activeDetails.questions[qIdx];
         let correct = false;
         if (qObj.type === 'fill_in_the_blanks') {
-          const userAns = (quizAnswers[qIdx] || '').toString().trim().toLowerCase();
-          const correctAns = (qObj.correctText || '').toString().trim().toLowerCase();
-          correct = userAns === correctAns && correctAns !== '';
+          correct = checkBlankAnswer(quizAnswers[qIdx], qObj.correctText);
         } else {
           correct = quizAnswers[qIdx] === qObj.correctIndex;
         }
@@ -134,11 +139,11 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
                   onChange={(e) => setQuizAnswers(prev => ({ ...prev, [currentQuizQuestionIdx]: e.target.value }))}
                   className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 bg-background transition-colors ${
                     quizSubmitted 
-                      ? (((quizAnswers[currentQuizQuestionIdx] || '').toString().trim().toLowerCase() === (q.correctText || '').toString().trim().toLowerCase()) ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 focus:ring-0' : 'border-rose-500 text-rose-400 bg-rose-500/10 focus:ring-0')
+                      ? (checkBlankAnswer(quizAnswers[currentQuizQuestionIdx], q.correctText) ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 focus:ring-0' : 'border-rose-500 text-rose-400 bg-rose-500/10 focus:ring-0')
                       : 'border-outline-variant/30 text-on-surface focus:ring-amber-500/30 focus:border-amber-500/40'
                   }`}
                 />
-                {quizSubmitted && ((quizAnswers[currentQuizQuestionIdx] || '').toString().trim().toLowerCase() !== (q.correctText || '').toString().trim().toLowerCase()) && (
+                {quizSubmitted && !checkBlankAnswer(quizAnswers[currentQuizQuestionIdx], q.correctText) && (
                   <p className="text-emerald-400 text-xs font-bold mt-2 bg-emerald-500/10 px-3 py-2 rounded-lg inline-block border border-emerald-500/20">Correct Answer: {q.correctText}</p>
                 )}
               </div>
@@ -254,9 +259,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
                   let score = 0;
                   activeDetails.questions.forEach((q, idx) => {
                     if (q.type === 'fill_in_the_blanks') {
-                      const userAns = (quizAnswers[idx] || '').toString().trim().toLowerCase();
-                      const correctAns = (q.correctText || '').toString().trim().toLowerCase();
-                      if (userAns === correctAns && correctAns !== '') score++;
+                      if (checkBlankAnswer(quizAnswers[idx], q.correctText)) score++;
                     } else {
                       if (quizAnswers[idx] === q.correctIndex) score++;
                     }

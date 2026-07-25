@@ -512,18 +512,18 @@ export default function ManageLMS({ subTab = 'courses', user }) {
       <section>
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h3 className="text-2xl font-bold tracking-tight text-on-surface">Curriculum</h3>
+            <h3 className="text-2xl font-bold tracking-tight text-on-surface">Study Hub</h3>
             <p className="text-on-surface-variant text-sm mt-1">Manage your organized modules.</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-sm font-bold text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-lg hidden md:block">
-              {courses.length} Courses
+              {courses.length} Study Hub Items
             </div>
             <button 
               onClick={() => setIsAddCourseModalOpen(true)}
               className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/20 whitespace-nowrap"
             >
-              <IconPlus size={18} stroke={2.5} /> Add Course
+              <IconPlus size={18} stroke={2.5} /> Add Item
             </button>
           </div>
         </div>
@@ -575,8 +575,8 @@ export default function ManageLMS({ subTab = 'courses', user }) {
             {courses.length === 0 && (
               <div className="col-span-1 md:col-span-2 text-center py-12 border border-dashed border-outline-variant/40 rounded-2xl bg-surface-container-lowest">
                 <IconBook2 size={48} stroke={1} className="mx-auto text-on-surface-variant/50 mb-3" />
-                <h4 className="font-bold text-on-surface">No courses yet</h4>
-                <p className="text-sm text-on-surface-variant mt-1">Create your first course above.</p>
+                <h4 className="font-bold text-on-surface">No items yet</h4>
+                <p className="text-sm text-on-surface-variant mt-1">Create your first item above.</p>
               </div>
             )}
           </ul>

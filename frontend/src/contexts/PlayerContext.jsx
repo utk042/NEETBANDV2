@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, recordSongRepeat, recordSongShare } from '../services/api';
 import { useDialog } from './DialogContext';
-import SharePopup from '../components/Common/SharePopup';
+
 
 const PlayerContext = createContext(null);
 
@@ -29,7 +29,7 @@ export function PlayerProvider({ children, user }) {
   const [isPlayingAd, setIsPlayingAd] = useState(false);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const adQueueRef = useRef(null); // pending song to play after ads
-  const [showSharePopup, setShowSharePopup] = useState(false);
+
   const [playedWatermarks, setPlayedWatermarks] = useState([]);
   const { confirm } = useDialog();
 
@@ -75,6 +75,7 @@ export function PlayerProvider({ children, user }) {
           durationSeconds: durationSecs,
           duration: formattedDuration,
           premium: s.isPremium,
+          songType: s.songType || 'Study',
         };
       });
       setGlobalTracks(mapped);
@@ -132,10 +133,12 @@ export function PlayerProvider({ children, user }) {
       }
     }
 
+    const isNormalSong = currentTrack.songType === 'Normal';
+
     // Guest user restriction (only 1st song of every chapter is free up to 20%)
     const isFirstSongOfChapter = globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === (currentTrack._id || currentTrack.id);
 
-    if (!user?.isLoggedIn && pct >= 0.2) {
+    if (!isNormalSong && !user?.isLoggedIn && pct >= 0.2) {
       if (!playedGuestAd) {
         setPlayedGuestAd(true);
         audioRef.current.pause();
@@ -161,7 +164,7 @@ export function PlayerProvider({ children, user }) {
     }
 
     // Watermark/Ads logic for free users
-    if (!user?.isPremium && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
+    if (!isNormalSong && !user?.isPremium && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
       const pct100 = pct * 100;
       const pos = currentTrack.watermarkPositions.find(p => pct100 >= p && pct100 < p + 2); // Trigger within a small window
       if (pos !== undefined && !playedWatermarks.includes(pos)) {
@@ -170,18 +173,23 @@ export function PlayerProvider({ children, user }) {
           audioRef.current.volume = 0.2; // Dip main volume
           watermarkAudioRef.current.src = currentTrack.watermarkUrl;
           watermarkAudioRef.current.currentTime = 0;
-          watermarkAudioRef.current.play().catch(e => console.error(e));
-          setShowSharePopup(true);
+          watermarkAudioRef.current.play().catch(e => {
+            console.error(e);
+            if (audioRef.current && !isMuted) audioRef.current.volume = volume;
+          });
+
         }
       }
     }
 
     // Unified Audio Roll & Popup Ad Logic (Guests & Non-Premium)
-    if (!user?.isPremium && adConfig) {
+    if (!isNormalSong && !user?.isPremium && adConfig) {
       const pct100 = pct * 100;
+      const audioRollsActive = adConfig.audioRollsEnabled ?? true;
+      const popupsActive = adConfig.popupsEnabled ?? true;
 
       // Audio Roll Check
-      if (adConfig.audioRollPositions && adConfig.audioRollUrl) {
+      if (audioRollsActive && adConfig.audioRollPositions && adConfig.audioRollUrl) {
         const audioPos = adConfig.audioRollPositions.find(p => pct100 >= p && pct100 < p + 2);
         if (audioPos !== undefined && !playedAudioRolls.includes(audioPos)) {
           setPlayedAudioRolls(prev => [...prev, audioPos]);
@@ -193,13 +201,20 @@ export function PlayerProvider({ children, user }) {
             const url = adConfig.audioRollUrl;
             midRollAudioRef.current.src = url.startsWith('http') ? url : `${API_URL}${url}`;
             midRollAudioRef.current.currentTime = 0;
-            midRollAudioRef.current.play().catch(e => console.error(e));
+            midRollAudioRef.current.play().catch(e => {
+              console.error(e);
+              if (audioRef.current) {
+                if (!isMuted) audioRef.current.volume = volume;
+                audioRef.current.play().catch(err => console.error(err));
+                setIsPlaying(true);
+              }
+            });
           }
         }
       }
 
       // Popup Check
-      if (adConfig.popupPositions && adConfig.popupHtml) {
+      if (popupsActive && adConfig.popupPositions && adConfig.popupHtml) {
         const popupPos = adConfig.popupPositions.find(p => pct100 >= p && pct100 < p + 2);
         if (popupPos !== undefined && !playedPopups.includes(popupPos)) {
           setPlayedPopups(prev => [...prev, popupPos]);
@@ -215,10 +230,12 @@ export function PlayerProvider({ children, user }) {
 
   // Play ad sequence then the actual track
   const playWithAds = useCallback(async (track) => {
+    const isNormalSong = track.songType === 'Normal';
+
     // Guest Limit check
     const isFirstSongOfChapter = globalTracks.find(t => t.chapter === track.chapter)?.id === (track._id || track.id);
     
-    if (!user?.isLoggedIn && !isFirstSongOfChapter) {
+    if (!isNormalSong && !user?.isLoggedIn && !isFirstSongOfChapter) {
       // Guests cannot play anything except the 1st song of a chapter
       confirm("Login Required", "Please login to access more songs.", {
         showCancel: false,
@@ -231,7 +248,7 @@ export function PlayerProvider({ children, user }) {
     }
 
     const isPremium = user?.isPremium;
-    if (isPremium || adAudioUrls.length === 0 || !track.audioUrl) {
+    if (isNormalSong || isPremium || adAudioUrls.length === 0 || !track.audioUrl) {
       // No ads — play directly
       setCurrentTrack(track);
       setIsPlayingAd(false);
@@ -493,10 +510,10 @@ export function PlayerProvider({ children, user }) {
         ref={midRollAudioRef}
         onEnded={() => {
           if (audioRef.current) {
+            if (!isMuted) audioRef.current.volume = volume;
             audioRef.current.play().catch(e => console.error(e));
             setIsPlaying(true);
           }
-          setShowConfigPopup(false);
         }}
         preload="auto"
         style={{ display: 'none' }}
@@ -520,12 +537,7 @@ export function PlayerProvider({ children, user }) {
       <video ref={pipVideoRef} style={{ display: 'none' }} muted playsInline />
       {/* Ad banner overlay when ad is playing */}
       {/* Removed per user request */}
-      <SharePopup 
-        isOpen={showSharePopup} 
-        onClose={() => setShowSharePopup(false)} 
-        shareUrl={window.location.href}
-        title={currentTrack?.title}
-      />
+
       
       {/* HTML Config Popup Modal */}
       {showConfigPopup && adConfig?.popupHtml && (
@@ -533,12 +545,14 @@ export function PlayerProvider({ children, user }) {
           <div className="bg-surface relative border border-outline-variant/30 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setShowConfigPopup(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors z-10"
+              aria-label="Close popup"
+              title="Close"
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-surface-variant/80 hover:bg-surface-variant text-on-surface hover:text-white transition-colors z-20 shadow-md font-bold text-lg cursor-pointer"
             >
               ✕
             </button>
             <div 
-              className="p-6 pt-10"
+              className="p-6 pt-12"
               dangerouslySetInnerHTML={{ __html: adConfig.popupHtml }} 
             />
           </div>

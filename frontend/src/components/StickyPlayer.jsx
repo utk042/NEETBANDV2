@@ -187,7 +187,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
   }, [displayTrack.lyricsUrl]);
 
   const activeLyricIndex = lyrics.findIndex(l => currentSeconds >= l.begin && currentSeconds <= l.end);
-  const activeLyric = lyrics[activeLyricIndex]?.text || displayTrack.title;
+  const activeLyric = lyrics[activeLyricIndex]?.text || '';
 
   const handleScrub = (e) => {
     e.stopPropagation();
@@ -268,7 +268,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
 
         {/* Center — Live Lyrics (1/3) */}
         <div className="w-1/3 flex justify-center text-center min-w-0">
-          <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm">
+          <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem]">
             {activeLyric}
           </p>
         </div>

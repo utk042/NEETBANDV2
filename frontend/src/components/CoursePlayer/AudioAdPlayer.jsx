@@ -15,8 +15,9 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
   }, [item._id]);
 
   const isFree = !user?.isPremium;
+  const isNormalSong = item.songType === 'Normal';
   const originalAudio = item.audioUrl || item.videoUrl;
-  const tracks = isFree && originalAudio ? [...AD_URLS, originalAudio] : [originalAudio];
+  const tracks = (isFree && !isNormalSong && originalAudio) ? [...AD_URLS, originalAudio] : [originalAudio];
   
   const handleEnded = () => {
     if (currentTrackIndex < tracks.length - 1) {
@@ -24,7 +25,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
     }
   };
 
-  const isAd = isFree && currentTrackIndex < AD_URLS.length && originalAudio;
+  const isAd = isFree && !isNormalSong && currentTrackIndex < AD_URLS.length && originalAudio;
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center bg-surface-container/20 border border-outline/10 rounded-2xl p-6">

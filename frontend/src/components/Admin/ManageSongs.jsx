@@ -3,6 +3,13 @@ import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCours
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
 
+const getFullUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  return `${backendUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const WaveformSlider = ({ positions, onChange, audioUrl }) => {
   const trackRef = useRef(null);
   const [draggingIdx, setDraggingIdx] = useState(null);
@@ -26,7 +33,8 @@ const WaveformSlider = ({ positions, onChange, audioUrl }) => {
     const generateWaveform = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(audioUrl);
+        const fullAudioUrl = getFullUrl(audioUrl);
+        const response = await fetch(fullAudioUrl);
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -131,6 +139,7 @@ const WaveformSlider = ({ positions, onChange, audioUrl }) => {
 };
 
 import SearchableSelect from '../ui/SearchableSelect';
+import DragDropWrapper from '../ui/DragDropWrapper';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
 
 export default function ManageSongs() {
@@ -140,7 +149,7 @@ export default function ManageSongs() {
   const [loading, setLoading] = useState(true);
   const [adConfig, setAdConfig] = useState({ watermarkUrl: '', watermarkPositions: [20, 50, 90] });
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: '', watermarkPositions: [20, 50, 90]
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: '', watermarkPositions: [20, 50, 90]
   });
   const [editingSongId, setEditingSongId] = useState(null);
 
@@ -156,8 +165,8 @@ export default function ManageSongs() {
 
   const [uploadProgress, setUploadProgress] = useState({});
 
-  const handleFileUpload = async (e, field, folderType) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (eOrFile, field, folderType) => {
+    const file = eOrFile?.target ? eOrFile.target.files?.[0] : eOrFile;
     if (!file) return;
     try {
       setUploadProgress(prev => ({ ...prev, [field]: 0 }));
@@ -176,13 +185,16 @@ export default function ManageSongs() {
         delete next[field];
         return next;
       });
-      e.target.value = null;
+      if (eOrFile?.target) {
+        eOrFile.target.value = null;
+      }
     }
   };
 
   useEffect(() => {
     if (formData.audioUrl) {
-      const audio = new Audio(formData.audioUrl);
+      const fullUrl = getFullUrl(formData.audioUrl);
+      const audio = new Audio(fullUrl);
       audio.onloadedmetadata = () => {
         if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
           setFormData(prev => ({ ...prev, duration: Math.round(audio.duration) }));
@@ -193,7 +205,7 @@ export default function ManageSongs() {
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
-    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
+    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
   };
@@ -210,6 +222,7 @@ export default function ManageSongs() {
       thumbnailUrl: song.thumbnailUrl || '',
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
+      songType: song.songType || 'Study',
       isPremium: song.isPremium !== false,
       watermarkUrl: song.watermarkUrl || adConfig.watermarkUrl || '',
       watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90])
@@ -295,7 +308,7 @@ export default function ManageSongs() {
         await createSong(payload);
         toast.success("Song added successfully");
       }
-      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
+      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -312,50 +325,98 @@ export default function ManageSongs() {
   const audioRef = useRef(null);
   const watermarkAudioRef = useRef(null);
 
-  const handlePreview = () => {
+  const stopAudioPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current = null;
+    }
+    if (watermarkAudioRef.current) {
+      watermarkAudioRef.current.pause();
+      watermarkAudioRef.current.currentTime = 0;
+      watermarkAudioRef.current.onended = null;
+      watermarkAudioRef.current.onerror = null;
+      watermarkAudioRef.current = null;
+    }
+    setPreviewing(false);
+  };
+
+  const handlePreview = async () => {
     if (!formData.audioUrl) return toast.error("Please add an audio URL first");
     if (!formData.watermarkUrl) return toast.error("Please upload an audio watermark first");
     
     if (previewing) {
-      if (audioRef.current) audioRef.current.pause();
-      if (watermarkAudioRef.current) watermarkAudioRef.current.pause();
-      setPreviewing(false);
+      stopAudioPreview();
       return;
     }
     
-    setPreviewing(true);
-    audioRef.current = new Audio(formData.audioUrl);
-    watermarkAudioRef.current = new Audio(formData.watermarkUrl);
-    
-    audioRef.current.play();
-    
-    let lastPlayedPos = -1;
-    audioRef.current.ontimeupdate = () => {
-      if (!audioRef.current) return;
-      const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100;
-      
-      const pos = formData.watermarkPositions.find(p => pct >= p && pct < p + 5);
-      if (pos && pos !== lastPlayedPos) {
-        lastPlayedPos = pos;
-        audioRef.current.volume = 0.2; // dip volume
-        watermarkAudioRef.current.currentTime = 0;
-        watermarkAudioRef.current.play();
-      }
-    };
-    
-    watermarkAudioRef.current.onended = () => {
-      if (audioRef.current) audioRef.current.volume = 1;
-    };
-    
-    audioRef.current.onended = () => {
-      setPreviewing(false);
-    };
+    const finalAudioUrl = getFullUrl(formData.audioUrl);
+    const finalWatermarkUrl = getFullUrl(formData.watermarkUrl);
+
+    try {
+      const mainAudio = new Audio(finalAudioUrl);
+      const watermarkAudio = new Audio(finalWatermarkUrl);
+
+      audioRef.current = mainAudio;
+      watermarkAudioRef.current = watermarkAudio;
+
+      let lastPlayedPos = -1;
+      mainAudio.ontimeupdate = () => {
+        if (!mainAudio || !mainAudio.duration) return;
+        const pct = (mainAudio.currentTime / mainAudio.duration) * 100;
+        
+        const rawPositions = formData.watermarkPositions || [20, 50, 90];
+        const numPositions = rawPositions.map(p => Number(p)).filter(p => !isNaN(p));
+        
+        const pos = numPositions.find(p => pct >= p && pct < (p + 3));
+        if (pos !== undefined && pos !== lastPlayedPos) {
+          lastPlayedPos = pos;
+          mainAudio.volume = 0.2;
+          watermarkAudio.currentTime = 0;
+          watermarkAudio.play().catch(e => console.error("Watermark audio playback failed:", e));
+        }
+      };
+
+      watermarkAudio.onended = () => {
+        if (audioRef.current) audioRef.current.volume = 1;
+      };
+
+      mainAudio.onended = () => {
+        stopAudioPreview();
+      };
+
+      mainAudio.onerror = (e) => {
+        console.error("Main audio error:", e);
+        toast.error("Failed to load audio file for preview");
+        stopAudioPreview();
+      };
+
+      watermarkAudio.onerror = (e) => {
+        console.error("Watermark audio error:", e);
+        toast.error("Failed to load watermark audio file for preview");
+      };
+
+      setPreviewing(true);
+      await mainAudio.play();
+    } catch (err) {
+      console.error("Preview play failed:", err);
+      toast.error("Could not play preview audio: " + err.message);
+      stopAudioPreview();
+    }
   };
 
   useEffect(() => {
+    if (!isAddSongModalOpen && previewing) {
+      stopAudioPreview();
+    }
+  }, [isAddSongModalOpen, previewing]);
+
+  useEffect(() => {
     return () => {
-      if (audioRef.current) audioRef.current.pause();
-      if (watermarkAudioRef.current) watermarkAudioRef.current.pause();
+      stopAudioPreview();
     };
   }, []);
 
@@ -400,8 +461,8 @@ export default function ManageSongs() {
                       {song.chapter ? `${song.chapter} ${song.chapterNumber ? `(Ch ${song.chapterNumber})` : ''}` : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${song.isPremium ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {song.isPremium ? 'Premium' : 'Free'}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${song.songType === 'Normal' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                        {song.songType || 'Study'}
                       </span>
                     </td>
                     <td className="p-4 text-center font-mono font-bold text-on-surface">{song.playCount || 0}</td>
@@ -530,53 +591,59 @@ export default function ManageSongs() {
                   <div className="grid grid-cols-1 gap-y-4 mt-4">
                     <div className="flex flex-col">
                       <label className={labelClass}>Audio File URL</label>
-                      <div className="relative">
-                        <input type="url" required placeholder="https://..." className={`${inputClass} pr-24`} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
-                        <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                          <IconUpload size={12} stroke={2.5} /> Upload
-                          <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
-                        </label>
-                      </div>
+                      <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'audioUrl', 'songs/audio')}>
+                        <div className="relative">
+                          <input type="url" required placeholder="https://..." className={`${inputClass} pr-24`} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
+                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                            <IconUpload size={12} stroke={2.5} /> Upload
+                            <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
+                          </label>
+                        </div>
+                      </DragDropWrapper>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                       <div className="flex flex-col">
                         <label className={labelClass}>Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                        <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
-                          {uploadProgress.thumbnailUrl !== undefined ? (
-                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                              <span>{uploadProgress.thumbnailUrl}%</span>
-                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.thumbnailUrl}%` }} />
+                        <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'thumbnailUrl', 'songs/thumbnails')}>
+                          <div className="relative">
+                            <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
+                            {uploadProgress.thumbnailUrl !== undefined ? (
+                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                <span>{uploadProgress.thumbnailUrl}%</span>
+                                <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.thumbnailUrl}%` }} />
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                              <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
-                            </label>
-                          )}
-                        </div>
+                            ) : (
+                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                <IconUpload size={12} stroke={2.5} /> Upload
+                                <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
+                              </label>
+                            )}
+                          </div>
+                        </DragDropWrapper>
                       </div>
                       <div className="flex flex-col">
                         <label className={labelClass}>Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                        <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
-                          {uploadProgress.lyricsUrl !== undefined ? (
-                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                              <span>{uploadProgress.lyricsUrl}%</span>
-                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.lyricsUrl}%` }} />
+                        <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'lyricsUrl', 'songs/lyrics')}>
+                          <div className="relative">
+                            <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.lyricsUrl} onChange={e => setFormData({...formData, lyricsUrl: e.target.value})} />
+                            {uploadProgress.lyricsUrl !== undefined ? (
+                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                <span>{uploadProgress.lyricsUrl}%</span>
+                                <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.lyricsUrl}%` }} />
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                              <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept=".ttml,.txt,.lrc" onChange={e => handleFileUpload(e, 'lyricsUrl', 'songs/lyrics')} />
-                            </label>
-                          )}
-                        </div>
+                            ) : (
+                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                <IconUpload size={12} stroke={2.5} /> Upload
+                                <input type="file" className="hidden" accept=".ttml,.txt,.lrc" onChange={e => handleFileUpload(e, 'lyricsUrl', 'songs/lyrics')} />
+                              </label>
+                            )}
+                          </div>
+                        </DragDropWrapper>
                       </div>
                       <div className="flex flex-col">
                         <label className={labelClass}>Duration (seconds) <span className="opacity-60 lowercase font-normal">(auto-fetched)</span></label>
@@ -595,22 +662,24 @@ export default function ManageSongs() {
                     <div className="grid grid-cols-1 gap-y-4">
                       <div className="flex flex-col">
                         <label className={labelClass}>Watermark Audio URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                        <div className="relative">
-                          <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
-                          {uploadProgress.watermarkUrl !== undefined ? (
-                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                              <span>{uploadProgress.watermarkUrl}%</span>
-                              <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                        <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
+                          <div className="relative">
+                            <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
+                            {uploadProgress.watermarkUrl !== undefined ? (
+                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                <span>{uploadProgress.watermarkUrl}%</span>
+                                <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                              <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
-                            </label>
-                          )}
-                        </div>
+                            ) : (
+                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                <IconUpload size={12} stroke={2.5} /> Upload
+                                <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                              </label>
+                            )}
+                          </div>
+                        </DragDropWrapper>
                       </div>
                       
                       <div className="flex flex-col">
@@ -636,23 +705,32 @@ export default function ManageSongs() {
                       )}
                     </div>
                   </div>
-                  
                   <div className="mt-2">
-                    <label className="flex items-center justify-between md:justify-start cursor-pointer group w-full md:w-auto md:inline-flex md:gap-6 p-4 rounded-xl border border-outline-variant/40 bg-surface-variant/20 hover:bg-surface-variant/40 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${formData.isPremium ? 'bg-amber-500/10 text-amber-500' : 'bg-outline-variant/20 text-on-surface-variant'}`}>
-                          <IconCrown size={20} />
-                        </div>
-                        <div>
-                          <div className="font-bold text-on-surface text-[15px]">Premium Track</div>
-                          <div className="text-xs text-on-surface-variant mt-0.5">Only available to subscribed users</div>
-                        </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-bold text-on-surface-variant uppercase tracking-wide text-[11px] ml-1">Song Type</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className={`cursor-pointer flex flex-col p-4 rounded-xl border transition-all ${formData.songType === 'Study' ? 'border-primary bg-primary/5 shadow-sm' : 'border-outline-variant/40 bg-surface-variant/20 hover:bg-surface-variant/40'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-bold text-on-surface">Study Song</div>
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.songType === 'Study' ? 'border-primary' : 'border-outline-variant'}`}>
+                              {formData.songType === 'Study' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            </div>
+                          </div>
+                          <div className="text-xs text-on-surface-variant">Standard study material. Playback behaviour (ads/watermarks) depends on the user's subscription.</div>
+                          <input type="radio" className="sr-only" name="songType" value="Study" checked={formData.songType === 'Study'} onChange={() => setFormData({...formData, songType: 'Study'})} />
+                        </label>
+                        <label className={`cursor-pointer flex flex-col p-4 rounded-xl border transition-all ${formData.songType === 'Normal' ? 'border-emerald-500 bg-emerald-500/5 shadow-sm' : 'border-outline-variant/40 bg-surface-variant/20 hover:bg-surface-variant/40'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-bold text-on-surface">Normal Song</div>
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.songType === 'Normal' ? 'border-emerald-500' : 'border-outline-variant'}`}>
+                              {formData.songType === 'Normal' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                            </div>
+                          </div>
+                          <div className="text-xs text-on-surface-variant">Standard ad-free track. Plays fully for everyone, ignoring subscription logic.</div>
+                          <input type="radio" className="sr-only" name="songType" value="Normal" checked={formData.songType === 'Normal'} onChange={() => setFormData({...formData, songType: 'Normal'})} />
+                        </label>
                       </div>
-                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isPremium ? 'bg-amber-500' : 'bg-outline-variant/50'}`}>
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isPremium ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </div>
-                      <input type="checkbox" className="sr-only" checked={formData.isPremium} onChange={e => setFormData({...formData, isPremium: e.target.checked})} />
-                    </label>
+                    </div>
                   </div>
               </form>
             </div>

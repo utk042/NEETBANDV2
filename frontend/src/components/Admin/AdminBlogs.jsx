@@ -3,6 +3,7 @@ import { Search, Code, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Im
 import api, { uploadFile } from '../../services/api';
 import BlogEditor from './BlogEditor';
 import SlugInput from './SlugInput';
+import DragDropWrapper from '../ui/DragDropWrapper';
 import { useDialog } from '../../contexts/DialogContext';
 
 const getErrorMessage = (error) => {
@@ -364,31 +365,43 @@ export default function AdminBlogs() {
           </div>
 
           <div className="form-group">
-            <div className="flex items-center justify-between mb-2">
-              <label className="form-label-dark font-medium text-sm text-on-surface-variant">Thumbnail Image URL</label>
-              <label className="text-xs font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
-                <ImageIcon size={14} /> Upload Image
-                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  try {
-                    const res = await uploadFile(file, 'blogs/thumbnails');
-                    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-                    const fullUrl = `${backendUrl}${res.url}`;
-                    setCoverImage(fullUrl);
-                  } catch (err) {
-                    toast.error("Failed to upload file: " + getErrorMessage(err));
-                  }
-                }} />
-              </label>
-            </div>
-            <input
-              type="text"
-              className="w-full px-4 py-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
-              placeholder="e.g. https://images.unsplash.com/photo-... or local asset path"
-              value={coverImage}
-              onChange={e => setCoverImage(e.target.value)}
-            />
+            <DragDropWrapper onFileDrop={async (file) => {
+              if (!file) return;
+              try {
+                const res = await uploadFile(file, 'blogs/thumbnails');
+                const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+                const fullUrl = `${backendUrl}${res.url}`;
+                setCoverImage(fullUrl);
+              } catch (err) {
+                toast.error("Failed to upload file: " + getErrorMessage(err));
+              }
+            }}>
+              <div className="flex items-center justify-between mb-2">
+                <label className="form-label-dark font-medium text-sm text-on-surface-variant">Thumbnail Image URL</label>
+                <label className="text-xs font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
+                  <ImageIcon size={14} /> Upload Image
+                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const res = await uploadFile(file, 'blogs/thumbnails');
+                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+                      const fullUrl = `${backendUrl}${res.url}`;
+                      setCoverImage(fullUrl);
+                    } catch (err) {
+                      toast.error("Failed to upload file: " + getErrorMessage(err));
+                    }
+                  }} />
+                </label>
+              </div>
+              <input
+                type="text"
+                className="w-full px-4 py-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                placeholder="e.g. https://images.unsplash.com/photo-... or local asset path"
+                value={coverImage}
+                onChange={e => setCoverImage(e.target.value)}
+              />
+            </DragDropWrapper>
           </div>
 
           <div className="form-group">

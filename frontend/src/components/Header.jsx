@@ -128,7 +128,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
           
           <nav className="hidden lg:flex items-center gap-5">
             <a className={linkClass('home')} href="#" onClick={(e) => handleNav(e, 'home')}>Home</a>
-            <a className={linkClass('library')} href="#" onClick={(e) => handleNav(e, 'library')}>Library</a>
+            <a className={linkClass('library')} href="#" onClick={(e) => handleNav(e, 'library')}>Study Songs</a>
             <a className={linkClass('course')} href="#" onClick={(e) => handleNav(e, 'course')}>Courses</a>
             <a className={linkClass('feed')} href="#" onClick={(e) => handleNav(e, 'feed')}>Feed</a>
             <a className={linkClass('blog')} href="#" onClick={(e) => handleNav(e, 'blog')}>Blog</a>
@@ -221,11 +221,11 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container to-surface opacity-95 pointer-events-none"></div> 
         
         {/* Scrollable Content */}
-        <div className="relative w-full h-full overflow-y-auto flex flex-col justify-start items-center pt-32 pb-12">
+        <div className="relative w-full h-full overflow-y-auto flex flex-col justify-start items-center pt-32 pb-40">
           {/* Animated Links */}
           <div className={`flex flex-col items-center gap-6 w-full transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
-            <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Library</a>
+            <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Study Songs</a>
             <a onClick={(e) => handleNav(e, 'feed')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'feed' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Feed</a>
 
             <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>

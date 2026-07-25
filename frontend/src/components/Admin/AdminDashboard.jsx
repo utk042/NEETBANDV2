@@ -240,7 +240,7 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                 : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
             }`}
           >
-            <IconBook size={20} stroke={2.5} /> Courses
+            <IconBook size={20} stroke={2.5} /> Study Hub
           </button>
           <button
             onClick={() => changeTab('lms-students')}
@@ -440,7 +440,7 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                   <div className="relative z-10">
                     <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Learning Modules</p>
                     <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{stats.loading ? '-' : stats.learningModules}</h2>
-                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Organized courses</p>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Organized modules</p>
                     <button onClick={() => changeTab('lms-courses')} className="text-purple-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
                       Manage <IconArrowRight size={16} />
                     </button>

@@ -4,7 +4,7 @@ import { IconHome, IconPlaylist, IconLayoutDashboard, IconBook2, IconUsers } fro
 export default function MobileNavbar({ currentPage, navigate, user = { isLoggedIn: false } }) {
   const items = [
     { id: 'home',      label: 'Home',      icon: IconHome },
-    { id: 'library',   label: 'Library',   icon: IconPlaylist },
+    { id: 'library',   label: 'Study Songs',   icon: IconPlaylist },
     { id: 'course',    label: 'Course',    icon: IconBook2 },
     { id: 'feed',      label: 'Feed',      icon: IconUsers },
     { id: 'dashboard', label: 'Dashboard', icon: IconLayoutDashboard },

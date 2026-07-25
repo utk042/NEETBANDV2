@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DragDropWrapper from '../ui/DragDropWrapper';
 import {
   IconX, IconPlus, IconTrash, IconBook2,
   IconMusic, IconHelp, IconVideo, IconFileText, IconPencil,
@@ -814,6 +815,13 @@ function ChapterCard({ chapter, index, chapters, onUpdate, onDelete, onMoveUp, o
         />
         <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
           <button
+            onClick={() => onUpdate({ isPremium: !chapter.isPremium })}
+            className={`p-1.5 rounded-md transition-colors ${chapter.isPremium ? 'bg-amber-500/10 text-amber-500' : 'hover:bg-surface-variant text-on-surface-variant'}`}
+            title={chapter.isPremium ? 'Premium Chapter' : 'Free Chapter'}
+          >
+            <IconCrown size={16} stroke={2} />
+          </button>
+          <button
             onClick={onManageContent}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-variant hover:bg-surface-variant/80 transition-colors text-xs font-bold text-on-surface"
           >
@@ -1081,7 +1089,26 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
               </a>
             </div>
           ) : (
-            <>
+            <DragDropWrapper onFileDrop={async (file) => {
+              if (!file) return;
+              setIsParsingFile(true);
+              try {
+                const res = await uploadFile(file, 'document');
+                if (res.url) {
+                  let type = 'link';
+                  if (file.name.toLowerCase().endsWith('.pdf')) type = 'pdf';
+                  if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) type = 'doc';
+                  const finalUrl = res.url.startsWith('/') 
+                    ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${res.url}` 
+                    : res.url;
+                  onUpdate({ fileUrl: finalUrl, fileType: type });
+                }
+              } catch (err) {
+                console.error('File upload failed:', err);
+              } finally {
+                setIsParsingFile(false);
+              }
+            }}>
               <textarea
                 id={`textarea-${item._id}`}
                 rows={12}
@@ -1101,7 +1128,7 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
                   onChange={e => onUpdate({ fileUrl: e.target.value, fileType: e.target.value.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link' })}
                 />
               </div>
-            </>
+            </DragDropWrapper>
           )}
         </div>
       )}
@@ -1347,8 +1374,8 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(null);
   const SubjectIcon = getSubjectIcon(meta.subject);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (eOrFile) => {
+    const file = eOrFile?.target ? eOrFile.target.files?.[0] : eOrFile;
     if (!file) return;
     try {
       const res = await uploadFile(file, 'courses/thumbnails');
@@ -1775,7 +1802,16 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                     chapters={subjects[selectedSubjectIndex].chapters || []}
                     onUpdate={patch => {
                       updateSubject(selectedSubjectIndex, prev => ({
-                        chapters: (prev.chapters || []).map((ch, i) => i === idx ? { ...ch, ...patch } : ch)
+                        chapters: (prev.chapters || []).map((ch, i) => {
+                          if (i === idx) {
+                            const newCh = { ...ch, ...patch };
+                            if (patch.isPremium !== undefined) {
+                              newCh.items = (ch.items || []).map(item => ({ ...item, isPremium: patch.isPremium }));
+                            }
+                            return newCh;
+                          }
+                          return ch;
+                        })
                       }));
                     }}
                     onDelete={() => {
@@ -1849,7 +1885,11 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                 onUpdate={patch => {
                   const updatedSubjects = [...subjects];
                   const currentChapters = [...(updatedSubjects[selectedSubjectIndex].chapters || [])];
-                  currentChapters[selectedChapterIndex] = { ...currentChapters[selectedChapterIndex], ...patch };
+                  const newChapter = { ...currentChapters[selectedChapterIndex], ...patch };
+                  if (patch.isPremium !== undefined) {
+                    newChapter.items = (currentChapters[selectedChapterIndex].items || []).map(item => ({ ...item, isPremium: patch.isPremium }));
+                  }
+                  currentChapters[selectedChapterIndex] = newChapter;
                   updatedSubjects[selectedSubjectIndex] = { ...updatedSubjects[selectedSubjectIndex], chapters: currentChapters };
                   setSubjects(updatedSubjects);
                 }} 
@@ -1907,7 +1947,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                     placeholder="What will students learn in this course?"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5 mt-4">
+                <DragDropWrapper onFileDrop={handleFileUpload} className="flex flex-col gap-1.5 mt-4">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Course Thumbnail Image URL</label>
                     <label className="text-[10px] font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
@@ -1922,7 +1962,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                     value={meta.thumbnail}
                     onChange={e => setMeta(m => ({ ...m, thumbnail: e.target.value }))}
                   />
-                </div>
+                </DragDropWrapper>
               </div>
 
               {/* Cover color */}
