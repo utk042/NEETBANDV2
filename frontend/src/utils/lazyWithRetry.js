@@ -32,8 +32,10 @@ export function lazyWithRetry(componentImport) {
             if (!hasReloaded) {
               window.sessionStorage.setItem('page-has-been-reloaded', 'true');
               window.location.reload();
-              // Return a pending promise so Suspense stays in loading state and avoids crashing
-              return new Promise(() => {});
+              // Return a promise with a safety timeout rejection in case browser blocks window.location.reload()
+              return new Promise((_, reject) => {
+                setTimeout(() => reject(error), 5000);
+              });
             }
           } catch (e) {
             console.warn('sessionStorage not available or failed to reload:', e);

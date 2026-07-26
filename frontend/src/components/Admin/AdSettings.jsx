@@ -127,23 +127,23 @@ export default function AdSettings() {
   };
 
   if (loading) {
-    return <div className="p-6 text-slate-300">Loading Ad Settings...</div>;
+    return <div className="p-6 text-on-surface-variant">Loading Ad Settings...</div>;
   }
 
   return (
-    <div className="text-slate-100 max-w-4xl mx-auto space-y-8 md:space-y-10">
+    <div className="text-on-surface max-w-4xl mx-auto space-y-8 md:space-y-10">
       <h1 className="text-3xl font-bold text-primary tracking-tight">Global Advertisement Triggers</h1>
-      <p className="text-slate-400">Configure audio and popup advertisements for all songs. These will be shown to guest users and non-premium members.</p>
+      <p className="text-on-surface-variant">Configure audio and popup advertisements for all songs. These will be shown to guest users and non-premium members.</p>
 
       {/* AUDIO ROLL SECTION */}
-      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4">
+      <div className="bg-surface border border-outline-variant/30 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white">Audio Roll Ads</h2>
-            <p className="text-slate-400 text-sm">The song will pause at these percentages, play the uploaded audio ad, and then resume.</p>
+            <h2 className="text-2xl font-semibold text-on-surface">Audio Roll Ads</h2>
+            <p className="text-on-surface-variant text-sm">The song will pause at these percentages, play the uploaded audio ad, and then resume.</p>
           </div>
-          <label className="flex items-center cursor-pointer gap-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 shrink-0 select-none">
-            <span className={`text-sm font-semibold ${audioRollsEnabled ? 'text-primary' : 'text-slate-400'}`}>
+          <label className="flex items-center cursor-pointer gap-3 bg-surface-container px-4 py-2 rounded-xl border border-outline-variant/30 shrink-0 select-none">
+            <span className={`text-sm font-semibold ${audioRollsEnabled ? 'text-primary' : 'text-on-surface-variant'}`}>
               {audioRollsEnabled ? 'Enabled' : 'Disabled'}
             </span>
             <input 
@@ -152,23 +152,23 @@ export default function AdSettings() {
               onChange={(e) => setAudioRollsEnabled(e.target.checked)} 
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
+            <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
           </label>
         </div>
         
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-slate-300">Upload Audio Ad (MP3/WAV)</label>
+          <label className="block text-sm font-medium text-on-surface">Upload Audio Ad (MP3/WAV)</label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <input 
               type="file" 
               accept="audio/*" 
               onChange={(e) => handleAudioUpload(e, 'roll')}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:bg-primary/90 file:cursor-pointer text-slate-300 cursor-pointer"
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-on-primary hover:file:bg-primary/90 file:cursor-pointer text-on-surface-variant cursor-pointer"
             />
             {uploadingAudio && <span className="text-primary animate-pulse text-sm">Uploading...</span>}
           </div>
           {audioRollUrl && (
-            <div className="mt-2 text-sm text-green-400 break-all bg-green-400/10 p-3 rounded-lg border border-green-400/20">
+            <div className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 break-all bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
               <strong>Current Ad:</strong> {audioRollUrl}
               <audio 
                 controls 
@@ -179,27 +179,27 @@ export default function AdSettings() {
           )}
         </div>
 
-        <div className="space-y-4 pt-4 border-t border-slate-700/50">
-          <label className="block text-sm font-medium text-slate-300">Trigger Positions (% of song)</label>
+        <div className="space-y-4 pt-4 border-t border-outline-variant/30">
+          <label className="block text-sm font-medium text-on-surface">Trigger Positions (% of song)</label>
           <div className="flex flex-wrap gap-3">
             {audioRollPositions.map((pos, i) => (
-              <div key={i} className="flex items-center gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700">
+              <div key={i} className="flex items-center gap-2 bg-surface-container px-3 py-2 rounded-lg border border-outline-variant/30">
                 <input 
                   type="number" 
                   min="0" max="100" 
                   value={pos} 
                   onChange={(e) => handlePositionChange('audio', i, e.target.value)}
-                  className="w-16 bg-transparent border-none text-white focus:ring-0 p-0 text-center text-lg"
+                  className="w-16 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center text-lg font-bold"
                 />
-                <span className="text-slate-400">%</span>
-                <button aria-label="Remove audio position" onClick={() => removePosition('audio', i)} className="text-red-400 hover:text-red-300 ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Remove">
+                <span className="text-on-surface-variant">%</span>
+                <button aria-label="Remove audio position" onClick={() => removePosition('audio', i)} className="text-red-500 hover:text-red-400 ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center font-bold" title="Remove">
                   ✕
                 </button>
               </div>
             ))}
             <button 
               onClick={() => addPosition('audio')} 
-              className="flex items-center justify-center w-12 h-[50px] bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-300 transition-colors"
+              className="flex items-center justify-center w-12 h-[50px] bg-surface-container hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-xl"
               title="Add Position"
             >
               +
@@ -209,14 +209,14 @@ export default function AdSettings() {
       </div>
 
       {/* POPUP SECTION */}
-      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4">
+      <div className="bg-surface border border-outline-variant/30 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white">Popup HTML Ads</h2>
-            <p className="text-slate-400 text-sm">The popup will appear at these percentages. It will not pause the music.</p>
+            <h2 className="text-2xl font-semibold text-on-surface">Popup HTML Ads</h2>
+            <p className="text-on-surface-variant text-sm">The popup will appear at these percentages. It will not pause the music.</p>
           </div>
-          <label className="flex items-center cursor-pointer gap-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 shrink-0 select-none">
-            <span className={`text-sm font-semibold ${popupsEnabled ? 'text-primary' : 'text-slate-400'}`}>
+          <label className="flex items-center cursor-pointer gap-3 bg-surface-container px-4 py-2 rounded-xl border border-outline-variant/30 shrink-0 select-none">
+            <span className={`text-sm font-semibold ${popupsEnabled ? 'text-primary' : 'text-on-surface-variant'}`}>
               {popupsEnabled ? 'Enabled' : 'Disabled'}
             </span>
             <input 
@@ -225,50 +225,50 @@ export default function AdSettings() {
               onChange={(e) => setPopupsEnabled(e.target.checked)} 
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
+            <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
           </label>
         </div>
         
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-slate-300">Popup Content (HTML / Text)</label>
+          <label className="block text-sm font-medium text-on-surface">Popup Content (HTML / Text)</label>
           <textarea 
             value={popupHtml}
             onChange={(e) => setPopupHtml(e.target.value)}
             rows={6}
             placeholder="<div class='text-center'><h2>Special Offer!</h2><button>Click Here</button></div>"
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-300 focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+            className="w-full bg-surface-container border border-outline-variant/30 rounded-xl p-4 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
           />
           {popupHtml && (
             <div className="mt-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">Live Preview</label>
-              <div className="bg-white/5 border border-slate-700 rounded-xl p-4 relative flex items-center justify-center min-h-[100px] overflow-hidden">
+              <label className="block text-sm font-medium text-on-surface mb-2">Live Preview</label>
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 relative flex items-center justify-center min-h-[100px] overflow-hidden text-on-surface">
                 <div dangerouslySetInnerHTML={{ __html: popupHtml }} />
               </div>
             </div>
           )}
         </div>
 
-        <div className="space-y-4 pt-4 border-t border-slate-700/50">
-          <label className="block text-sm font-medium text-slate-300">Trigger Positions (% of song)</label>
+        <div className="space-y-4 pt-4 border-t border-outline-variant/30">
+          <label className="block text-sm font-medium text-on-surface">Trigger Positions (% of song)</label>
           <div className="flex flex-wrap gap-3">
             {popupPositions.map((pos, i) => (
-              <div key={i} className="flex items-center gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700">
+              <div key={i} className="flex items-center gap-2 bg-surface-container px-3 py-2 rounded-lg border border-outline-variant/30">
                 <input 
                   type="number" 
                   min="0" max="100" 
                   value={pos} 
                   onChange={(e) => handlePositionChange('popup', i, e.target.value)}
-                  className="w-16 bg-transparent border-none text-white focus:ring-0 p-0 text-center text-lg"
+                  className="w-16 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center text-lg font-bold"
                 />
-                <span className="text-slate-400">%</span>
-                <button aria-label="Remove popup position" onClick={() => removePosition('popup', i)} className="text-red-400 hover:text-red-300 ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Remove">
+                <span className="text-on-surface-variant">%</span>
+                <button aria-label="Remove popup position" onClick={() => removePosition('popup', i)} className="text-red-500 hover:text-red-400 ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center font-bold" title="Remove">
                   ✕
                 </button>
               </div>
             ))}
             <button 
               onClick={() => addPosition('popup')} 
-              className="flex items-center justify-center w-12 h-[50px] bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-300 transition-colors"
+              className="flex items-center justify-center w-12 h-[50px] bg-surface-container hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-xl"
               title="Add Position"
             >
               +
@@ -278,31 +278,31 @@ export default function AdSettings() {
       </div>
 
       {/* GUEST AD SECTION */}
-      <div className="bg-slate-800/50 border border-slate-700 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
-        <h2 className="text-2xl font-semibold text-white">Guest User Ad</h2>
-        <p className="text-slate-400 text-sm">For guest users, the song will pause at 20%, play this ad, and then show the login required popup.</p>
+      <div className="bg-surface border border-outline-variant/30 p-4 md:p-6 rounded-2xl shadow-xl space-y-4 md:space-y-6">
+        <h2 className="text-2xl font-semibold text-on-surface">Guest User Ad</h2>
+        <p className="text-on-surface-variant text-sm">For guest users, the song will pause at 20%, play this ad, and then show the login required popup.</p>
         
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-slate-300">Upload Guest Audio Ad (MP3/WAV)</label>
+          <label className="block text-sm font-medium text-on-surface">Upload Guest Audio Ad (MP3/WAV)</label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <input 
               type="file" 
               accept="audio/*" 
               onChange={(e) => handleAudioUpload(e, 'guest')}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:bg-primary/90 file:cursor-pointer text-slate-300 cursor-pointer"
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-on-primary hover:file:bg-primary/90 file:cursor-pointer text-on-surface-variant cursor-pointer"
             />
           </div>
           
-          <label className="block text-sm font-medium text-slate-300 mt-4">Manual URL / Path</label>
+          <label className="block text-sm font-medium text-on-surface mt-4">Manual URL / Path</label>
           <input 
             type="text" 
             value={guestAdUrl}
             onChange={(e) => setGuestAdUrl(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-300 focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+            className="w-full bg-surface-container border border-outline-variant/30 rounded-xl p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
           />
 
           {guestAdUrl && (
-            <div className="mt-2 text-sm text-green-400 break-all bg-green-400/10 p-3 rounded-lg border border-green-400/20">
+            <div className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 break-all bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
               <strong>Current Ad:</strong> {guestAdUrl}
               {guestAdUrl.startsWith('http') || guestAdUrl.startsWith('/') ? (
                 <audio 
@@ -311,7 +311,7 @@ export default function AdSettings() {
                   className="mt-2 h-10 w-full max-w-full" 
                 />
               ) : (
-                <p className="mt-2 text-yellow-400">Preview not available for local absolute paths.</p>
+                <p className="mt-2 text-amber-600 dark:text-amber-400 font-medium">Preview not available for local absolute paths.</p>
               )}
             </div>
           )}
@@ -323,7 +323,7 @@ export default function AdSettings() {
         <button 
           onClick={handleSave} 
           disabled={saving}
-          className="bg-primary hover:bg-primary/90 text-black font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+          className="bg-primary hover:bg-primary/90 text-on-primary font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
         >
           {saving ? 'Saving...' : 'Save All Configurations'}
         </button>

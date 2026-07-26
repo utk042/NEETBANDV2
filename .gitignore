@@ -1,1 +1,10 @@
 .worktrees/
+
+# Dev artifacts — do not commit
+*.scratch.jsx
+*.scratch.tsx
+*.patch
+original_*.jsx
+original_*.tsx
+*_findings*.json
+*_findings.json

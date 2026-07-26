@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { 
   IconUser, IconHeart, IconBrain, IconBell, 
@@ -8,8 +8,9 @@ import {
   IconCertificate, IconX, IconPencil, IconCrown, IconEye, IconShoppingCart
 } from '@tabler/icons-react';
 import { getUserProfile, uploadFile, updateUserProfile } from '../services/api';
-import Button from './ui/Button';
+import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
+import Button from './ui/Button';
 
 
 
@@ -66,23 +67,31 @@ export default function Dashboard({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
+  const blobUrlRef = useRef(null);
+
+  const updatePreviewUrl = (newUrl) => {
+    if (blobUrlRef.current && blobUrlRef.current !== newUrl) {
+      try { URL.revokeObjectURL(blobUrlRef.current); } catch {}
+      blobUrlRef.current = null;
+    }
+    if (newUrl && newUrl.startsWith('blob:')) {
+      blobUrlRef.current = newUrl;
+    }
+    setPreviewUrl(newUrl);
+  };
+
   useEffect(() => {
     if (isProfileModalOpen && user) {
       setProfileFile(null);
-      setPreviewUrl(prev => {
-        if (prev && prev.startsWith('blob:')) {
-          URL.revokeObjectURL(prev);
-        }
-        return user.profilePicture ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`) : '';
-      });
+      const initialUrl = user.profilePicture ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`) : '';
+      updatePreviewUrl(initialUrl);
     }
     return () => {
-      setPreviewUrl(prev => {
-        if (prev && prev.startsWith('blob:')) {
-          URL.revokeObjectURL(prev);
-        }
-        return '';
-      });
+      if (blobUrlRef.current) {
+        try { URL.revokeObjectURL(blobUrlRef.current); } catch {}
+        blobUrlRef.current = null;
+      }
+      setPreviewUrl('');
     };
   }, [isProfileModalOpen, user]);
 
@@ -337,16 +346,36 @@ export default function Dashboard({
               <IconSchool className="text-primary" size={28} strokeWidth={1.5} /> Enrolled Courses
             </h2>
             
-            {profileData?.progress?.filter(p => p.courseId).length > 0 ? (
+            {((profileData?.progress || user?.progress || []).filter(p => p.courseId && typeof p.courseId === 'object')).length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {profileData.progress.filter(p => p.courseId).map((prog, index) => {
+                {(profileData?.progress || user?.progress || []).filter(p => p.courseId && typeof p.courseId === 'object').map((prog, index) => {
                   const course = prog.courseId;
-                  const percentage = course.lessons?.length > 0 
-                    ? Math.round((prog.score / course.lessons.length) * 100) || 0 
-                    : 0;
+                  
+                  const totalItems = (course.subjects || []).reduce((acc, sub) => {
+                    return acc + (sub.chapters || []).reduce((capAcc, cap) => {
+                      const items = cap.items && cap.items.length > 0
+                        ? cap.items
+                        : (cap.fileUrl || cap.videoUrl || cap.content || cap.audioUrl ? [cap] : []);
+                      return capAcc + items.length;
+                    }, 0);
+                  }, 0);
+
+                  const completedCount = Array.isArray(prog.completedItems) ? prog.completedItems.length : 0;
+
+                  let percentage = 0;
+                  if (totalItems > 0) {
+                    percentage = Math.min(100, Math.round((completedCount / totalItems) * 100));
+                    if (prog.completed) {
+                      percentage = 100;
+                    }
+                  } else if (prog.completed) {
+                    percentage = 100;
+                  } else if (prog.score > 0) {
+                    percentage = Math.min(100, prog.score);
+                  }
 
                   return (
-                    <Card key={index} className="flex flex-col justify-between group h-full hover:-translate-y-1 transition-all duration-300">
+                    <Card key={course._id || index} onClick={() => navigate(`/course/${course._id}`)} className="flex flex-col justify-between group h-full hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                       <CardBody className="p-6 md:p-8">
                         <div className="flex justify-between items-start mb-6">
                           <span className="text-xs font-bold text-on-surface uppercase tracking-widest px-3 py-1.5 border border-outline/20 rounded-full bg-surface-container-high/50">
@@ -487,7 +516,13 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt={track.title || "Track cover"} className="w-full h-full object-cover" loading="lazy" />
+                          <img 
+                            src={track.cover || track.image || logoImg} 
+                            alt={track.title || "Track cover"} 
+                            className={`w-full h-full ${(!track.cover && !track.image) || (track.cover === logoImg || track.image === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} 
+                            loading="lazy" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}
+                          />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         
@@ -578,7 +613,13 @@ export default function Dashboard({
                         
                         {/* Thumbnail */}
                         <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm relative">
-                          <img src={track.cover || track.image} alt={track.title || "Track cover"} className="w-full h-full object-cover" loading="lazy" />
+                          <img 
+                            src={track.cover || track.image || logoImg} 
+                            alt={track.title || "Track cover"} 
+                            className={`w-full h-full ${(!track.cover && !track.image) || (track.cover === logoImg || track.image === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} 
+                            loading="lazy" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}
+                          />
                           {isCurrent && <div className="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>}
                         </div>
                         
@@ -675,12 +716,8 @@ export default function Dashboard({
                         const file = e.target.files[0];
                         if (file) {
                           setProfileFile(file);
-                          setPreviewUrl(prev => {
-                            if (prev && prev.startsWith('blob:')) {
-                              URL.revokeObjectURL(prev);
-                            }
-                            return URL.createObjectURL(file);
-                          });
+                          const newUrl = URL.createObjectURL(file);
+                          updatePreviewUrl(newUrl);
                         }
                       }}
                     />

@@ -5,7 +5,6 @@ export default function ProtectedRoute({
   isAuthLoading, 
   isLoggedIn, 
   children, 
-  portalName = 'this area', 
   loginRoute = '/login' 
 }) {
   const location = useLocation();

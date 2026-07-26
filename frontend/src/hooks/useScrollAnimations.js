@@ -62,10 +62,19 @@ function attachRowHover(el) {
   tlOut.to(el, { x: 0, duration: 0.3, ease: 'power3.out' });
   if (bar) tlOut.to(bar, { scaleY: 0, opacity: 0, duration: 0.2, ease: 'power2.out' }, 0);
 
-  el.addEventListener('mouseenter', () => { tlOut.pause(); tl.restart(); });
-  el.addEventListener('mouseleave', () => { tl.pause();   tlOut.restart(); });
+  function onEnter() { tlOut.pause(); tl.restart(); }
+  function onLeave() { tl.pause();   tlOut.restart(); }
 
-  return () => {};
+  el.addEventListener('mouseenter', onEnter);
+  el.addEventListener('mouseleave', onLeave);
+
+  // Return real cleanup — the original returned () => {} which leaked both listeners
+  return () => {
+    el.removeEventListener('mouseenter', onEnter);
+    el.removeEventListener('mouseleave', onLeave);
+    tl.kill();
+    tlOut.kill();
+  };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

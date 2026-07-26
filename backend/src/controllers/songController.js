@@ -6,6 +6,17 @@ import AdConfig from '../models/AdConfig.js';
 // @access  Private/Admin
 export const createSong = async (req, res) => {
   try {
+    const { title, audioUrl, duration } = req.body || {};
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+    if (!audioUrl || typeof audioUrl !== 'string' || !audioUrl.trim()) {
+      return res.status(400).json({ message: 'Audio URL is required' });
+    }
+    if (duration !== undefined && duration !== null && (typeof duration !== 'number' || duration < 0)) {
+      return res.status(400).json({ message: 'Duration cannot be negative' });
+    }
+
     const song = new Song(req.body);
     const createdSong = await song.save();
     res.status(201).json(createdSong);
@@ -54,7 +65,18 @@ export const getSongById = async (req, res) => {
 // @access  Private/Admin
 export const updateSong = async (req, res) => {
   try {
-    const song = await Song.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { title, audioUrl, duration } = req.body || {};
+    if (title !== undefined && (!title || typeof title !== 'string' || !title.trim())) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+    if (audioUrl !== undefined && (!audioUrl || typeof audioUrl !== 'string' || !audioUrl.trim())) {
+      return res.status(400).json({ message: 'Audio URL is required' });
+    }
+    if (duration !== undefined && duration !== null && (typeof duration !== 'number' || duration < 0)) {
+      return res.status(400).json({ message: 'Duration cannot be negative' });
+    }
+
+    const song = await Song.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (song) {
       res.json(song);
     } else {

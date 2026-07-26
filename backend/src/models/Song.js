@@ -3,7 +3,9 @@ import mongoose from 'mongoose';
 const songSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
+    required: [true, 'Song title is required'],
+    trim: true,
+    minlength: [1, 'Title cannot be empty'],
   },
   class: {
     type: String, // e.g., 'Class 10'
@@ -23,7 +25,8 @@ const songSchema = new mongoose.Schema({
   },
   audioUrl: {
     type: String, // External link to mp3
-    required: true,
+    required: [true, 'Audio URL is required'],
+    trim: true,
   },
   thumbnailUrl: {
     type: String,
@@ -33,6 +36,7 @@ const songSchema = new mongoose.Schema({
   },
   duration: {
     type: Number, // In seconds
+    min: [0, 'Duration cannot be negative'],
   },
   isPremium: {
     type: Boolean,
@@ -40,8 +44,11 @@ const songSchema = new mongoose.Schema({
   },
   songType: {
     type: String,
-    enum: ['Normal', 'Study'],
-    default: 'Study'
+    enum: {
+      values: ['Normal', 'Study'],
+      message: '{VALUE} is not a valid songType',
+    },
+    default: 'Study',
   },
   playCount: { type: Number, default: 0 },
   completionCount: { type: Number, default: 0 },
@@ -49,6 +56,10 @@ const songSchema = new mongoose.Schema({
   repeatCount: { type: Number, default: 0 },
   watermarkUrl: { type: String }, // External link to mp3 for ad/watermark
   watermarkPositions: { type: [Number], default: [20, 50, 90] }, // Percentages where watermark plays
+  audioRollsEnabled: { type: Boolean, default: true },
+  popupsEnabled: { type: Boolean, default: true },
+  popupPositions: { type: [Number], default: [10, 40, 75] },
+  popupHtml: { type: String, default: '' },
   // 10 buckets representing each 10% segment of the song (drop-off distribution)
   dropOffDistribution: { type: [Number], default: () => [0,0,0,0,0,0,0,0,0,0] },
 }, { timestamps: true });

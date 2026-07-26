@@ -450,18 +450,18 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                   </div>
                 </div>
 
-                {/* Premium Content Card (Amber) */}
+                {/* Study Songs Card (Blue) */}
                 <div className="bg-surface border border-outline-variant/30 text-on-surface rounded-2xl p-5 md:p-6 relative overflow-hidden shadow-lg shadow-black/5 transition-colors duration-300">
                   <div className="relative z-10">
-                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Premium Content</p>
-                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{stats.loading ? '-' : stats.premiumTracks}</h2>
-                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Locked for subscribers</p>
-                    <button className="text-amber-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all opacity-0 whitespace-nowrap">
+                    <p className="text-on-surface-variant font-medium text-xs md:text-sm mb-1">Study Songs</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{stats.loading ? '-' : (stats.studyTracks ?? stats.premiumTracks)}</h2>
+                    <p className="text-on-surface-variant text-xs md:text-sm mb-4">Tiered playback by user plan</p>
+                    <button className="text-primary font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all opacity-0 whitespace-nowrap">
                       View All
                     </button>
                   </div>
-                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-amber-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-amber-500/20">
-                    <IconCrown size={20} className="text-amber-500 md:w-6 md:h-6" />
+                  <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-primary/20">
+                    <IconMusic size={20} className="text-primary md:w-6 md:h-6" />
                   </div>
                 </div>
               </div>
@@ -483,8 +483,8 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                     <IconMusic size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-on-surface text-lg md:text-xl leading-tight">{stats.loading ? '-' : stats.freeTracks}</h3>
-                    <p className="text-on-surface-variant text-[11px] md:text-xs">Free Tracks</p>
+                    <h3 className="font-bold text-on-surface text-lg md:text-xl leading-tight">{stats.loading ? '-' : (stats.normalTracks ?? stats.freeTracks)}</h3>
+                    <p className="text-on-surface-variant text-[11px] md:text-xs">Normal Songs</p>
                   </div>
                 </div>
 
@@ -536,26 +536,26 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                   </div>
                 </div>
                 <div className="bg-surface rounded-2xl p-6 shadow-sm border border-outline-variant/30 min-h-[250px] md:min-h-[300px] transition-colors duration-300">
-                  <h3 className="font-bold text-on-surface mb-6">Premium vs Free Content</h3>
+                  <h3 className="font-bold text-on-surface mb-6">Study vs Normal Audio Content</h3>
                   <div className="flex justify-center relative mt-6 md:mt-10">
                     <svg className="w-40 h-40 md:w-48 md:h-48 transform -rotate-90" viewBox="0 0 192 192">
-                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-amber-500/20" strokeWidth="30" fill="none" />
+                      <circle cx="96" cy="96" r="70" stroke="currentColor" className="text-primary/20" strokeWidth="30" fill="none" />
                       <circle 
                         cx="96" 
                         cy="96" 
                         r="70" 
                         stroke="currentColor" 
-                        className="text-amber-500" 
+                        className="text-primary" 
                         strokeWidth="30" 
                         fill="none" 
                         strokeDasharray="440" 
-                        strokeDashoffset={stats.totalTracks > 0 ? 440 - (440 * (stats.premiumTracks / stats.totalTracks)) : 440} 
+                        strokeDashoffset={stats.totalTracks > 0 ? 440 - (440 * ((stats.studyTracks ?? stats.premiumTracks) / stats.totalTracks)) : 440} 
                         style={{ transition: 'all 1s ease-out' }} 
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center flex-col">
-                      <span className="text-2xl font-bold text-on-surface">{stats.totalTracks > 0 ? Math.round((stats.premiumTracks / stats.totalTracks) * 100) : 0}%</span>
-                      <span className="text-xs text-on-surface-variant">Premium</span>
+                      <span className="text-2xl font-bold text-on-surface">{stats.totalTracks > 0 ? Math.round(((stats.studyTracks ?? stats.premiumTracks) / stats.totalTracks) * 100) : 0}%</span>
+                      <span className="text-xs text-on-surface-variant">Study Songs</span>
                     </div>
                   </div>
                 </div>

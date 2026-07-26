@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
+import logoImg from '../../assets/logo.png';
 
 const getFullUrl = (url) => {
   if (!url) return '';
@@ -143,13 +144,24 @@ import DragDropWrapper from '../ui/DragDropWrapper';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
 
 export default function ManageSongs() {
-  const { toast, confirm } = useDialog();
+  const { toast, confirm, alert } = useDialog();
   const [songs, setSongs] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [adConfig, setAdConfig] = useState({ watermarkUrl: '', watermarkPositions: [20, 50, 90] });
+  const [testingAudioUrl, setTestingAudioUrl] = useState(false);
+  const [audioUrlValid, setAudioUrlValid] = useState(null);
+  const [adConfig, setAdConfig] = useState({
+    watermarkUrl: '',
+    watermarkPositions: [20, 50, 90],
+    audioRollsEnabled: true,
+    popupsEnabled: true,
+    popupPositions: [10, 40, 75],
+    popupHtml: ''
+  });
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: '', watermarkPositions: [20, 50, 90]
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+    watermarkUrl: '', watermarkPositions: [20, 50, 90], audioRollsEnabled: true,
+    popupsEnabled: true, popupPositions: [10, 40, 75], popupHtml: ''
   });
   const [editingSongId, setEditingSongId] = useState(null);
 
@@ -165,6 +177,90 @@ export default function ManageSongs() {
 
   const [uploadProgress, setUploadProgress] = useState({});
 
+  const handlePositionChange = (type, index, value) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num)) return;
+    if (type === 'audio') {
+      const newPos = [...(formData.watermarkPositions || [])];
+      newPos[index] = num;
+      setFormData(prev => ({ ...prev, watermarkPositions: newPos }));
+    } else {
+      const newPos = [...(formData.popupPositions || [])];
+      newPos[index] = num;
+      setFormData(prev => ({ ...prev, popupPositions: newPos }));
+    }
+  };
+
+  const addPosition = (type) => {
+    if (type === 'audio') {
+      setFormData(prev => ({ ...prev, watermarkPositions: [...(prev.watermarkPositions || []), 50] }));
+    } else {
+      setFormData(prev => ({ ...prev, popupPositions: [...(prev.popupPositions || []), 50] }));
+    }
+  };
+
+  const removePosition = (type, index) => {
+    if (type === 'audio') {
+      setFormData(prev => ({ ...prev, watermarkPositions: (prev.watermarkPositions || []).filter((_, i) => i !== index) }));
+    } else {
+      setFormData(prev => ({ ...prev, popupPositions: (prev.popupPositions || []).filter((_, i) => i !== index) }));
+    }
+  };
+
+  const handleTestAudioUrl = async () => {
+    if (!formData.audioUrl) {
+      if (alert) alert('Validation Error', 'Please enter an audio URL to test.');
+      else toast.error('Please enter an audio URL to test.');
+      return;
+    }
+    setTestingAudioUrl(true);
+    setAudioUrlValid(null);
+
+    try {
+      const audio = new Audio();
+      const targetUrl = getFullUrl(formData.audioUrl);
+      audio.src = targetUrl;
+
+      await new Promise((resolve, reject) => {
+        let timeoutId;
+        const cleanup = () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          audio.onloadedmetadata = null;
+          audio.onerror = null;
+        };
+
+        audio.onloadedmetadata = () => {
+          cleanup();
+          if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
+            const detectedDuration = Math.round(audio.duration);
+            setFormData(prev => ({ ...prev, duration: detectedDuration }));
+          }
+          resolve();
+        };
+
+        audio.onerror = () => {
+          cleanup();
+          reject(new Error('Failed to load audio from URL'));
+        };
+
+        timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Audio verification timed out after 8s'));
+        }, 8000);
+      });
+
+      setAudioUrlValid(true);
+      if (alert) alert('Success', 'Audio URL is valid and accessible! Duration auto-detected.');
+      else toast.success('Audio URL is valid and accessible! Duration auto-detected.');
+    } catch (err) {
+      setAudioUrlValid(false);
+      if (alert) alert('Verification Failed', `Could not verify audio URL: ${err.message}`);
+      else toast.error(`Could not verify audio URL: ${err.message}`);
+    } finally {
+      setTestingAudioUrl(false);
+    }
+  };
+
   const handleFileUpload = async (eOrFile, field, folderType) => {
     const file = eOrFile?.target ? eOrFile.target.files?.[0] : eOrFile;
     if (!file) return;
@@ -176,6 +272,9 @@ export default function ManageSongs() {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const fullUrl = `${backendUrl}${res.url}`;
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
+      if (field === 'audioUrl') {
+        setAudioUrlValid(null);
+      }
       toast.success("File uploaded successfully");
     } catch (err) {
       toast.error("Failed to upload file: " + err.message);
@@ -205,12 +304,24 @@ export default function ManageSongs() {
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
-    setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
+    setAudioUrlValid(null);
+    setTestingAudioUrl(false);
+    setFormData({
+      title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+      watermarkUrl: adConfig.watermarkUrl || '',
+      watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
+      audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
+      popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
+      popupPositions: adConfig.popupPositions || [10, 40, 75],
+      popupHtml: adConfig.popupHtml || ''
+    });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
   };
 
   const handleEditClick = (song) => {
+    setAudioUrlValid(null);
+    setTestingAudioUrl(false);
     setFormData({
       title: song.title || '',
       class: song.class || '',
@@ -225,7 +336,11 @@ export default function ManageSongs() {
       songType: song.songType || 'Study',
       isPremium: song.isPremium !== false,
       watermarkUrl: song.watermarkUrl || adConfig.watermarkUrl || '',
-      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90])
+      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90]),
+      audioRollsEnabled: song.audioRollsEnabled !== undefined ? song.audioRollsEnabled : (adConfig.audioRollsEnabled ?? true),
+      popupsEnabled: song.popupsEnabled !== undefined ? song.popupsEnabled : (adConfig.popupsEnabled ?? true),
+      popupPositions: (song.popupPositions && song.popupPositions.length > 0) ? song.popupPositions : (adConfig.popupPositions || [10, 40, 75]),
+      popupHtml: song.popupHtml !== undefined ? song.popupHtml : (adConfig.popupHtml || '')
     });
     setEditingSongId(song._id);
     setIsAddSongModalOpen(true);
@@ -260,12 +375,23 @@ export default function ManageSongs() {
         }
         const config = {
           watermarkUrl: wUrl,
-          watermarkPositions: data.audioRollPositions || [20, 50, 90]
+          watermarkPositions: data.audioRollPositions || [20, 50, 90],
+          audioRollsEnabled: data.audioRollsEnabled !== undefined ? data.audioRollsEnabled : true,
+          popupsEnabled: data.popupsEnabled !== undefined ? data.popupsEnabled : true,
+          popupPositions: data.popupPositions || [10, 40, 75],
+          popupHtml: data.popupHtml || ''
         };
         setAdConfig(config);
-        // Also update formData if not editing
         if (!editingSongId && !isAddSongModalOpen) {
-          setFormData(prev => ({ ...prev, watermarkUrl: config.watermarkUrl, watermarkPositions: config.watermarkPositions }));
+          setFormData(prev => ({
+            ...prev,
+            watermarkUrl: prev.watermarkUrl || config.watermarkUrl,
+            watermarkPositions: prev.watermarkPositions?.length ? prev.watermarkPositions : config.watermarkPositions,
+            audioRollsEnabled: prev.audioRollsEnabled !== undefined ? prev.audioRollsEnabled : config.audioRollsEnabled,
+            popupsEnabled: prev.popupsEnabled !== undefined ? prev.popupsEnabled : config.popupsEnabled,
+            popupPositions: prev.popupPositions?.length ? prev.popupPositions : config.popupPositions,
+            popupHtml: prev.popupHtml !== undefined ? prev.popupHtml : config.popupHtml
+          }));
         }
       }
     } catch (err) {
@@ -308,7 +434,13 @@ export default function ManageSongs() {
         await createSong(payload);
         toast.success("Song added successfully");
       }
-      setFormData({ title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false, watermarkUrl: adConfig.watermarkUrl, watermarkPositions: adConfig.watermarkPositions });
+      setFormData({
+        title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+        watermarkUrl: adConfig.watermarkUrl || '', watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
+        audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
+        popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
+        popupPositions: adConfig.popupPositions || [10, 40, 75], popupHtml: adConfig.popupHtml || ''
+      });
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -320,105 +452,7 @@ export default function ManageSongs() {
   const inputClass = "w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-on-surface placeholder:text-on-surface-variant/40";
   const labelClass = "text-sm font-bold text-on-surface-variant mb-1.5 ml-1 uppercase tracking-wide text-[11px]";
 
-  // Watermark Preview Logic
-  const [previewing, setPreviewing] = useState(false);
-  const audioRef = useRef(null);
-  const watermarkAudioRef = useRef(null);
 
-  const stopAudioPreview = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current.ontimeupdate = null;
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current = null;
-    }
-    if (watermarkAudioRef.current) {
-      watermarkAudioRef.current.pause();
-      watermarkAudioRef.current.currentTime = 0;
-      watermarkAudioRef.current.onended = null;
-      watermarkAudioRef.current.onerror = null;
-      watermarkAudioRef.current = null;
-    }
-    setPreviewing(false);
-  };
-
-  const handlePreview = async () => {
-    if (!formData.audioUrl) return toast.error("Please add an audio URL first");
-    if (!formData.watermarkUrl) return toast.error("Please upload an audio watermark first");
-    
-    if (previewing) {
-      stopAudioPreview();
-      return;
-    }
-    
-    const finalAudioUrl = getFullUrl(formData.audioUrl);
-    const finalWatermarkUrl = getFullUrl(formData.watermarkUrl);
-
-    try {
-      const mainAudio = new Audio(finalAudioUrl);
-      const watermarkAudio = new Audio(finalWatermarkUrl);
-
-      audioRef.current = mainAudio;
-      watermarkAudioRef.current = watermarkAudio;
-
-      let lastPlayedPos = -1;
-      mainAudio.ontimeupdate = () => {
-        if (!mainAudio || !mainAudio.duration) return;
-        const pct = (mainAudio.currentTime / mainAudio.duration) * 100;
-        
-        const rawPositions = formData.watermarkPositions || [20, 50, 90];
-        const numPositions = rawPositions.map(p => Number(p)).filter(p => !isNaN(p));
-        
-        const pos = numPositions.find(p => pct >= p && pct < (p + 3));
-        if (pos !== undefined && pos !== lastPlayedPos) {
-          lastPlayedPos = pos;
-          mainAudio.volume = 0.2;
-          watermarkAudio.currentTime = 0;
-          watermarkAudio.play().catch(e => console.error("Watermark audio playback failed:", e));
-        }
-      };
-
-      watermarkAudio.onended = () => {
-        if (audioRef.current) audioRef.current.volume = 1;
-      };
-
-      mainAudio.onended = () => {
-        stopAudioPreview();
-      };
-
-      mainAudio.onerror = (e) => {
-        console.error("Main audio error:", e);
-        toast.error("Failed to load audio file for preview");
-        stopAudioPreview();
-      };
-
-      watermarkAudio.onerror = (e) => {
-        console.error("Watermark audio error:", e);
-        toast.error("Failed to load watermark audio file for preview");
-      };
-
-      setPreviewing(true);
-      await mainAudio.play();
-    } catch (err) {
-      console.error("Preview play failed:", err);
-      toast.error("Could not play preview audio: " + err.message);
-      stopAudioPreview();
-    }
-  };
-
-  useEffect(() => {
-    if (!isAddSongModalOpen && previewing) {
-      stopAudioPreview();
-    }
-  }, [isAddSongModalOpen, previewing]);
-
-  useEffect(() => {
-    return () => {
-      stopAudioPreview();
-    };
-  }, []);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -439,54 +473,66 @@ export default function ManageSongs() {
           <div className="p-8 text-center text-on-surface-variant">Loading songs...</div>
         ) : (
           <div className="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-[var(--border-floating-card)] shadow-sm">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[760px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-[var(--border-floating-card)]">
-                  <th className="p-4 font-semibold text-on-surface-variant">Title</th>
-                  <th className="p-4 font-semibold text-on-surface-variant">Class</th>
-                  <th className="p-4 font-semibold text-on-surface-variant">Subject</th>
-                  <th className="p-4 font-semibold text-on-surface-variant">Chapter</th>
-                  <th className="p-4 font-semibold text-on-surface-variant">Type</th>
-                  <th className="p-4 font-semibold text-on-surface-variant text-center">Plays</th>
-                  <th className="p-4 font-semibold text-on-surface-variant text-right">Actions</th>
+                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Title</th>
+                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Class</th>
+                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Subject</th>
+                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Chapter</th>
+                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Type</th>
+                  <th className="p-4 font-semibold text-on-surface-variant text-center whitespace-nowrap">Plays</th>
+                  <th className="p-4 font-semibold text-on-surface-variant text-right whitespace-nowrap pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {songs.map(song => (
-                  <tr key={song._id} className="border-b border-[var(--border-floating-card)] hover:bg-surface-container/50">
-                    <td className="p-4 font-medium text-on-surface">{song.title}</td>
-                    <td className="p-4 text-on-surface-variant">{song.class || '-'}</td>
-                    <td className="p-4 text-on-surface-variant">{song.subject || '-'}</td>
-                    <td className="p-4 text-on-surface-variant">
+                  <tr key={song._id} className="border-b border-[var(--border-floating-card)] hover:bg-surface-container/50 transition-colors">
+                    <td className="p-4 font-medium text-on-surface min-w-[200px] max-w-[300px]">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={song.thumbnailUrl ? getFullUrl(song.thumbnailUrl) : logoImg} 
+                          onError={(e) => { e.target.onerror = null; e.target.src = logoImg; }}
+                          alt="" 
+                          className="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-surface-variant/40 border border-outline-variant/20 shadow-xs" 
+                        />
+                        <span className="line-clamp-2 leading-snug">{song.title}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-on-surface-variant whitespace-nowrap">{song.class || '-'}</td>
+                    <td className="p-4 text-on-surface-variant whitespace-nowrap">{song.subject || '-'}</td>
+                    <td className="p-4 text-on-surface-variant min-w-[160px]">
                       {song.chapter ? `${song.chapter} ${song.chapterNumber ? `(Ch ${song.chapterNumber})` : ''}` : '-'}
                     </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${song.songType === 'Normal' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                    <td className="p-4 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${song.songType === 'Normal' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'}`}>
                         {song.songType || 'Study'}
                       </span>
                     </td>
-                    <td className="p-4 text-center font-mono font-bold text-on-surface">{song.playCount || 0}</td>
-                    <td className="p-4 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditClick(song)}
-                        className="p-2 text-on-surface-variant hover:text-primary transition-colors bg-surface-container rounded-lg hover:bg-primary/10"
-                        title="Edit Song"
-                      >
-                        <IconEdit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(song._id)}
-                        className="p-2 text-on-surface-variant hover:text-error transition-colors bg-surface-container rounded-lg hover:bg-error/10"
-                        title="Delete Song"
-                      >
-                        <IconTrash size={18} />
-                      </button>
+                    <td className="p-4 text-center font-mono font-bold text-on-surface whitespace-nowrap">{song.playCount || 0}</td>
+                    <td className="p-4 whitespace-nowrap text-right pr-6">
+                      <div className="inline-flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditClick(song)}
+                          className="p-2 text-on-surface-variant hover:text-primary transition-colors bg-surface-container rounded-lg hover:bg-primary/10"
+                          title="Edit Song"
+                        >
+                          <IconEdit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(song._id)}
+                          className="p-2 text-on-surface-variant hover:text-error transition-colors bg-surface-container rounded-lg hover:bg-error/10"
+                          title="Delete Song"
+                        >
+                          <IconTrash size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {songs.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="p-8 text-center text-on-surface-variant">No songs found.</td>
+                    <td colSpan="7" className="p-8 text-center text-on-surface-variant">No songs found.</td>
                   </tr>
                 )}
               </tbody>
@@ -592,14 +638,44 @@ export default function ManageSongs() {
                     <div className="flex flex-col">
                       <label className={labelClass}>Audio File URL</label>
                       <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'audioUrl', 'songs/audio')}>
-                        <div className="relative">
-                          <input type="url" required placeholder="https://..." className={`${inputClass} pr-24`} value={formData.audioUrl} onChange={e => setFormData({...formData, audioUrl: e.target.value})} />
-                          <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                            <IconUpload size={12} stroke={2.5} /> Upload
-                            <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
-                          </label>
+                        <div className="flex gap-2 items-center">
+                          <div className="relative flex-1">
+                            <input 
+                              type="url" 
+                              required 
+                              placeholder="https://... or /uploads/..." 
+                              className={`${inputClass} pr-24`} 
+                              value={formData.audioUrl} 
+                              onChange={e => {
+                                setFormData({...formData, audioUrl: e.target.value});
+                                setAudioUrlValid(null);
+                              }} 
+                            />
+                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                              <IconUpload size={12} stroke={2.5} /> Upload
+                              <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
+                            </label>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleTestAudioUrl}
+                            disabled={testingAudioUrl || !formData.audioUrl}
+                            className="px-4 py-3 bg-surface-variant hover:bg-surface-variant/80 text-on-surface rounded-xl font-medium text-sm transition-colors shrink-0 disabled:opacity-50"
+                          >
+                            {testingAudioUrl ? 'Verifying...' : 'Test URL'}
+                          </button>
                         </div>
                       </DragDropWrapper>
+                      {audioUrlValid === true && (
+                        <span className="mt-1 text-xs text-emerald-500 font-semibold flex items-center gap-1 ml-1">
+                          ✓ Valid Audio URL
+                        </span>
+                      )}
+                      {audioUrlValid === false && (
+                        <span className="mt-1 text-xs text-red-500 font-semibold flex items-center gap-1 ml-1">
+                          ✕ Invalid URL
+                        </span>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -653,54 +729,166 @@ export default function ManageSongs() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col mt-2">
-                    <div className="flex items-center gap-2 mb-4">
-                      <IconMusic size={18} className="text-on-surface-variant" />
-                      <h4 className="font-bold text-on-surface">Audio Watermark / Ads</h4>
-                      <div className="h-px bg-outline-variant/30 flex-1 ml-2"></div>
+                  {/* AUDIO & POPUP AD SETTINGS */}
+                  <div className="flex flex-col gap-6 p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 mt-2">
+                    {/* AUDIO ROLL / WATERMARK SECTION */}
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+                        <div className="flex items-center gap-2">
+                          <IconMusic size={20} className="text-primary" />
+                          <div>
+                            <h4 className="font-bold text-on-surface text-base">Audio Ads & Watermark</h4>
+                            <p className="text-xs text-on-surface-variant">Pause song or play watermark at specified intervals.</p>
+                          </div>
+                        </div>
+                        <label className="flex items-center cursor-pointer gap-2 bg-surface px-3 py-1.5 rounded-xl border border-outline-variant/30 shrink-0 select-none">
+                          <span className={`text-xs font-bold ${formData.audioRollsEnabled ? 'text-primary' : 'text-on-surface-variant'}`}>
+                            {formData.audioRollsEnabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.audioRollsEnabled} 
+                            onChange={(e) => setFormData(prev => ({ ...prev, audioRollsEnabled: e.target.checked }))} 
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary relative"></div>
+                        </label>
+                      </div>
+
+                      {formData.audioRollsEnabled && (
+                        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+                          <div className="flex flex-col">
+                            <label className={labelClass}>Watermark / Audio Ad URL <span className="opacity-60 lowercase font-normal">(optional override)</span></label>
+                            <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
+                              <div className="relative">
+                                <input type="url" placeholder="https://... (leave empty to use global ad)" className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
+                                {uploadProgress.watermarkUrl !== undefined ? (
+                                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                    <span>{uploadProgress.watermarkUrl}%</span>
+                                    <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                    <IconUpload size={12} stroke={2.5} /> Upload
+                                    <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                                  </label>
+                                )}
+                              </div>
+                            </DragDropWrapper>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <label className={labelClass}>Audio Ad Positions (% of song length)</label>
+                            <div className="flex flex-wrap gap-2.5 items-center">
+                              {(formData.watermarkPositions || []).map((pos, i) => (
+                                <div key={i} className="flex items-center gap-1 bg-surface px-2.5 py-1.5 rounded-lg border border-outline-variant/30 shadow-xs">
+                                  <input 
+                                    type="number" 
+                                    min="0" max="100" 
+                                    value={pos} 
+                                    onChange={(e) => handlePositionChange('audio', i, e.target.value)}
+                                    className="w-12 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center font-bold text-sm"
+                                  />
+                                  <span className="text-xs text-on-surface-variant font-bold">%</span>
+                                  <button type="button" aria-label="Remove position" onClick={() => removePosition('audio', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                              <button 
+                                type="button"
+                                onClick={() => addPosition('audio')} 
+                                className="flex items-center justify-center h-9 px-3 bg-surface hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-sm"
+                                title="Add Position"
+                              >
+                                + Add Position
+                              </button>
+                            </div>
+                            <WaveformSlider 
+                              audioUrl={formData.audioUrl}
+                              positions={formData.watermarkPositions || []}
+                              onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 gap-y-4">
-                      <div className="flex flex-col">
-                        <label className={labelClass}>Watermark Audio URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
-                        <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
-                          <div className="relative">
-                            <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
-                            {uploadProgress.watermarkUrl !== undefined ? (
-                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                                <span>{uploadProgress.watermarkUrl}%</span>
-                                <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+
+                    {/* POPUP ADS SECTION */}
+                    <div className="flex flex-col gap-4 pt-4 border-t border-outline-variant/30">
+                      <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+                        <div className="flex items-center gap-2">
+                          <IconLink size={20} className="text-primary" />
+                          <div>
+                            <h4 className="font-bold text-on-surface text-base">Popup Ads</h4>
+                            <p className="text-xs text-on-surface-variant font-medium">Display popups during song playback without pausing music.</p>
+                          </div>
+                        </div>
+                        <label className="flex items-center cursor-pointer gap-2 bg-surface px-3 py-1.5 rounded-xl border border-outline-variant/30 shrink-0 select-none">
+                          <span className={`text-xs font-bold ${formData.popupsEnabled ? 'text-primary' : 'text-on-surface-variant'}`}>
+                            {formData.popupsEnabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.popupsEnabled} 
+                            onChange={(e) => setFormData(prev => ({ ...prev, popupsEnabled: e.target.checked }))} 
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary relative"></div>
+                        </label>
+                      </div>
+
+                      {formData.popupsEnabled && (
+                        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+                          <div className="flex flex-col gap-2">
+                            <label className={labelClass}>Popup Ad Positions (% of song length)</label>
+                            <div className="flex flex-wrap gap-2.5 items-center">
+                              {(formData.popupPositions || []).map((pos, i) => (
+                                <div key={i} className="flex items-center gap-1 bg-surface px-2.5 py-1.5 rounded-lg border border-outline-variant/30 shadow-xs">
+                                  <input 
+                                    type="number" 
+                                    min="0" max="100" 
+                                    value={pos} 
+                                    onChange={(e) => handlePositionChange('popup', i, e.target.value)}
+                                    className="w-12 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center font-bold text-sm"
+                                  />
+                                  <span className="text-xs text-on-surface-variant font-bold">%</span>
+                                  <button type="button" aria-label="Remove position" onClick={() => removePosition('popup', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                              <button 
+                                type="button"
+                                onClick={() => addPosition('popup')} 
+                                className="flex items-center justify-center h-9 px-3 bg-surface hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-sm"
+                                title="Add Position"
+                              >
+                                + Add Position
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col">
+                            <label className={labelClass}>Custom Popup Content (HTML / Text) <span className="opacity-60 lowercase font-normal">(optional override)</span></label>
+                            <textarea 
+                              value={formData.popupHtml}
+                              onChange={(e) => setFormData({ ...formData, popupHtml: e.target.value })}
+                              rows={3}
+                              placeholder="<div class='text-center'><h2>Special Offer!</h2></div> (leave empty to use global popup)"
+                              className="w-full bg-background border border-outline-variant/40 rounded-xl p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary font-mono text-xs"
+                            />
+                            {formData.popupHtml && (
+                              <div className="mt-3">
+                                <label className="block text-xs font-bold text-on-surface-variant mb-1">Live Preview</label>
+                                <div className="bg-surface border border-outline-variant/30 rounded-xl p-3 relative flex items-center justify-center min-h-[70px] overflow-hidden text-on-surface text-sm">
+                                  <div dangerouslySetInnerHTML={{ __html: formData.popupHtml }} />
                                 </div>
                               </div>
-                            ) : (
-                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                                <IconUpload size={12} stroke={2.5} /> Upload
-                                <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
-                              </label>
                             )}
                           </div>
-                        </DragDropWrapper>
-                      </div>
-                      
-                      <div className="flex flex-col">
-                        <label className={labelClass}>Positions (% of song length)</label>
-                        <WaveformSlider 
-                          audioUrl={formData.audioUrl}
-                          positions={formData.watermarkPositions}
-                          onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
-                        />
-                      </div>
-                      
-                      
-                      {formData.watermarkUrl && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={handlePreview}
-                            className="bg-surface-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
-                          >
-                            <IconMusic size={16} /> {previewing ? 'Stop Preview' : 'Preview Song with Watermark'}
-                          </button>
                         </div>
                       )}
                     </div>

@@ -5,6 +5,16 @@ import { protect, authorize, premiumOnly } from '../middlewares/authMiddleware.j
 
 const router = express.Router();
 
+// GET /forums overview
+router.get('/', async (req, res) => {
+  try {
+    const categories = await ForumCategory.find().sort('order');
+    res.json({ status: 'ok', categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // === CATEGORIES ===
 
 // Get all categories

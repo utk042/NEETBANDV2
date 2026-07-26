@@ -1,46 +1,38 @@
-// Force HMR 1
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Global Fetch Interceptor for sliding session token refresh
-if (typeof window !== 'undefined') {
-  const originalFetch = window.fetch;
-  window.fetch = async function (...args) {
-    const response = await originalFetch(...args);
-    try {
-      const newToken = response.headers.get('x-new-token');
-      if (newToken) {
-        let sentToken = null;
-        const options = args[1];
-        if (options && options.headers) {
-          let authHeader = null;
-          if (typeof options.headers.get === 'function') {
-            authHeader = options.headers.get('Authorization') || options.headers.get('authorization');
-          } else {
-            authHeader = options.headers['Authorization'] || options.headers['authorization'];
-          }
-          if (authHeader && authHeader.startsWith('Bearer ')) {
-            sentToken = authHeader.substring(7);
-          }
-        }
-        
-        if (sentToken) {
-          if (localStorage.getItem('user_token') === sentToken) {
-            localStorage.setItem('user_token', newToken);
-          }
-          if (localStorage.getItem('lms_token') === sentToken) {
-            localStorage.setItem('lms_token', newToken);
-          }
-          if (localStorage.getItem('affiliate_token') === sentToken) {
-            localStorage.setItem('affiliate_token', newToken);
-          }
+/**
+ * apiFetch — a contained fetch wrapper for NeetBand API calls only.
+ * Handles sliding-session token refresh without touching window.fetch
+ * (which would break Supabase and other third-party SDKs).
+ *
+ * Token refresh rule: only the exact token that was SENT gets refreshed.
+ * This prevents user/affiliate/lms tokens from cross-contaminating each other.
+ */
+const apiFetch = async (url, options = {}) => {
+  const response = await fetch(url, options);
+  try {
+    const newToken = response.headers.get('x-new-token');
+    if (newToken) {
+      const authHeader =
+        (options.headers?.['Authorization'] || options.headers?.['authorization'] || '');
+      if (authHeader.startsWith('Bearer ')) {
+        const sentToken = authHeader.substring(7);
+        // Only update the specific token store that was used — no cross-contamination
+        if (localStorage.getItem('user_token') === sentToken) {
+          localStorage.setItem('user_token', newToken);
+        } else if (localStorage.getItem('lms_token') === sentToken) {
+          localStorage.setItem('lms_token', newToken);
+        } else if (localStorage.getItem('affiliate_token') === sentToken) {
+          localStorage.setItem('affiliate_token', newToken);
         }
       }
-    } catch (err) {
-      console.error('Error updating token from header:', err);
     }
-    return response;
-  };
-}
+  } catch (err) {
+    // Non-fatal: token refresh failure should not break the actual API response
+    console.warn('apiFetch: token refresh error', err);
+  }
+  return response;
+};
 
 const getHeaders = () => {
   const isLms = typeof window !== 'undefined' && window.location.pathname.startsWith('/lms');
@@ -65,7 +57,7 @@ const getLmsHeaders = () => {
 
 // --- AUTH ---
 export const login = async (email, password) => {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const res = await apiFetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -75,7 +67,7 @@ export const login = async (email, password) => {
 };
 
 export const register = async (name, email, password) => {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  const res = await apiFetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password }),
@@ -85,7 +77,7 @@ export const register = async (name, email, password) => {
 };
 
 export const loginWithSupabaseToken = async (accessToken) => {
-  const res = await fetch(`${API_URL}/auth/supabase-login`, {
+  const res = await apiFetch(`${API_URL}/auth/supabase-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ accessToken }),
@@ -95,13 +87,13 @@ export const loginWithSupabaseToken = async (accessToken) => {
 };
 
 export const getUserProfile = async () => {
-  const res = await fetch(`${API_URL}/auth/profile`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/auth/profile`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const getLmsUserProfile = async () => {
-  const res = await fetch(`${API_URL}/auth/profile`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/auth/profile`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
@@ -111,13 +103,13 @@ export const getAffiliateUserProfile = async () => {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_URL}/affiliates/profile`, { headers });
+  const res = await apiFetch(`${API_URL}/affiliates/profile`, { headers });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateUserProfile = async (userData) => {
-  const res = await fetch(`${API_URL}/auth/profile`, {
+  const res = await apiFetch(`${API_URL}/auth/profile`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(userData),
@@ -135,7 +127,7 @@ export const updateUserProfile = async (userData) => {
 };
 
 export const updateLmsUserProfile = async (userData) => {
-  const res = await fetch(`${API_URL}/auth/profile`, {
+  const res = await apiFetch(`${API_URL}/auth/profile`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(userData),
@@ -157,7 +149,7 @@ export const updateAffiliateProfile = async (userData) => {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_URL}/affiliates/profile`, {
+  const res = await apiFetch(`${API_URL}/affiliates/profile`, {
     method: 'PUT',
     headers,
     body: JSON.stringify(userData),
@@ -176,13 +168,13 @@ export const updateAffiliateProfile = async (userData) => {
 
 // --- SONGS ---
 export const getSongs = async () => {
-  const res = await fetch(`${API_URL}/songs`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/songs`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const createSong = async (songData) => {
-  const res = await fetch(`${API_URL}/songs`, {
+  const res = await apiFetch(`${API_URL}/songs`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(songData),
@@ -192,7 +184,7 @@ export const createSong = async (songData) => {
 };
 
 export const updateSong = async (id, songData) => {
-  const res = await fetch(`${API_URL}/songs/${id}`, {
+  const res = await apiFetch(`${API_URL}/songs/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(songData),
@@ -202,7 +194,7 @@ export const updateSong = async (id, songData) => {
 };
 
 export const deleteSong = async (id) => {
-  const res = await fetch(`${API_URL}/songs/${id}`, {
+  const res = await apiFetch(`${API_URL}/songs/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -212,19 +204,19 @@ export const deleteSong = async (id) => {
 
 // --- LMS ---
 export const getCourses = async () => {
-  const res = await fetch(`${API_URL}/lms/courses`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/courses`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const getCourseById = async (id) => {
-  const res = await fetch(`${API_URL}/lms/courses/${id}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/courses/${id}`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const createCourse = async (courseData) => {
-  const res = await fetch(`${API_URL}/lms/courses`, {
+  const res = await apiFetch(`${API_URL}/lms/courses`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(courseData),
@@ -234,7 +226,7 @@ export const createCourse = async (courseData) => {
 };
 
 export const updateCourse = async (id, courseData) => {
-  const res = await fetch(`${API_URL}/lms/courses/${id}`, {
+  const res = await apiFetch(`${API_URL}/lms/courses/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(courseData),
@@ -244,7 +236,7 @@ export const updateCourse = async (id, courseData) => {
 };
 
 export const deleteCourse = async (id) => {
-  const res = await fetch(`${API_URL}/lms/courses/${id}`, {
+  const res = await apiFetch(`${API_URL}/lms/courses/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -254,20 +246,20 @@ export const deleteCourse = async (id) => {
 
 // --- LESSON DETAILS ---
 export const getLessonContent = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/content`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/content`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 // Course Progress
 export const getCourseProgress = async (courseId) => {
-  const res = await fetch(`${API_URL}/lms/courses/${courseId}/progress`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/courses/${courseId}/progress`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const markItemComplete = async (courseId, itemId) => {
-  const res = await fetch(`${API_URL}/lms/courses/${courseId}/items/${itemId}/complete`, { 
+  const res = await apiFetch(`${API_URL}/lms/courses/${courseId}/items/${itemId}/complete`, { 
     method: 'POST',
     headers: getHeaders()
   });
@@ -276,7 +268,7 @@ export const markItemComplete = async (courseId, itemId) => {
 };
 
 export const updateLessonContent = async (itemId, content) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/content`, {
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/content`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ content }),
@@ -286,13 +278,13 @@ export const updateLessonContent = async (itemId, content) => {
 };
 
 export const getLessonQuiz = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/quiz`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/quiz`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateLessonQuiz = async (itemId, questions) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/quiz`, {
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/quiz`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ questions }),
@@ -302,13 +294,13 @@ export const updateLessonQuiz = async (itemId, questions) => {
 };
 
 export const getLessonQa = async (itemId) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/qa`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/qa`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const updateLessonQa = async (itemId, qas) => {
-  const res = await fetch(`${API_URL}/lms/items/${itemId}/qa`, {
+  const res = await apiFetch(`${API_URL}/lms/items/${itemId}/qa`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ qas }),
@@ -318,13 +310,13 @@ export const updateLessonQa = async (itemId, qas) => {
 };
 
 export const getQuizByCourse = async (courseId) => {
-  const res = await fetch(`${API_URL}/lms/quizzes/course/${courseId}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/lms/quizzes/course/${courseId}`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const submitQuiz = async (quizId, answers) => {
-  const res = await fetch(`${API_URL}/lms/quizzes/submit`, {
+  const res = await apiFetch(`${API_URL}/lms/quizzes/submit`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ quizId, answers }),
@@ -334,19 +326,19 @@ export const submitQuiz = async (quizId, answers) => {
 };
 
 export const getAdminStats = async () => {
-  const res = await fetch(`${API_URL}/admin/stats`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/admin/stats`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const getAdminStudents = async () => {
-  const res = await fetch(`${API_URL}/admin/students`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/admin/students`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const createAdminStudent = async (studentData) => {
-  const res = await fetch(`${API_URL}/admin/students`, {
+  const res = await apiFetch(`${API_URL}/admin/students`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(studentData),
@@ -356,7 +348,7 @@ export const createAdminStudent = async (studentData) => {
 };
 
 export const updateAdminStudent = async (id, studentData) => {
-  const res = await fetch(`${API_URL}/admin/students/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/students/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(studentData),
@@ -366,7 +358,7 @@ export const updateAdminStudent = async (id, studentData) => {
 };
 
 export const deleteAdminStudent = async (id) => {
-  const res = await fetch(`${API_URL}/admin/students/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/students/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -436,7 +428,7 @@ export const parseDocumentFile = async (file) => {
 
 // --- PAYMENTS ---
 export const createPaymentOrder = async (plan, discountCode) => {
-  const res = await fetch(`${API_URL}/payments/order`, {
+  const res = await apiFetch(`${API_URL}/payments/order`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ plan, discountCode }),
@@ -446,7 +438,7 @@ export const createPaymentOrder = async (plan, discountCode) => {
 };
 
 export const verifyPayment = async (verificationData) => {
-  const res = await fetch(`${API_URL}/payments/verify`, {
+  const res = await apiFetch(`${API_URL}/payments/verify`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(verificationData),
@@ -456,7 +448,7 @@ export const verifyPayment = async (verificationData) => {
 };
 
 export const verifyPromo = async (discountCode) => {
-  const res = await fetch(`${API_URL}/payments/verify-promo`, {
+  const res = await apiFetch(`${API_URL}/payments/verify-promo`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ discountCode }),
@@ -467,12 +459,12 @@ export const verifyPromo = async (discountCode) => {
 
 const api = {
   get: async (path) => {
-    const res = await fetch(`${API_URL}${path}`, { headers: getHeaders() });
+    const res = await apiFetch(`${API_URL}${path}`, { headers: getHeaders() });
     if (!res.ok) throw new Error(await res.text());
     return { data: await res.json() };
   },
   post: async (path, body = {}) => {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await apiFetch(`${API_URL}${path}`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -481,7 +473,7 @@ const api = {
     return { data: await res.json() };
   },
   put: async (path, body = {}) => {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await apiFetch(`${API_URL}${path}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -490,7 +482,7 @@ const api = {
     return { data: await res.json() };
   },
   delete: async (path) => {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await apiFetch(`${API_URL}${path}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -501,7 +493,7 @@ const api = {
 
 // --- AFFILIATES ---
 export const affiliateLogin = async (email, password) => {
-  const res = await fetch(`${API_URL}/affiliates/login`, {
+  const res = await apiFetch(`${API_URL}/affiliates/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -516,19 +508,19 @@ export const getAffiliateDashboard = async () => {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetch(`${API_URL}/affiliates/dashboard`, { headers });
+  const res = await apiFetch(`${API_URL}/affiliates/dashboard`, { headers });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const getAdminAffiliates = async () => {
-  const res = await fetch(`${API_URL}/admin/affiliates`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/admin/affiliates`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const createAdminAffiliate = async (affiliateData) => {
-  const res = await fetch(`${API_URL}/admin/affiliates`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(affiliateData),
@@ -538,7 +530,7 @@ export const createAdminAffiliate = async (affiliateData) => {
 };
 
 export const updateAdminAffiliate = async (id, affiliateData) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(affiliateData),
@@ -548,7 +540,7 @@ export const updateAdminAffiliate = async (id, affiliateData) => {
 };
 
 export const deleteAdminAffiliate = async (id) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -557,7 +549,7 @@ export const deleteAdminAffiliate = async (id) => {
 };
 
 export const addAdminAffiliateWalletTransaction = async (id, transactionData) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}/wallet`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates/${id}/wallet`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(transactionData),
@@ -567,7 +559,7 @@ export const addAdminAffiliateWalletTransaction = async (id, transactionData) =>
 };
 
 export const addAdminAffiliateReferral = async (id, referralData) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}/referrals`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates/${id}/referrals`, {
     method: 'POST',
     headers: getLmsHeaders(),
     body: JSON.stringify(referralData),
@@ -577,7 +569,7 @@ export const addAdminAffiliateReferral = async (id, referralData) => {
 };
 
 export const removeAdminAffiliateReferral = async (id, referralId) => {
-  const res = await fetch(`${API_URL}/admin/affiliates/${id}/referrals/${referralId}`, {
+  const res = await apiFetch(`${API_URL}/admin/affiliates/${id}/referrals/${referralId}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -586,13 +578,13 @@ export const removeAdminAffiliateReferral = async (id, referralId) => {
 };
 
 export const getAdminWithdrawals = async () => {
-  const res = await fetch(`${API_URL}/admin/withdrawals`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/admin/withdrawals`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const processAdminWithdrawal = async (id, statusData) => {
-  const res = await fetch(`${API_URL}/admin/withdrawals/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/withdrawals/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(statusData),
@@ -606,7 +598,7 @@ export const requestAffiliateWithdrawal = async (withdrawalData) => {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_URL}/affiliates/withdrawals`, {
+  const res = await apiFetch(`${API_URL}/affiliates/withdrawals`, {
     method: 'POST',
     headers,
     body: JSON.stringify(withdrawalData),
@@ -625,7 +617,7 @@ export const requestAffiliateWithdrawal = async (withdrawalData) => {
 
 // --- CONTACT MESSAGES ---
 export const createContactMessage = async (messageData) => {
-  const res = await fetch(`${API_URL}/contact`, {
+  const res = await apiFetch(`${API_URL}/contact`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(messageData),
@@ -635,13 +627,13 @@ export const createContactMessage = async (messageData) => {
 };
 
 export const getContactMessages = async () => {
-  const res = await fetch(`${API_URL}/contact`, { headers: getLmsHeaders() });
+  const res = await apiFetch(`${API_URL}/contact`, { headers: getLmsHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const markContactMessageRead = async (id) => {
-  const res = await fetch(`${API_URL}/contact/${id}/read`, {
+  const res = await apiFetch(`${API_URL}/contact/${id}/read`, {
     method: 'PUT',
     headers: getLmsHeaders(),
   });
@@ -650,7 +642,7 @@ export const markContactMessageRead = async (id) => {
 };
 
 export const deleteContactMessage = async (id) => {
-  const res = await fetch(`${API_URL}/contact/${id}`, {
+  const res = await apiFetch(`${API_URL}/contact/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });
@@ -660,7 +652,7 @@ export const deleteContactMessage = async (id) => {
 
 // --- NEWS SCROLLER ---
 export const getNewsScrollSettings = async () => {
-  const res = await fetch(`${API_URL}/admin/news-scroll`, {
+  const res = await apiFetch(`${API_URL}/admin/news-scroll`, {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) throw new Error(await res.text());
@@ -668,7 +660,7 @@ export const getNewsScrollSettings = async () => {
 };
 
 export const updateNewsScrollSettings = async (settingsData) => {
-  const res = await fetch(`${API_URL}/admin/news-scroll`, {
+  const res = await apiFetch(`${API_URL}/admin/news-scroll`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify(settingsData),
@@ -679,27 +671,47 @@ export const updateNewsScrollSettings = async (settingsData) => {
 
 // --- SONG ANALYTICS ---
 export const recordSongPlay = async (id) => {
-  await fetch(`${API_URL}/songs/${id}/play`, { method: 'POST' }).catch(() => {});
+  try {
+    await fetch(`${API_URL}/songs/${id}/play`, { method: 'POST' });
+  } catch (err) {
+    console.warn('[Analytics] recordSongPlay error:', err.message || err);
+  }
 };
 
 export const recordSongComplete = async (id) => {
-  await fetch(`${API_URL}/songs/${id}/complete`, { method: 'POST' }).catch(() => {});
+  try {
+    await fetch(`${API_URL}/songs/${id}/complete`, { method: 'POST' });
+  } catch (err) {
+    console.warn('[Analytics] recordSongComplete error:', err.message || err);
+  }
 };
 
 export const recordSongShare = async (id) => {
-  await fetch(`${API_URL}/songs/${id}/share`, { method: 'POST' }).catch(() => {});
+  try {
+    await fetch(`${API_URL}/songs/${id}/share`, { method: 'POST' });
+  } catch (err) {
+    console.warn('[Analytics] recordSongShare error:', err.message || err);
+  }
 };
 
 export const recordSongRepeat = async (id) => {
-  await fetch(`${API_URL}/songs/${id}/repeat`, { method: 'POST' }).catch(() => {});
+  try {
+    await fetch(`${API_URL}/songs/${id}/repeat`, { method: 'POST' });
+  } catch (err) {
+    console.warn('[Analytics] recordSongRepeat error:', err.message || err);
+  }
 };
 
 export const recordSongDropOff = async (id, segment) => {
-  await fetch(`${API_URL}/songs/${id}/dropoff`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ segment }),
-  }).catch(() => {});
+  try {
+    await fetch(`${API_URL}/songs/${id}/dropoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ segment }),
+    });
+  } catch (err) {
+    console.warn('[Analytics] recordSongDropOff error:', err.message || err);
+  }
 };
 
 export const getSongAnalytics = async (id) => {
@@ -716,7 +728,7 @@ export const getAllSongAnalytics = async () => {
 
 // --- NEWSLETTER ---
 export const subscribeNewsletter = async (email) => {
-  const res = await fetch(`${API_URL}/newsletter/subscribe`, {
+  const res = await apiFetch(`${API_URL}/newsletter/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -734,7 +746,7 @@ export const subscribeNewsletter = async (email) => {
 };
 
 export const getNewsletterSubscribers = async () => {
-  const res = await fetch(`${API_URL}/newsletter/subscribers`, {
+  const res = await apiFetch(`${API_URL}/newsletter/subscribers`, {
     headers: getLmsHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -742,7 +754,7 @@ export const getNewsletterSubscribers = async () => {
 };
 
 export const updateNewsletterSubscriber = async (id, email) => {
-  const res = await fetch(`${API_URL}/newsletter/subscribers/${id}`, {
+  const res = await apiFetch(`${API_URL}/newsletter/subscribers/${id}`, {
     method: 'PUT',
     headers: getLmsHeaders(),
     body: JSON.stringify({ email }),
@@ -760,7 +772,7 @@ export const updateNewsletterSubscriber = async (id, email) => {
 };
 
 export const deleteNewsletterSubscriber = async (id) => {
-  const res = await fetch(`${API_URL}/newsletter/subscribers/${id}`, {
+  const res = await apiFetch(`${API_URL}/newsletter/subscribers/${id}`, {
     method: 'DELETE',
     headers: getLmsHeaders(),
   });

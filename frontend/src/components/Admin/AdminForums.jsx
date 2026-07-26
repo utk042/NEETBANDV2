@@ -7,6 +7,8 @@ import { useDialog } from '../../contexts/DialogContext';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
+  if (typeof error === 'string') return error;
+  
   let msg = error.message || String(error);
   try {
     const parsed = JSON.parse(error.message);
@@ -152,14 +154,14 @@ const AdminForums = ({ api }) => {
         }
         
         let name = 'Attachment';
-        try {
-          const parts = url.split('/');
-          const lastPart = parts[parts.length - 1];
-          if (lastPart) {
+        const parts = url.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart) {
+          try {
             name = decodeURIComponent(lastPart);
+          } catch (e) {
+            name = lastPart;
           }
-        } catch (e) {
-          // ignore
         }
         
         return { url, type, name };

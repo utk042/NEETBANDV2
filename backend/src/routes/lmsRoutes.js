@@ -34,8 +34,9 @@ router.route('/quizzes/submit')
   .post(protect, submitQuiz);
 
 // --- DEDICATED LESSON DETAILS (Notes, Quiz, QA) ---
-// We use itemId to fetch the specific notes/quiz/qa associated with that item.
-
+// Uses optionalAuth intentionally: free items are publicly readable,
+// premium items are blocked inside each controller via isPremium check on the item.
+// DO NOT remove the isPremium guard in getLessonContent / getLessonQuiz / getLessonQa.
 router.route('/items/:itemId/content')
   .get(optionalAuth, getLessonContent)
   .put(protect, authorize('admin', 'owner'), updateLessonContent);

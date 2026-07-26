@@ -8,7 +8,7 @@ import heroVideo from '../assets/vid1.mp4';
 export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeClick }) {
   const navigate = useNavigate();
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden w-full pt-40 pb-44 md:pb-60">
+    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden w-full pt-44 md:pt-52 pb-24 md:pb-32">
       {/* Background Video */}
       <div className="absolute inset-0 z-0" data-gsap="hero-bg">
         <video 
@@ -25,7 +25,7 @@ export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeCli
       </div>
       
       <div className="relative z-10 max-w-container-max mx-auto px-gutter w-full grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24 items-center">
-        <div className="space-y-8 max-w-2xl pt-20 md:pt-10" data-gsap="hero-text">
+        <div className="space-y-8 max-w-2xl" data-gsap="hero-text">
           <h1 className="text-display-1 text-on-surface">
             Study Smarter. <br/>
             <span className="text-primary">Remember</span> More.

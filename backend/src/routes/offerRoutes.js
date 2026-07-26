@@ -5,6 +5,16 @@ import EyeCheckupClaim from '../models/EyeCheckupClaim.js';
 
 const router = express.Router();
 
+// GET /api/offers
+router.get('/', (req, res) => {
+  res.json({
+    offers: [
+      { id: 'book', title: 'Free Formula Book', status: 'active' },
+      { id: 'eye-checkup', title: 'Free Eye Checkup', status: 'active' }
+    ]
+  });
+});
+
 // POST /api/offers/book
 router.post('/book', protect, premiumOnly, async (req, res) => {
   try {

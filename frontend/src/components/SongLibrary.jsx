@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { IconSearch, IconChevronRight, IconAward } from '@tabler/icons-react';
+import logoImg from '../assets/logo.png';
 
 export default function SongLibrary({
   tracks = [],
@@ -81,10 +82,11 @@ export default function SongLibrary({
                   {/* Thumbnail */}
                   <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative bg-black/10 border border-outline/10">
                     <img 
-                      src={track.cover || track.image} 
+                      src={track.cover || track.image || logoImg} 
                       alt={track.title} 
-                      className="w-full h-full object-cover" 
+                      className={`w-full h-full ${(!track.cover && !track.image) || (track.cover === logoImg || track.image === logoImg) ? 'object-contain p-1.5 bg-black/20' : 'object-cover'}`} 
                       loading="lazy"
+                      onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1.5 bg-black/20'; }}
                     />
                     {isActive && isPlaying && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -103,9 +105,6 @@ export default function SongLibrary({
                       <h3 className={`text-base font-bold truncate ${isActive ? 'text-primary' : 'text-on-surface'}`}>
                         {track.title}
                       </h3>
-                      {track.premium && (
-                        <IconAward size={14} className="text-[#f5d042] shrink-0" fill="currentColor" />
-                      )}
                     </div>
                     <p className="text-xs text-on-surface-variant/80 truncate mt-1">
                       {track.grade || 'Class 11'} • {track.chapter} • {track.duration}

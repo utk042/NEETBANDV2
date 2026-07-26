@@ -100,7 +100,13 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
 
       {/* Thumbnail */}
       <div className="w-10 h-10 rounded-xl overflow-hidden border border-outline/10 shrink-0 relative">
-        <img src={track.cover || track.image} alt={track.title || "Track cover"} className="w-full h-full object-cover" loading="lazy" />
+        <img 
+          src={track.cover || track.image || logoImg} 
+          alt={track.title || "Track cover"} 
+          className={`w-full h-full ${(!track.cover && !track.image) || (track.cover === logoImg || track.image === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} 
+          loading="lazy" 
+          onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}
+        />
         {isCurrent && (
           <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
             {isTrackPlaying
@@ -123,12 +129,7 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
         </p>
       </div>
 
-      {/* PRO badge */}
-      {track.premium && (
-        <span className="shrink-0 bg-primary/10 text-primary border border-primary/20 font-mono text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">
-          PRO
-        </span>
-      )}
+
 
       {/* Favorite */}
       <button

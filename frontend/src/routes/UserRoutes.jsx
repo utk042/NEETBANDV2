@@ -58,6 +58,8 @@ function FeedGuard({ user, isAuthLoading, setPostLoginRedirect }) {
       } else if (!user.isPremium && user.role !== 'admin' && user.role !== 'owner') {
         dialogAlert("Premium Required", "Premium access required. Redirecting to checkout...").then(() => {
           navigate('/checkout', { replace: true });
+        }).catch(() => {
+          navigate('/checkout', { replace: true });
         });
       }
     }
@@ -119,7 +121,7 @@ export default function UserRoutes() {
     getCourses()
       .then(data => setLmsCourses(data))
       .catch(err => console.error('Failed to fetch courses:', err));
-  }, [currentPage]);
+  }, []); // fetch once on mount, not on every page change
 
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
@@ -137,21 +139,12 @@ export default function UserRoutes() {
     }
   };
 
-  // Wrap handleTrackSelect with premium guard
+  // Track selection & toggle (playback behavior is managed by PlayerContext according to user tier & songType)
   const handleTrackSelect = (track) => {
-    if (track.premium && !user?.isPremium) {
-      handleUpgradeClick();
-      return;
-    }
     contextHandleTrackSelect(track);
   };
 
-  // Wrap togglePlay with premium guard
   const togglePlay = () => {
-    if (currentTrack?.premium && !user?.isPremium) {
-      handleUpgradeClick();
-      return;
-    }
     contextTogglePlay();
   };
 
@@ -214,7 +207,7 @@ export default function UserRoutes() {
               </ProtectedRoute>
             } />
             
-            <Route path="/favourites" element={<div className="pt-32 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} /></div>} />
+            <Route path="/favourites" element={<div className="pt-36 md:pt-44 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} /></div>} />
 
             <Route path="/course" element={<LibraryPage tracks={globalTracks} lmsCourses={lmsCourses} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} onCourseSelect={async (course) => {
                 try {
@@ -238,8 +231,8 @@ export default function UserRoutes() {
             } />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
-            <Route path="/hub" element={<div className="pt-32 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
-            <Route path="/library" element={<SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />} />
+            <Route path="/hub" element={<div className="pt-36 md:pt-44 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
+            <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
             <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />

@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 
 export default function NotFound() {
@@ -10,8 +9,7 @@ export default function NotFound() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10 text-center flex flex-col items-center max-w-2xl">
-        <style>{`@keyframes notfoundFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } @media (prefers-reduced-motion: reduce) { [style*='notfoundFloat'] { animation: none !important; } }`}</style>
-        <h1 className="text-8xl md:text-[120px] font-black tracking-tighter mb-4 text-on-surface">
+        <h1 className="text-8xl md:text-[120px] font-black tracking-tighter mb-4 text-on-surface motion-safe:animate-pulse">
           404
         </h1>
         
@@ -25,7 +23,7 @@ export default function NotFound() {
         
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded-full font-bold text-lg hover:scale-105 hover:shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all duration-300"
+          className="flex items-center gap-2 bg-primary text-on-primary px-8 py-4 rounded-full font-bold text-lg hover:scale-105 hover:shadow-[0_0_20px_rgba(236,194,70,0.4)] transition-all duration-300"
         >
           Back to Home
         </button>

@@ -85,6 +85,11 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     const ro = new ResizeObserver(update);
     if (currentHeader) ro.observe(currentHeader);
     
+    // Observe only the header's direct parent — NOT document.body.
+    // Watching all of document.body fires on every DOM change in the app,
+    // causing severe layout thrash. The header lives in a stable parent container;
+    // if it ever gets swapped, only its sibling list changes, not the whole tree.
+    const observationTarget = currentHeader?.parentElement || document.documentElement;
     const mo = new MutationObserver(() => {
       const h = document.querySelector('header[data-gsap="header"]');
       if (h !== currentHeader) {
@@ -94,13 +99,13 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
         update();
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(observationTarget, { childList: true });
 
     return () => {
       ro.disconnect();
       mo.disconnect();
     };
-  }, [selectedItemIdx]);
+  }, []); // Run once on mount — the header element itself doesn't change between lessons
 
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeDetails, setActiveDetails] = useState(null);

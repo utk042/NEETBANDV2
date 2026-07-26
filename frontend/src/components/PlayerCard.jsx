@@ -1,16 +1,16 @@
 import React from 'react';
 import { IconActivity, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled } from '@tabler/icons-react';
-import defaultCover from '../assets/dna_replication.png';
+import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 
 export default function PlayerCard() {
   const { currentTrack, isPlaying, togglePlay, handleNext, handlePrev } = usePlayer();
 
-  // If no track is playing, show DNA Replication as fallback
+  // If no track is playing, show NeetBand Logo as fallback
   const displayTrack = currentTrack || {
     title: "DNA Replication",
     chapter: "Molecular Basis of Inheritance",
-    cover: defaultCover,
+    cover: logoImg,
     premium: false
   };
 
@@ -42,9 +42,10 @@ export default function PlayerCard() {
         
         <div className="w-full h-48 bg-surface-container-highest rounded-xl mb-6 overflow-hidden relative shadow-inner border border-[var(--border-floating-card)]">
           <img 
-            className="object-cover object-center w-full h-full opacity-90 hover:scale-105 transition-transform duration-700" 
+            className={`w-full h-full opacity-90 hover:scale-105 transition-transform duration-700 ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-4 bg-black/20' : 'object-cover object-center'}`} 
             alt={displayTrack.title}
-            src={displayTrack.cover || defaultCover}
+            src={displayTrack.cover || logoImg}
+            onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full opacity-90 hover:scale-105 transition-transform duration-700 object-contain p-4 bg-black/20'; }}
             width={292}
             height={192}
           />

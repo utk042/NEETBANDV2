@@ -111,7 +111,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
 
   return (
     <>
-      <header data-gsap="header" className="fixed top-0 w-full z-header bg-surface/95 border-b border-outline/20 transition-colors duration-300">
+      <header data-gsap="header" className="fixed top-0 w-full z-header bg-surface/90 backdrop-blur-md border-b border-outline/20 transition-colors duration-300">
         <div className="flex justify-between items-center px-gutter py-4 md:py-2.5 w-full max-w-container-max mx-auto gap-8 relative z-header bg-transparent">
           <div className="flex items-center gap-sm">
             <button 

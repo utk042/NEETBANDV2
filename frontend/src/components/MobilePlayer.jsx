@@ -1,6 +1,6 @@
 import React from 'react';
 import { IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipBackFilled, IconPlayerSkipForwardFilled, IconHeart } from '@tabler/icons-react';
-import defaultCover from '../assets/mendelian_genetics_anthem.png';
+import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 
 export default function MobilePlayer({ onOpenFullPlayer }) {
@@ -11,7 +11,7 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
   const displayTrack = currentTrack || {
     title: "Mendelian Genetics Anthem",
     chapter: "Biology • Genetics & Evolution",
-    cover: defaultCover,
+    cover: logoImg,
     durationSeconds: 260
   };
 
@@ -61,7 +61,7 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
       <div className="flex items-center justify-between px-4 py-3 gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 rounded bg-surface-container-highest overflow-hidden flex-shrink-0 border border-[var(--border-floating-card)]">
-            <img alt={displayTrack.title} className="w-full h-full object-cover" src={displayTrack.cover || defaultCover} width={40} height={40} onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
+            <img alt={displayTrack.title} className={`w-full h-full ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} src={displayTrack.cover || logoImg} width={40} height={40} onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }} />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>

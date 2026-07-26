@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconVolume, IconPlayerPlayFilled, IconPlayerPauseFilled, IconHeart, IconDownload, IconShare } from '@tabler/icons-react';
+import logoImg from '../assets/logo.png';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
 
@@ -51,11 +52,11 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                       isCurrent 
                         ? 'bg-primary/12 dark:bg-primary/18 border-primary/45 shadow-[0_2px_12px_rgba(201,162,39,0.08)]' 
                         : 'bg-transparent border-[var(--border-nav-layout)]/65 hover:bg-surface-container-low/50'
-                    } ${track.premium ? 'opacity-85 hover:opacity-100' : ''}`}
+                    }`}
                   >
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                       <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block">
-                        <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40} loading="lazy"/>
+                        <img className={`w-full h-full ${(!track.cover || track.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} alt={track.title} src={track.cover || logoImg} width={40} height={40} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}/>
                         <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           {isCurrent && isPlaying ? (
                             <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />
@@ -84,11 +85,6 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                             )}
                           </span>
                           <span className={`truncate ${isCurrent ? 'text-primary' : 'text-on-surface'}`}>{track.title}</span>
-                          {track.premium && (
-                            <span className="px-1.5 py-[1px] rounded-lg text-[8px] bg-primary/10 text-primary border border-primary/20 tracking-wider flex-shrink-0 font-normal hidden sm:inline-block">
-                              PREMIUM
-                            </span>
-                          )}
                         </div>
                         <span className="text-xs text-on-surface-variant/70 md:hidden mt-0.5 truncate pl-8">{track.chapter}</span>
                       </div>

@@ -74,6 +74,8 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
       
       const finalDiscountCode = appliedPromo ? appliedPromo.code : '';
       const order = await createPaymentOrder('premium_scholar', finalDiscountCode);
+
+      // Dev/staging mode: mock payment flow when using test Razorpay keys
       if (order.id.startsWith('order_mock_')) {
         const verificationData = {
           razorpay_order_id: order.id,
@@ -86,6 +88,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
         if (onCheckoutSuccess) {
           onCheckoutSuccess({ ...user, ...verifyRes.user, isLoggedIn: true });
         }
+        setIsLoading(false);
         return;
       }
 
@@ -113,23 +116,33 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
               onCheckoutSuccess({ ...user, ...verifyRes.user, isLoggedIn: true });
             }
           } catch (err) {
-            setError('Payment verification failed.');
+            setError('Payment verification failed. Please contact support.');
+          } finally {
+            setIsLoading(false);
           }
         },
         prefill: {
           name: user?.name || '',
           email: user?.email || '',
         },
+        modal: {
+          // User closed the Razorpay modal without completing payment
+          ondismiss: () => {
+            setIsLoading(false);
+          }
+        },
         theme: { color: '#ecc246' }
       };
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
         setError(`Payment failed: ${response.error.description}`);
+        setIsLoading(false);
       });
       rzp.open();
+      // NOTE: Do NOT call setIsLoading(false) here — the modal is async.
+      // It will be cleared in handler, payment.failed, or modal.ondismiss.
     } catch (err) {
       setError('Could not initialize checkout. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

@@ -10,6 +10,34 @@ export default function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+    let redirectTimer = null;
+
+    const processSession = async (session) => {
+      try {
+        // Exchange Supabase token for local backend JWT
+        const data = await loginWithSupabaseToken(session.access_token);
+        if (!mounted) return;
+        localStorage.setItem('user_token', data.token);
+        login({
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          membershipPlan: data.membershipPlan,
+          isPremium: data.isPremium,
+          streak: data.streak,
+          isLoggedIn: true
+        });
+        navigate('/');
+      } catch (err) {
+        if (!mounted) return;
+        console.error('Callback authentication error:', err);
+        setErrorMsg(err.message || "Failed to authenticate.");
+        redirectTimer = setTimeout(() => { if (mounted) navigate('/login'); }, 4000);
+      }
+    };
+
     const handleCallback = async () => {
       try {
         // Handle recovery flow (Password Reset Link) redirection
@@ -22,40 +50,56 @@ export default function AuthCallback() {
           return;
         }
 
+        // Primary: try getSession() which works if the hash has already been consumed
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         
-        if (!session) {
-          setErrorMsg("No active session found.");
-          setTimeout(() => navigate('/login'), 3000);
+        if (session) {
+          await processSession(session);
           return;
         }
 
-        // Exchange Supabase token for local backend token
-        const data = await loginWithSupabaseToken(session.access_token);
-        
-        localStorage.setItem('user_token', data.token);
-        login({
-          _id: data._id,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          membershipPlan: data.membershipPlan,
-          isPremium: data.isPremium,
-          streak: data.streak,
-          isLoggedIn: true
-        });
+        // Fallback: Supabase may not have parsed the URL hash yet on first render.
+        // onAuthStateChange fires reliably after the OAuth redirect is processed.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, authSession) => {
+            if (!mounted) return;
+            if (authSession) {
+              subscription.unsubscribe();
+              await processSession(authSession);
+            } else if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+              subscription.unsubscribe();
+              if (mounted) {
+                setErrorMsg("No active session found.");
+                redirectTimer = setTimeout(() => { if (mounted) navigate('/login'); }, 3000);
+              }
+            }
+          }
+        );
 
-        // Redirect to dashboard/home
-        navigate('/');
+        // Safety timeout: if auth state never fires, redirect after 8s
+        redirectTimer = setTimeout(() => {
+          if (mounted && !session) {
+            subscription.unsubscribe();
+            setErrorMsg("Authentication timed out. Please try again.");
+            setTimeout(() => { if (mounted) navigate('/login'); }, 2000);
+          }
+        }, 8000);
+
       } catch (err) {
+        if (!mounted) return;
         console.error('Callback authentication error:', err);
         setErrorMsg(err.message || "Failed to authenticate.");
-        setTimeout(() => navigate('/login'), 4000);
+        redirectTimer = setTimeout(() => { if (mounted) navigate('/login'); }, 4000);
       }
     };
 
     handleCallback();
+
+    return () => {
+      mounted = false;
+      if (redirectTimer) clearTimeout(redirectTimer);
+    };
   }, [navigate, login]);
 
   return (

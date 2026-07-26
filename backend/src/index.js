@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import songRoutes from './routes/songRoutes.js';
@@ -50,8 +52,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-import path from 'path';
-import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -73,7 +73,6 @@ app.use('/newsletter', newsletterRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
 
-console.log("Admin routes mounted to /admin");
 
 // Ad URLs endpoint
 app.get('/ads', getAds);

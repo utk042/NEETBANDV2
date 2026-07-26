@@ -46,10 +46,11 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0,
       },
-      completedItems: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Item'
-      }]
+      // Stores the _id values of completed Course.subjects[].chapters[].items[] embedded docs.
+      // NOTE: 'Item' is an embedded subdocument in Course.js — NOT a registered Mongoose model.
+      // Do NOT add ref: 'Item' here — it will throw MissingSchemaError on .populate().
+      // To look up item details, query: Course.findOne({ "subjects.chapters.items._id": itemId })
+      completedItems: [{ type: mongoose.Schema.Types.ObjectId }]
     }
   ],
   favoriteSongs: [

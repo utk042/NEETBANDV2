@@ -5,7 +5,7 @@ import {
   IconHeart, IconArrowsShuffle, IconRepeat, IconRepeatOnce, IconPictureInPicture,
   IconRotate, IconRotate2
 } from '@tabler/icons-react';
-import defaultCover from '../assets/dna_replication_thumbnail.png';
+import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 
@@ -24,7 +24,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
   const displayTrack = currentTrack || {
     title: "DNA Replication Mnemonic",
     chapter: "Molecular Basis of Inheritance",
-    cover: defaultCover,
+    cover: logoImg,
     duration: "6:12",
     durationSeconds: 372
   };
@@ -169,8 +169,16 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
       return 'plain';
     };
 
-    fetch(displayTrack.lyricsUrl)
-      .then(res => res.text())
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const lyricsUrl = displayTrack.lyricsUrl.startsWith('http://') || displayTrack.lyricsUrl.startsWith('https://') || displayTrack.lyricsUrl.startsWith('blob:')
+      ? displayTrack.lyricsUrl
+      : `${API_URL}${displayTrack.lyricsUrl.startsWith('/') ? '' : '/'}${displayTrack.lyricsUrl}`;
+
+    fetch(lyricsUrl)
+      .then(res => {
+        if (!res.ok) throw new Error(`Lyrics file not found (status ${res.status})`);
+        return res.text();
+      })
       .then(text => {
         const format = detectFormat(displayTrack.lyricsUrl, text);
         let parsed = [];
@@ -181,7 +189,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
         setLyrics(parsed);
       })
       .catch(err => {
-        console.error('Failed to load lyrics:', err);
+        console.warn('Failed to load lyrics:', err.message || err);
         setLyrics([]);
       });
   }, [displayTrack.lyricsUrl]);
@@ -253,10 +261,10 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
         <div className="flex items-center gap-3 w-1/3 min-w-0">
           <div className="w-12 h-12 bg-surface-container rounded-lg overflow-hidden shadow-sm border border-outline/10 flex-shrink-0">
             <img
-              className="object-cover w-full h-full"
+              className={`w-full h-full ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`}
               alt={displayTrack.title}
-              src={displayTrack.cover || defaultCover}
-              onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }}
+              src={displayTrack.cover || logoImg}
+              onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}
               width={48} height={48}
             />
           </div>

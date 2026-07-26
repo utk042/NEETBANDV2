@@ -47,20 +47,25 @@ export default function CourseCarousel({ lmsCourses = [] }) {
     ? classToSubjects[selectedClass]
     : existingSubjects;
 
+  const shouldInfiniteScroll = filteredCourses.length > 4;
+
   const repeatCount = React.useMemo(() => {
-    if (filteredCourses.length === 0) return 1;
+    if (!shouldInfiniteScroll || filteredCourses.length === 0) return 1;
     return Math.max(2, Math.ceil(12 / filteredCourses.length));
-  }, [filteredCourses]);
+  }, [filteredCourses, shouldInfiniteScroll]);
 
   const displayCourses = React.useMemo(() => {
+    if (!shouldInfiniteScroll) return filteredCourses;
     const arr = [];
     for (let i = 0; i < repeatCount; i++) {
       arr.push(...filteredCourses);
     }
     return arr;
-  }, [filteredCourses, repeatCount]);
+  }, [filteredCourses, repeatCount, shouldInfiniteScroll]);
 
   useEffect(() => {
+    if (!shouldInfiniteScroll || filteredCourses.length === 0) return;
+
     let intervalId;
     const scrollContainer = scrollRef.current;
     
@@ -108,7 +113,7 @@ export default function CourseCarousel({ lmsCourses = [] }) {
         scrollContainer.removeEventListener('touchend', handleInteractionEnd);
       }
     };
-  }, [filteredCourses]);
+  }, [filteredCourses, shouldInfiniteScroll, repeatCount]);
 
   const scrollLeft = () => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
@@ -214,13 +219,17 @@ export default function CourseCarousel({ lmsCourses = [] }) {
         </div>
 
         <div className="relative group/carousel">
-          <button onClick={scrollLeft} className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-surface-container-highest transition-all shadow-lg text-on-surface cursor-pointer hidden md:flex">
-            <IconChevronLeft size={24} />
-          </button>
-          
-          <button onClick={scrollRight} className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-surface-container-highest transition-all shadow-lg text-on-surface cursor-pointer hidden md:flex">
-            <IconChevronRight size={24} />
-          </button>
+          {shouldInfiniteScroll && (
+            <>
+              <button onClick={scrollLeft} className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-surface-container-highest transition-all shadow-lg text-on-surface cursor-pointer hidden md:flex">
+                <IconChevronLeft size={24} />
+              </button>
+              
+              <button onClick={scrollRight} className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-container border border-[var(--border-floating-card)] flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-surface-container-highest transition-all shadow-lg text-on-surface cursor-pointer hidden md:flex">
+                <IconChevronRight size={24} />
+              </button>
+            </>
+          )}
 
           <div 
             ref={scrollRef} 

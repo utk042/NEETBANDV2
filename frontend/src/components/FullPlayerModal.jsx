@@ -4,7 +4,7 @@ import {
   IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
   IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture, IconMusic
 } from '@tabler/icons-react';
-import defaultCover from '../assets/dna_replication_thumbnail.png';
+import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 
@@ -203,8 +203,16 @@ export default function FullPlayerModal({ isOpen, onClose }) {
       return 'plain';
     };
 
-    fetch(displayTrack.lyricsUrl)
-      .then(res => res.text())
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const lyricsUrl = displayTrack.lyricsUrl.startsWith('http://') || displayTrack.lyricsUrl.startsWith('https://') || displayTrack.lyricsUrl.startsWith('blob:')
+      ? displayTrack.lyricsUrl
+      : `${API_URL}${displayTrack.lyricsUrl.startsWith('/') ? '' : '/'}${displayTrack.lyricsUrl}`;
+
+    fetch(lyricsUrl)
+      .then(res => {
+        if (!res.ok) throw new Error(`Lyrics file not found (status ${res.status})`);
+        return res.text();
+      })
       .then(text => {
         const format = detectFormat(displayTrack.lyricsUrl, text);
         let parsed = [];
@@ -215,7 +223,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         setLyrics(parsed);
       })
       .catch(err => {
-        console.error('Failed to load lyrics:', err);
+        console.warn('Failed to load lyrics:', err.message || err);
         setLyrics([]);
       });
   }, [displayTrack?.lyricsUrl]);
@@ -372,10 +380,10 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col items-center justify-center py-2">
           <div className="w-[75vw] max-w-[360px] md:max-w-[460px] aspect-square bg-black rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-floating-card)] relative shrink min-h-0">
             <img 
-              src={displayTrack.cover || defaultCover} 
+              src={displayTrack.cover || logoImg} 
               alt={displayTrack.title} 
-              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${(showLyrics && lyrics.length > 0) ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
-              onError={(e) => { e.target.onerror = null; e.target.src = defaultCover; }} />
+              className={`absolute inset-0 w-full h-full ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-8' : 'object-cover'} transition-all duration-700 ease-in-out ${(showLyrics && lyrics.length > 0) ? 'scale-110 blur-xl brightness-[0.25]' : 'scale-100 blur-0 brightness-100'}`} 
+              onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.classList.remove('object-cover'); e.target.classList.add('object-contain', 'p-8'); }} />
             
             {/* Lyrics Overlay */}
             <div 

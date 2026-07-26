@@ -27,7 +27,10 @@ const adConfigSchema = new mongoose.Schema({
   },
   guestAdUrl: {
     type: String,
-    default: 'C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg',
+    // Fallback: the bundled ad file served via backend /uploads static route.
+    // Override anytime via Admin panel → Upload a new file → saves to DB.
+    // The frontend prefixes API_URL when the value starts with '/' (relative path).
+    default: '/uploads/post_roll_ad.mp3',
   },
 }, { timestamps: true });
 

@@ -12,8 +12,8 @@ export const getDashboardStats = async (req, res) => {
     
     const songs = await Song.find({});
     const totalTracks = songs.length;
-    const premiumTracks = songs.filter(s => s.isPremium).length;
-    const freeTracks = totalTracks - premiumTracks;
+    const studyTracks = songs.filter(s => s.songType === 'Study' || !s.songType).length;
+    const normalTracks = totalTracks - studyTracks;
     
     const learningModules = await Course.countDocuments();
     const quizzes = await Quiz.countDocuments();
@@ -45,8 +45,10 @@ export const getDashboardStats = async (req, res) => {
       totalStudents,
       teachers,
       totalTracks,
-      premiumTracks,
-      freeTracks,
+      studyTracks,
+      normalTracks,
+      premiumTracks: studyTracks, // mapped for legacy references
+      freeTracks: normalTracks,
       learningModules,
       quizzes,
       completionRate,

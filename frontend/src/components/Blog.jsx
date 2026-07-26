@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { IconArrowRight, IconCalendarEvent, IconClock, IconArrowLeft, IconHeart, IconMessageCircle, IconUser, IconShare } from '@tabler/icons-react';
 import api from '../services/api';
 
@@ -234,7 +234,7 @@ export default function Blog({ user }) {
               </form>
             ) : (
               <div className="bg-surface-container-low border border-[var(--border-floating-card)] rounded-xl p-4 text-center mb-8">
-                <p className="text-on-surface-variant/80 text-sm">Please log in to join the discussion.</p>
+                <p className="text-on-surface-variant/80 text-sm">Please <Link to="/login" className="text-primary font-semibold hover:underline">log in</Link> to join the discussion.</p>
               </div>
             )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
+import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
@@ -95,12 +96,12 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
           transform-origin: bottom;
         }
       `}</style>
-      <section id="syllabus-library" className="py-32 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
+      <section id="syllabus-library" className="pt-6 pb-16 md:pt-10 md:pb-24 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
       
 
       
       <div className="max-w-container-max mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:mb-10 gap-6">
           <div data-gsap="syllabus-heading">
             <h2 className="font-headline-lg font-bold text-headline-lg-mobile md:text-4xl text-on-surface mb-3 text-balance">Study Songs</h2>
             <p className="font-body-md font-normal text-lg text-on-surface-variant opacity-80">Master the NEET syllabus with immersive audio tracks.</p>
@@ -227,7 +228,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
               <div className="flex items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-12 h-12 md:w-20 md:h-20 bg-white/10 rounded-xl overflow-hidden flex-shrink-0 border border-white/20 shadow-sm relative group">
-                    <img className="object-cover w-full h-full transform transition-transform duration-700 group-hover:scale-105" alt={displayTrack.title} src={displayTrack.cover || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCA0MDAgNDAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzFhMWExYSIvPjwvc3ZnPg=='} width={80} height={80}/>
+                    <img className={`w-full h-full transform transition-transform duration-700 group-hover:scale-105 ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-2 bg-black/20' : 'object-cover'}`} alt={displayTrack.title} src={displayTrack.cover || logoImg} width={80} height={80} onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full transform transition-transform duration-700 group-hover:scale-105 object-contain p-2 bg-black/20'; }}/>
                     <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none"></div>
                   </div>
                   
@@ -411,14 +412,12 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                     isCurrent 
                       ? 'bg-primary/12 dark:bg-primary/18 border-primary/45 shadow-[0_2px_12px_rgba(201,162,39,0.08)]' 
                       : 'bg-transparent border-[var(--border-nav-layout)]/65 hover:bg-surface-container-low/50'
-                  } ${
-                    track.premium ? 'opacity-85 hover:opacity-100' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 pr-2">
                     {/* Play/Pause hover image overlay */}
                     <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block group-hover:scale-105 transition-transform">
-                      <img className="object-cover w-full h-full" alt={track.title} src={track.cover} width={40} height={40} loading="lazy"/>
+                      <img className={`w-full h-full ${(!track.cover || track.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} alt={track.title} src={track.cover || logoImg} width={40} height={40} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}/>
                       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-black/60' : 'bg-black/30 group-hover:bg-black/50'}`}>
                         {isCurrent && isPlaying ? (
                           <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />
@@ -432,11 +431,6 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="font-headline-md text-[15px] md:text-base group-hover:text-primary transition-colors font-bold flex items-center gap-2 truncate">
                         <span className={`truncate ${isCurrent ? 'text-primary' : 'text-on-surface'}`}>{track.title}</span>
-                        {track.premium && (
-                          <span className="px-1.5 py-[1px] rounded-lg text-[8px] bg-primary/10 text-primary border border-primary/20 tracking-wider flex-shrink-0 font-normal hidden sm:inline-block">
-                            PREMIUM
-                          </span>
-                        )}
                       </div>
                       <span className="text-xs text-on-surface-variant/70 md:hidden mt-0.5 truncate">{track.subject} • {track.duration || '0:00'}</span>
                     </div>

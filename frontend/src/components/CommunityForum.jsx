@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { IconMessageCircle, IconSend, IconUser, IconSearch, IconHeart, IconPaperclip, IconChartBar, IconPlus, IconX } from '@tabler/icons-react';
 import api from '../services/api';
 import BlogEditor from './Admin/BlogEditor';
@@ -295,7 +296,9 @@ export default function CommunityForum({ user }) {
                         </form>
                       ) : (
                         <div className="bg-surface-container rounded-xl p-4 text-center">
-                          <p className="font-label-md text-xs font-bold text-primary">Log in to participate</p>
+                          <p className="font-label-md text-xs font-bold text-primary">
+                            Please <Link to="/login" className="underline hover:text-primary-fixed cursor-pointer transition-colors">log in</Link> to participate
+                          </p>
                         </div>
                       )}
                     </div>

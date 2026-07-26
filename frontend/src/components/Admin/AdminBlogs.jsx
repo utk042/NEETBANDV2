@@ -8,15 +8,17 @@ import { useDialog } from '../../contexts/DialogContext';
 
 const getErrorMessage = (error) => {
   if (!error) return "Unknown error occurred";
-  try {
-    const parsed = JSON.parse(error.message);
-    if (parsed && parsed.message) {
-      return parsed.message;
+  if (typeof error === 'string') return error;
+  if (error.message) {
+    try {
+      const parsed = JSON.parse(error.message);
+      if (parsed && parsed.message) return parsed.message;
+    } catch (e) {
+      return error.message;
     }
-  } catch (e) {
-    // Not a JSON string
+    return error.message;
   }
-  return error.message || String(error);
+  return String(error);
 };
 
 export default function AdminBlogs() {

@@ -9,6 +9,7 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
   
@@ -31,7 +32,7 @@ export default function ResetPassword() {
 
     try {
       // 1. Update password in Supabase
-      const { data, error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
       // 2. Fetch session to exchange token
@@ -103,17 +104,26 @@ export default function ResetPassword() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 relative">
             <label className="font-label-md text-sm font-semibold text-on-surface-variant">Confirm New Password</label>
-            <input 
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm password"
-              disabled={isLoading}
-              className="w-full px-4 py-3 rounded-xl bg-surface-container border border-[var(--border-floating-card)] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-body-md"
-            />
+            <div className="relative w-full">
+              <input 
+                type={showConfirmPassword ? 'text' : 'password'}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm password"
+                disabled={isLoading}
+                className="w-full px-4 py-3 pr-11 rounded-xl bg-surface-container border border-[var(--border-floating-card)] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-body-md"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface focus:outline-none p-1 rounded"
+              >
+                {showConfirmPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button 
