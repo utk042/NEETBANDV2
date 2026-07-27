@@ -180,7 +180,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
         <button
           key={qIdx}
           onClick={() => setCurrentQuizQuestionIdx(qIdx)}
-          className={`w-9 h-9 rounded-lg border text-[11px] font-bold transition-all duration-150 flex items-center justify-center ${circleStyle} ${
+          className={`w-9 h-9 shrink-0 rounded-lg border text-[11px] font-bold transition-all duration-150 flex items-center justify-center ${circleStyle} ${
             isActive ? 'ring-2 ring-amber-500' : ''
           }`}
         >
@@ -299,7 +299,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
               </button>
             )}
           </div>
-          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 max-h-36 overflow-y-auto p-1 pr-1.5 scrollbar-thin">
+          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 shrink-0 max-w-full">
             {renderPaletteButtons()}
           </div>
         </div>
@@ -506,22 +506,22 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-col w-full lg:w-56 shrink-0 rounded-2xl border border-outline/10 bg-surface-container-low/30 p-4 max-h-[calc(100vh-220px)] sticky top-4">
-        <div className="flex items-center justify-between border-b border-outline/5 pb-2 mb-3 shrink-0">
+      <div className="hidden lg:block w-full lg:w-56 shrink-0 rounded-2xl border border-outline/10 bg-surface-container-low/30 p-4 space-y-4">
+        <div className="flex items-center justify-between border-b border-outline/5 pb-2">
           <span className="text-xs font-extrabold text-on-surface uppercase tracking-wider">Question Palette</span>
-          <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md font-mono">
+          <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
             {Object.keys(quizAnswers).length}/{activeDetails.questions.length}
           </span>
         </div>
 
-        <div className="grid grid-cols-5 gap-2.5 overflow-y-auto max-h-[340px] p-1 pr-1.5 scrollbar-thin flex-1">
+        <div className="grid grid-cols-5 gap-3">
           {renderPaletteButtons()}
         </div>
 
         {!quizSubmitted && (
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500 text-amber-400 hover:text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm mt-4 shrink-0"
+            className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500 text-amber-400 hover:text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm mt-3"
           >
             <IconSend size={14} /> Submit Quiz
           </button>
