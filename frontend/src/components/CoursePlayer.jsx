@@ -55,6 +55,15 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const [folderSubjectIdx, setFolderSubjectIdx] = useState(null);
   const [folderChapterIdx, setFolderChapterIdx] = useState(null);
 
+  // Reset folder drill-down when returning to overview mode
+  useEffect(() => {
+    if (selectedSubjectIdx === null) {
+      setFolderLevel('chapters');
+      setFolderSubjectIdx(null);
+      setFolderChapterIdx(null);
+    }
+  }, [selectedSubjectIdx]);
+
   useEffect(() => {
     if (user && course && selectedSubjectIdx !== null && selectedChapterIdx !== null && selectedItemIdx !== null) {
       const subject = course.subjects?.[selectedSubjectIdx];
@@ -70,42 +79,79 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   }, [user, course, selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, completedItems, courseId]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(() => {
+    if (typeof document !== 'undefined') {
+      const h = document.querySelector('header[data-gsap="header"]');
+      if (h) return h.getBoundingClientRect().height || h.offsetHeight || 88;
+    }
+    return 88;
+  });
 
   useEffect(() => {
-    let currentHeader = document.querySelector('header[data-gsap="header"]');
-    const update = () => {
-      const h = document.querySelector('header[data-gsap="header"]');
-      setHeaderHeight(h ? h.offsetHeight : 0);
-    };
-    
-    setTimeout(update, 50);
-    update();
+    const isOverview = selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null;
 
-    const ro = new ResizeObserver(update);
-    if (currentHeader) ro.observe(currentHeader);
-    
-    // Observe only the header's direct parent — NOT document.body.
-    // Watching all of document.body fires on every DOM change in the app,
-    // causing severe layout thrash. The header lives in a stable parent container;
-    // if it ever gets swapped, only its sibling list changes, not the whole tree.
-    const observationTarget = currentHeader?.parentElement || document.documentElement;
-    const mo = new MutationObserver(() => {
+    const measureHeader = () => {
+      if (!isOverview) {
+        setHeaderHeight(0);
+        return;
+      }
+
       const h = document.querySelector('header[data-gsap="header"]');
-      if (h !== currentHeader) {
-        if (currentHeader) ro.unobserve(currentHeader);
-        currentHeader = h;
-        if (currentHeader) ro.observe(currentHeader);
-        update();
+      if (h) {
+        const rect = h.getBoundingClientRect();
+        const height = rect.height || h.offsetHeight;
+        if (height > 0) {
+          setHeaderHeight(height);
+        } else {
+          setHeaderHeight(88);
+        }
+      } else {
+        setHeaderHeight(88);
+      }
+    };
+
+    measureHeader();
+
+    // Staggered timers to capture async news banner loading, image/font loading, GSAP transitions
+    const timers = [20, 100, 250, 500, 1000].map(delay => setTimeout(measureHeader, delay));
+
+    let ro = null;
+    const h = document.querySelector('header[data-gsap="header"]');
+    if (h && window.ResizeObserver) {
+      ro = new ResizeObserver(measureHeader);
+      ro.observe(h);
+    }
+
+    // Observe DOM mutations in case header node mounts/unmounts or content changes
+    const mo = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const m of mutations) {
+        if (m.type === 'childList' || m.type === 'attributes') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        measureHeader();
+        const newH = document.querySelector('header[data-gsap="header"]');
+        if (newH && newH !== h && window.ResizeObserver) {
+          if (ro) ro.disconnect();
+          ro = new ResizeObserver(measureHeader);
+          ro.observe(newH);
+        }
       }
     });
-    mo.observe(observationTarget, { childList: true });
+
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    window.addEventListener('resize', measureHeader);
 
     return () => {
-      ro.disconnect();
+      timers.forEach(clearTimeout);
+      if (ro) ro.disconnect();
       mo.disconnect();
+      window.removeEventListener('resize', measureHeader);
     };
-  }, []); // Run once on mount — the header element itself doesn't change between lessons
+  }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, courseId]);
 
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeDetails, setActiveDetails] = useState(null);
@@ -587,7 +633,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           onUpgradeClick={onUpgradeClick}
         />
 
-        <main data-gsap="player-main" className="flex-1 overflow-y-auto bg-surface p-4 sm:p-6 lg:p-10 pb-32 sm:pb-40">
+        <main data-gsap="player-main" className="flex-1 overflow-y-auto bg-surface p-3 sm:p-6 lg:p-10 pb-24 sm:pb-36">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-3 mb-5 pb-4 border-b border-outline/10">
               <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${meta.bg}`}>

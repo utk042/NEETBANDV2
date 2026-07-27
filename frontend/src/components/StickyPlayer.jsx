@@ -12,7 +12,7 @@ import { useUserAuth } from '../contexts/UserAuthContext';
 
 export default function StickyPlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, isPlaying, currentTime, isMuted, setIsMuted, volume, setVolume,
+    currentTrack, globalTracks, isPlaying, currentTime, isMuted, setIsMuted, volume, setVolume,
     togglePlay, handleNext, handlePrev, handleSeek,
     favoritedTrackIds, toggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
@@ -22,13 +22,13 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
 
   const [lyrics, setLyrics] = React.useState([]);
 
-  const displayTrack = currentTrack || {
-    title: "DNA Replication Mnemonic",
-    chapter: "Molecular Basis of Inheritance",
+  const displayTrack = currentTrack || (globalTracks && globalTracks.length > 0 ? globalTracks[0] : {
+    title: "No Track Selected",
+    chapter: "Select a track to start listening",
     cover: logoImg,
-    duration: "6:12",
-    durationSeconds: 372
-  };
+    duration: "0:00",
+    durationSeconds: 0
+  });
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);

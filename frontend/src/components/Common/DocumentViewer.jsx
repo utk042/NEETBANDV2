@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { IconLoader2, IconAlertCircle } from '@tabler/icons-react';
 import mammoth from 'mammoth/mammoth.browser';
@@ -68,13 +69,15 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
           loading={
             <div className="flex flex-col items-center justify-center py-20 text-center w-full">
               <IconLoader2 className="animate-spin text-primary mb-3" size={32} />
-              <p className="text-sm text-on-surface-variant">Loading document...</p>
+              <p className="text-sm text-on-surface-variant">Loading notes...</p>
             </div>
           }
           error={
             <div className="flex flex-col items-center justify-center py-20 text-center w-full">
               <IconAlertCircle className="text-error mb-3" size={32} />
-              <p className="text-sm text-on-surface-variant">Failed to load document. Please try again later.</p>
+              <p className="text-sm text-on-surface-variant">
+                Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+              </p>
             </div>
           }
           className="w-full flex flex-col items-center"
@@ -100,12 +103,14 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
         {docLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-center w-full h-full">
             <IconLoader2 className="animate-spin text-primary mb-3" size={32} />
-            <p className="text-sm text-on-surface-variant">Loading document...</p>
+            <p className="text-sm text-on-surface-variant">Loading notes...</p>
           </div>
         ) : docError ? (
           <div className="flex flex-col items-center justify-center py-20 text-center w-full h-full">
             <IconAlertCircle className="text-error mb-3" size={32} />
-            <p className="text-sm text-on-surface-variant">Failed to load document. Please try again later.</p>
+            <p className="text-sm text-on-surface-variant">
+              Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+            </p>
           </div>
         ) : (
           <div 

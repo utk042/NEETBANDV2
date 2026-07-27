@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import LMSLogin from '../components/Admin/LMSLogin';
 import AdminDashboard from '../components/Admin/AdminDashboard';
-import ProtectedRoute from '../components/ProtectedRoute';
+import ProtectedRoute, { PublicOnlyRoute } from '../components/ProtectedRoute';
 import { useLmsAuth } from '../contexts/LmsAuthContext';
 import NotFound from '../components/NotFound';
 
@@ -29,17 +29,20 @@ export default function LmsRoutes() {
 
   return (
     <Routes>
-      <Route path="/lms-login" element={
-        <LMSLogin 
-          onLoginSuccess={(sessionUser) => {
-            login(sessionUser);
-            navigate('/lms');
-          }} 
-          navigate={navigate} 
-        />
+      <Route path="/lms/login" element={
+        <PublicOnlyRoute isLoggedIn={lmsUser?.isLoggedIn} isAuthLoading={isAuthLoading} redirectTo="/lms">
+          <LMSLogin 
+            onLoginSuccess={(sessionUser) => {
+              login(sessionUser);
+              navigate('/lms');
+            }} 
+            navigate={navigate} 
+          />
+        </PublicOnlyRoute>
       } />
+      <Route path="/lms-login" element={<Navigate to="/lms/login" replace />} />
       <Route path="/lms" element={
-        <ProtectedRoute isLoggedIn={lmsUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="LMS" loginRoute="/lms-login">
+        <ProtectedRoute isLoggedIn={lmsUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="LMS" loginRoute="/lms/login">
           <AdminDashboard user={lmsUser} theme={theme} setTheme={setTheme} />
         </ProtectedRoute>
       } />

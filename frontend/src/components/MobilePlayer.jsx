@@ -6,16 +6,16 @@ import { usePlayer } from '../contexts/PlayerContext';
 
 export default function MobilePlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, isPlaying, currentTime, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
+    currentTrack, globalTracks, isPlaying, currentTime, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
     playbackError, retryPlayback
   } = usePlayer();
 
-  const displayTrack = currentTrack || {
-    title: "Mendelian Genetics Anthem",
-    chapter: "Biology • Genetics & Evolution",
+  const displayTrack = currentTrack || (globalTracks && globalTracks.length > 0 ? globalTracks[0] : {
+    title: "No Track Selected",
+    chapter: "Select a track to start listening",
     cover: logoImg,
-    durationSeconds: 260
-  };
+    durationSeconds: 0
+  });
 
   const currentSeconds = currentTime || 0;
   const totalSeconds = displayTrack.durationSeconds || 260;

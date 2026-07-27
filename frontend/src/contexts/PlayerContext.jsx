@@ -396,7 +396,12 @@ export function PlayerProvider({ children, user }) {
   }, []);
 
   const togglePlay = useCallback(() => {
-    if (!currentTrack?.audioUrl) return;
+    const trackToPlay = currentTrack || (globalTracks.length > 0 ? globalTracks[0] : null);
+    if (!trackToPlay || !trackToPlay.audioUrl) return;
+    if (!currentTrack) {
+      playWithAds(trackToPlay);
+      return;
+    }
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -404,7 +409,7 @@ export function PlayerProvider({ children, user }) {
       audioRef.current?.play().catch(() => setIsPlaying(false));
       setIsPlaying(true);
     }
-  }, [isPlaying, currentTrack]);
+  }, [isPlaying, currentTrack, globalTracks, playWithAds]);
 
   const handleTrackSelect = useCallback((track) => {
     if (currentTrack?.id === track.id) {

@@ -1,20 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { IconAlertCircle, IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  IconAlertCircle, 
+  IconArrowLeft, 
+  IconArrowRight, 
+  IconCheck
+} from '@tabler/icons-react';
+import MathMarkdownContent from './MathMarkdownContent';
 
 export default React.memo(function FlashcardViewer({ activeDetails }) {
   const [flashcardIdx, setFlashcardIdx] = useState(0);
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const [mastered, setMastered] = useState({});
+  const touchStartX = useRef(null);
 
   useEffect(() => {
     setFlashcardIdx(0);
     setFlashcardFlipped(false);
+    setMastered({});
   }, [activeDetails]);
 
   if (!activeDetails?.qas || activeDetails.qas.length === 0) {
     return (
-      <div className="text-center py-10 border border-dashed border-outline/20 rounded-xl">
-        <IconAlertCircle className="mx-auto text-on-surface-variant/40 mb-2" size={24} />
-        <p className="text-sm text-on-surface-variant">This Q&amp;A has no content yet.</p>
+      <div className="text-center py-12 px-4 border border-dashed border-outline/20 rounded-2xl bg-surface-container-low/50">
+        <IconAlertCircle className="mx-auto text-on-surface-variant/40 mb-3" size={32} />
+        <p className="text-sm font-semibold text-on-surface">No Q&amp;As Available</p>
+        <p className="text-xs text-on-surface-variant/60 mt-1">This flashcard deck has no questions added yet.</p>
       </div>
     );
   }
@@ -22,18 +32,44 @@ export default React.memo(function FlashcardViewer({ activeDetails }) {
   const qas = activeDetails.qas;
   const total = qas.length;
   const pair = qas[flashcardIdx];
+  const isMastered = !!mastered[flashcardIdx];
 
   const goNext = (e) => {
     e?.stopPropagation();
-    setFlashcardFlipped(false);
-    setTimeout(() => setFlashcardIdx(i => Math.min(i + 1, total - 1)), 100);
+    if (flashcardIdx < total - 1) {
+      setFlashcardFlipped(false);
+      setTimeout(() => setFlashcardIdx(i => Math.min(i + 1, total - 1)), 60);
+    }
   };
 
   const goPrev = (e) => {
     e?.stopPropagation();
-    setFlashcardFlipped(false);
-    setTimeout(() => setFlashcardIdx(i => Math.max(i - 1, 0)), 100);
+    if (flashcardIdx > 0) {
+      setFlashcardFlipped(false);
+      setTimeout(() => setFlashcardIdx(i => Math.max(i - 1, 0)), 60);
+    }
   };
+
+  const toggleMastered = (e) => {
+    e?.stopPropagation();
+    setMastered(prev => ({ ...prev, [flashcardIdx]: !prev[flashcardIdx] }));
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const diffX = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diffX) > 40) {
+      if (diffX < 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = null;
+  };
+
+  const masteredCount = Object.values(mastered).filter(Boolean).length;
 
   return (
     <div
@@ -43,152 +79,138 @@ export default React.memo(function FlashcardViewer({ activeDetails }) {
         else if (e.key === ' ') { e.preventDefault(); setFlashcardFlipped(f => !f); }
       }}
       tabIndex={0}
-      className="outline-none"
+      className="outline-none max-w-2xl mx-auto w-full flex flex-col select-none"
       aria-label="Flashcard viewer"
     >
-      <div className="flex gap-1 mb-5" aria-hidden="true">
-        {qas.map((_, i) => (
+      {/* Progress & Deck Status Bar */}
+      <div className="mb-3 space-y-2">
+        <div className="flex items-center justify-between text-xs font-semibold text-on-surface-variant">
+          <div className="flex items-center gap-2">
+            <span className="text-primary font-mono font-bold tracking-wider">CARD {flashcardIdx + 1} OF {total}</span>
+            {masteredCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px]">
+                {masteredCount} Mastered
+              </span>
+            )}
+          </div>
           <button
-            key={i}
-            className={`fc-seg${i === flashcardIdx ? ' active' : i < flashcardIdx ? ' done' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setFlashcardFlipped(false); setFlashcardIdx(i); }}
-            tabIndex={-1}
-            aria-label={`Card ${i + 1}`}
-          />
-        ))}
+            onClick={toggleMastered}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 active:scale-95 ${
+              isMastered
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                : 'bg-surface-container-high/60 border-outline/10 text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconCheck size={13} className={isMastered ? 'opacity-100' : 'opacity-40'} />
+            {isMastered ? 'Learned' : 'Mark Learned'}
+          </button>
+        </div>
+
+        {/* Segmented Progress Line */}
+        <div className="flex gap-1" aria-hidden="true">
+          {qas.map((_, i) => (
+            <button
+              key={i}
+              className={`fc-seg${i === flashcardIdx ? ' active' : i < flashcardIdx ? ' done' : ''}${mastered[i] ? ' mastered' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setFlashcardFlipped(false); setFlashcardIdx(i); }}
+              tabIndex={-1}
+              aria-label={`Go to card ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="flashcard-scene">
-        <div
-          className={`flashcard-card${flashcardFlipped ? ' is-flipped' : ''}`}
-          onClick={() => setFlashcardFlipped(f => !f)}
-          role="button"
-          aria-pressed={flashcardFlipped}
-          aria-label={flashcardFlipped ? 'Showing answer — tap to see question' : 'Showing question — tap to reveal answer'}
+      {/* Main Flashcard Scene */}
+      <div className="relative">
+        {/* Flashcard 3D Scene */}
+        <div 
+          className="flashcard-scene"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
-          {/* FRONT — Question */}
           <div
-            className="flashcard-face border-l-2"
-            style={{
-              background: 'rgb(var(--color-surface-container) / 0.6)',
-              border: '1px solid rgb(var(--color-outline) / 0.1)',
-              borderLeftColor: 'rgb(var(--color-info))',
-              borderLeftWidth: '3px',
-            }}
+            className={`flashcard-card${flashcardFlipped ? ' is-flipped' : ''}`}
+            onClick={() => setFlashcardFlipped(f => !f)}
+            role="button"
+            aria-pressed={flashcardFlipped}
+            aria-label={flashcardFlipped ? 'Showing answer — tap to see question' : 'Showing question — tap to reveal answer'}
           >
-            <span style={{
-              position: 'absolute', top: '14px', right: '14px',
-              fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em',
-              color: 'rgb(var(--color-info))', opacity: 0.7,
-              padding: '2px 8px', borderRadius: '9999px',
-              border: '1px solid rgb(var(--color-info) / 0.2)',
-              background: 'rgb(var(--color-info) / 0.07)',
-              textTransform: 'uppercase',
-            }}>Q</span>
+            {/* FRONT — Question */}
+            <div className="flashcard-face flashcard-face--front">
+              {/* Top Card Badge Header */}
+              <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-outline/10 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                  <span className="text-[11px] font-bold tracking-wider text-indigo-400 uppercase font-mono">
+                    QUESTION
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-on-surface-variant/50">
+                  Tap to flip
+                </span>
+              </div>
 
-            <p style={{
-              fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)',
-              fontWeight: 600,
-              color: 'rgb(var(--color-on-surface))',
-              lineHeight: 1.55,
-              paddingRight: '2rem',
-            }}>
-              {pair.question}
-            </p>
+              {/* Question Content */}
+              <div className="flex-1 w-full min-h-0 overflow-y-auto show-scrollbar flex flex-col items-center justify-center p-2 text-center">
+                <div className="w-full text-center">
+                  <MathMarkdownContent content={pair?.question} className="text-center" />
+                </div>
+              </div>
+            </div>
 
-            <span style={{
-              marginTop: '1.25rem',
-              fontSize: '11px',
-              color: 'rgb(var(--color-on-surface-variant) / 0.35)',
-              letterSpacing: '0.02em',
-            }}>
-              Tap to reveal answer
-            </span>
-          </div>
+            {/* BACK — Answer */}
+            <div className="flashcard-face flashcard-face--back">
+              {/* Top Card Badge Header */}
+              <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-outline/10 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-[11px] font-bold tracking-wider text-emerald-400 uppercase font-mono">
+                    ANSWER
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-on-surface-variant/50">
+                  Tap to flip
+                </span>
+              </div>
 
-          {/* BACK — Answer */}
-          <div
-            className="flashcard-face"
-            style={{
-              background: 'rgb(var(--color-surface-container) / 0.6)',
-              border: '1px solid rgb(var(--color-outline) / 0.1)',
-              borderLeftColor: 'rgb(var(--color-success))',
-              borderLeftWidth: '3px',
-              transform: 'rotateY(180deg)',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: '14px', right: '14px',
-              fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em',
-              color: 'rgb(var(--color-success))', opacity: 0.7,
-              padding: '2px 8px', borderRadius: '9999px',
-              border: '1px solid rgb(var(--color-success) / 0.2)',
-              background: 'rgb(var(--color-success) / 0.07)',
-              textTransform: 'uppercase',
-            }}>A</span>
-
-            <p style={{
-              fontSize: 'clamp(0.875rem, 2.2vw, 1rem)',
-              color: 'rgb(var(--color-on-surface-variant))',
-              lineHeight: 1.7,
-              paddingRight: '2rem',
-            }}>
-              {pair.answer}
-            </p>
-
-            <span style={{
-              marginTop: '1.25rem',
-              fontSize: '11px',
-              color: 'rgb(var(--color-on-surface-variant) / 0.35)',
-              letterSpacing: '0.02em',
-            }}>
-              Tap to see question
-            </span>
+              {/* Answer Content */}
+              <div className="flex-1 w-full min-h-0 overflow-y-auto show-scrollbar flex flex-col items-center justify-center p-2 text-center">
+                <div className="w-full text-center">
+                  <MathMarkdownContent content={pair?.answer} className="text-center" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
+      {/* Bottom Compact Navigation Toolbar */}
+      <div className="flex items-center justify-between mt-3 px-1">
         <button
           onClick={goPrev}
           disabled={flashcardIdx === 0}
-          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-95"
-          style={{
-            background: 'rgb(var(--color-surface-container) / 0.5)',
-            border: '1px solid rgb(var(--color-outline) / 0.12)',
-            color: flashcardIdx === 0
-              ? 'rgb(var(--color-on-surface-variant) / 0.2)'
-              : 'rgb(var(--color-on-surface-variant) / 0.7)',
-            cursor: flashcardIdx === 0 ? 'not-allowed' : 'pointer',
-          }}
+          className="px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold bg-surface-container-high/80 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous card"
         >
-          <IconArrowLeft size={15} stroke={1.75} />
+          <IconArrowLeft size={15} stroke={2} />
+          <span>Prev</span>
         </button>
 
-        <span className="text-xs font-mono text-on-surface-variant/40 tabular-nums">
+        <span className="text-xs font-mono font-semibold text-on-surface-variant/60">
           {flashcardIdx + 1} / {total}
         </span>
 
         <button
           onClick={goNext}
           disabled={flashcardIdx === total - 1}
-          className="w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-95"
-          style={{
-            background: 'rgb(var(--color-surface-container) / 0.5)',
-            border: '1px solid rgb(var(--color-outline) / 0.12)',
-            color: flashcardIdx === total - 1
-              ? 'rgb(var(--color-on-surface-variant) / 0.2)'
-              : 'rgb(var(--color-on-surface-variant) / 0.7)',
-            cursor: flashcardIdx === total - 1 ? 'not-allowed' : 'pointer',
-          }}
+          className="px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold bg-surface-container-high/80 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next card"
         >
-          <IconArrowRight size={15} stroke={1.75} />
+          <span>Next</span>
+          <IconArrowRight size={15} stroke={2} />
         </button>
       </div>
     </div>
   );
 });
+

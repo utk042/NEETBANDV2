@@ -18,6 +18,7 @@ import {
   IconBuildingBank
 } from '@tabler/icons-react';
 import { getAffiliateDashboard, updateAffiliateProfile, requestAffiliateWithdrawal } from '../../services/api';
+import CustomSelect from '../ui/CustomSelect';
 import { useDialog } from '../../contexts/DialogContext';
 import EditProfileModal from '../Common/EditProfileModal';
 
@@ -59,7 +60,7 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
     if (user && user.isLoggedIn) {
       fetchData();
     } else {
-      navigate('/affiliate-login');
+      navigate('/affiliate/login');
     }
   }, [user?._id, user?.isLoggedIn, navigate]);
 
@@ -566,14 +567,11 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
 
               <div>
                 <label className="block text-sm font-semibold mb-1 text-on-surface">Payment Mode</label>
-                <select 
+                <CustomSelect 
                   value={paymentMode}
-                  onChange={(e) => setPaymentMode(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                >
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="UPI">UPI</option>
-                </select>
+                  onChange={(e) => setPaymentMode(e.value || e.target.value)}
+                  options={["Bank Transfer", "UPI"]}
+                />
               </div>
 
               <div>

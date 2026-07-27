@@ -6,10 +6,10 @@ import { usePlayer } from '../contexts/PlayerContext';
 export default function PlayerCard() {
   const { currentTrack, isPlaying, togglePlay, handleNext, handlePrev } = usePlayer();
 
-  // If no track is playing, show NeetBand Logo as fallback
+  // Fallback when no track is selected
   const displayTrack = currentTrack || {
-    title: "DNA Replication",
-    chapter: "Molecular Basis of Inheritance",
+    title: "No Track Selected",
+    chapter: "Select a track to start listening",
     cover: logoImg,
     premium: false
   };
@@ -82,15 +82,17 @@ export default function PlayerCard() {
         
         <div className="flex items-center justify-between px-2">
           <button 
-            onClick={handlePrev}
-            className="text-on-surface-variant hover:text-primary transition-colors p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full flex items-center justify-center" 
+            onClick={() => currentTrack && handlePrev()}
+            disabled={!currentTrack}
+            className={`text-on-surface-variant transition-colors p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full flex items-center justify-center ${!currentTrack ? 'opacity-40 cursor-not-allowed' : 'hover:text-primary'}`} 
             aria-label="Previous Track"
           >
             <IconPlayerSkipBackFilled size={28} className="block" />
           </button>
           <button 
-            onClick={togglePlay}
-            className="bg-primary text-on-primary rounded-full w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_20px_rgba(201,162,39,0.4)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            onClick={() => currentTrack && togglePlay()}
+            disabled={!currentTrack}
+            className={`bg-primary text-on-primary rounded-full w-16 h-16 flex items-center justify-center transition-transform shadow-[0_0_20px_rgba(201,162,39,0.4)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!currentTrack ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -100,8 +102,9 @@ export default function PlayerCard() {
             )}
           </button>
           <button 
-            onClick={handleNext}
-            className="text-on-surface-variant hover:text-primary transition-colors p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full flex items-center justify-center" 
+            onClick={() => currentTrack && handleNext()}
+            disabled={!currentTrack}
+            className={`text-on-surface-variant transition-colors p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full flex items-center justify-center ${!currentTrack ? 'opacity-40 cursor-not-allowed' : 'hover:text-primary'}`} 
             aria-label="Next Track"
           >
             <IconPlayerSkipForwardFilled size={28} className="block" />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { IconMessageCircle, IconSend, IconUser, IconSearch, IconHeart, IconPaperclip, IconChartBar, IconPlus, IconX } from '@tabler/icons-react';
 import api from '../services/api';
 import BlogEditor from './Admin/BlogEditor';
+import CustomSelect from './ui/CustomSelect';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -130,17 +131,17 @@ export default function CommunityForum({ user }) {
                 className="w-full bg-surface-container border border-[var(--border-floating-card)] rounded-xl pl-10 pr-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
               />
             </div>
-            <div className="w-full sm:w-auto flex items-center gap-2 shrink-0">
-              <label className="font-label-md text-on-surface-variant text-sm font-bold">Sort By:</label>
-              <select
+            <div className="w-full sm:w-auto flex items-center gap-2 shrink-0 min-w-[200px]">
+              <label className="font-label-md text-on-surface-variant text-sm font-bold shrink-0">Sort By:</label>
+              <CustomSelect
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-surface-container border border-[var(--border-floating-card)] rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none pr-10 cursor-pointer"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="most_comments">Most Comments</option>
-              </select>
+                onChange={(e) => setSortBy(e.value || e.target.value)}
+                options={[
+                  { label: "Newest", value: "newest" },
+                  { label: "Oldest", value: "oldest" },
+                  { label: "Most Comments", value: "most_comments" }
+                ]}
+              />
             </div>
           </div>
 

@@ -23,3 +23,24 @@ export default function ProtectedRoute({
 
   return children;
 }
+
+export function PublicOnlyRoute({
+  isAuthLoading,
+  isLoggedIn,
+  children,
+  redirectTo = '/'
+}) {
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
+      </div>
+    );
+  }
+
+  if (isLoggedIn) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  return children;
+}

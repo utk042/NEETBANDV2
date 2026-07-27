@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import AffiliateLogin from '../components/Affiliate/AffiliateLogin';
 import AffiliateDashboard from '../components/Affiliate/AffiliateDashboard';
-import ProtectedRoute from '../components/ProtectedRoute';
+import ProtectedRoute, { PublicOnlyRoute } from '../components/ProtectedRoute';
 import { useAffiliateAuth } from '../contexts/AffiliateAuthContext';
 import NotFound from '../components/NotFound';
 import { updateAffiliateProfile } from '../services/api';
@@ -66,19 +66,21 @@ export default function AffiliateRoutes() {
 
   return (
     <Routes>
-      <Route path="/affiliate-login" element={
-        <AffiliateLogin 
-          onLoginSuccess={(sessionUser) => {
-            login(sessionUser);
-            navigate('/affiliate');
-          }} 
-          navigate={navigate} 
-        />
+      <Route path="/affiliate/login" element={
+        <PublicOnlyRoute isLoggedIn={affiliateUser?.isLoggedIn} isAuthLoading={isAuthLoading} redirectTo="/affiliate">
+          <AffiliateLogin 
+            onLoginSuccess={(sessionUser) => {
+              login(sessionUser);
+              navigate('/affiliate');
+            }} 
+            navigate={navigate} 
+          />
+        </PublicOnlyRoute>
       } />
-      <Route path="/login" element={<Navigate to="/affiliate-login" replace />} />
-      <Route path="/affiliate/login" element={<Navigate to="/affiliate-login" replace />} />
+      <Route path="/affiliate-login" element={<Navigate to="/affiliate/login" replace />} />
+      <Route path="/login" element={<Navigate to="/affiliate/login" replace />} />
       <Route path="/affiliate" element={
-        <ProtectedRoute isLoggedIn={affiliateUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Affiliate" loginRoute="/affiliate-login">
+        <ProtectedRoute isLoggedIn={affiliateUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Affiliate" loginRoute="/affiliate/login">
           <AffiliateDashboard 
             user={displayUser} 
             onUserUpdate={handleUserUpdate}

@@ -53,7 +53,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-          <div className="overflow-y-auto max-h-48">
+          <div className="overflow-y-auto max-h-48 no-scrollbar">
             <div 
               className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${!value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
               onClick={() => { onChange(''); setIsOpen(false); }}

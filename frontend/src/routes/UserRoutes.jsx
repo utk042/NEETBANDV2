@@ -30,7 +30,7 @@ import CourseCarousel from '../components/CourseCarousel';
 const LibraryPage = lazyWithRetry(() => import('../components/LibraryPage'));
 const SongLibrary = lazyWithRetry(() => import('../components/SongLibrary'));
 import GoToTop from '../components/GoToTop';
-import ProtectedRoute from '../components/ProtectedRoute';
+import ProtectedRoute, { PublicOnlyRoute } from '../components/ProtectedRoute';
 const CommunityForum = lazyWithRetry(() => import('../components/CommunityForum'));
 const CoursePlayer = lazyWithRetry(() => import('../components/CoursePlayer'));
 const Checkout = lazyWithRetry(() => import('../components/Checkout'));
@@ -242,17 +242,21 @@ export default function UserRoutes() {
             <Route path="/privacy" element={<DataPolicy />} />
             <Route path="/refund" element={<RefundPolicy />} />
 
-            <Route path="/login" element={<LoginSignup onLoginSuccess={(sessionUser) => {
-                login(sessionUser);
-                if (postLoginRedirect) {
-                  navigate(`/${postLoginRedirect}`);
-                  setPostLoginRedirect(null);
-                } else if (location.state?.from?.pathname) {
-                  navigate(location.state.from.pathname);
-                } else {
-                  navigate('/dashboard');
-                }
-              }} navigate={navigate} />} />
+            <Route path="/login" element={
+              <PublicOnlyRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} redirectTo="/dashboard">
+                <LoginSignup onLoginSuccess={(sessionUser) => {
+                    login(sessionUser);
+                    if (postLoginRedirect) {
+                      navigate(`/${postLoginRedirect}`);
+                      setPostLoginRedirect(null);
+                    } else if (location.state?.from?.pathname) {
+                      navigate(location.state.from.pathname);
+                    } else {
+                      navigate('/dashboard');
+                    }
+                  }} navigate={navigate} />
+              </PublicOnlyRoute>
+            } />
 
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />

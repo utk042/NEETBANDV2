@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
-import { IconSend, IconMessageCircle, IconMail, IconPhone, IconChevronDown } from '@tabler/icons-react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { IconSend, IconMessageCircle, IconMail, IconPhone } from '@tabler/icons-react';
 import { createContactMessage } from '../services/api';
+import CustomSelect from './ui/CustomSelect';
 
 export default function ContactUs() {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
+    subject: location.state?.subject || '',
     message: ''
   });
+
+  useEffect(() => {
+    if (location.state?.subject) {
+      setFormData(prev => ({ ...prev, subject: location.state.subject }));
+    }
+  }, [location.state]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -88,11 +97,18 @@ export default function ContactUs() {
             </div>
 
             <div className="bg-primary/5 rounded-3xl border border-primary/20 p-8">
-              <h3 className="font-headline-md text-lg font-bold text-on-surface mb-2">Educators & Schools</h3>
+              <h3 className="font-headline-md text-lg font-bold text-on-surface mb-2">Need Immediate Help?</h3>
               <p className="font-body-md text-sm text-on-surface-variant mb-4">
-                Interested in bringing NeetBand to your classroom? We offer special institutional pricing and LMS integration.
+                Have questions about subscriptions, audio tracks, or payments? Chat with us directly on WhatsApp or drop us an email.
               </p>
-              <a href="#" className="font-label-md text-sm font-bold text-primary hover:underline">View Institutional Plans &rarr;</a>
+              <a 
+                href="https://wa.me/918047193393" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="font-label-md text-sm font-bold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                Chat on WhatsApp &rarr;
+              </a>
             </div>
           </div>
 
@@ -149,26 +165,23 @@ export default function ContactUs() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="subject" className="font-label-md text-sm font-semibold text-on-surface-variant">Subject</label>
-                  <div className="relative w-full">
-                    <select 
-                      id="subject" 
-                      name="subject"
-                      required
-                      value={formData.subject}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl bg-surface-container border border-[var(--border-floating-card)] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-body-md appearance-none pr-10"
-                    >
-                      <option value="" disabled>Select a topic...</option>
-                      <option value="general">General Inquiry</option>
-                      <option value="support">Technical Support</option>
-                      <option value="billing">Billing Question</option>
-                      <option value="partnership">School Partnership</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/70">
-                      <IconChevronDown size={18} />
-                    </div>
-                  </div>
+                  <label htmlFor="subject" className="font-label-md text-sm font-semibold text-on-surface-variant">Subject / Category</label>
+                  <CustomSelect 
+                    id="subject" 
+                    name="subject"
+                    required
+                    value={formData.subject}
+                    onChange={handleChange}
+                    placeholder="Select a topic..."
+                    options={[
+                      "Report Bug / Issue",
+                      "Report Notes / Content Issue",
+                      "General Inquiry",
+                      "Technical Support",
+                      "Billing Question",
+                      "Institute / College Partnership"
+                    ]}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2">
