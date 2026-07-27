@@ -7,7 +7,7 @@ import {
   IconChevronUp, IconArrowLeft, IconCloudUpload,
   IconSparkles, IconBulb, IconPlayerPlay, IconDeviceLaptop,
   IconMessageQuestion, IconCircleCheck, IconCircle, IconGripVertical,
-  IconLoader2,
+  IconLoader2, IconClock,
   IconDna,
   IconAtom,
   IconFlask,
@@ -111,7 +111,7 @@ function IconSelector({ value, onChange, size = 20, className }) {
 const tempId = () => `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 // ── Quiz editor ─────────────────────────────────────────────
-function QuizEditor({ questions = [], onChange }) {
+function QuizEditor({ questions = [], onChange, duration = 60, onDurationChange }) {
   const { toast } = useDialog();
   const [showRawPaste, setShowRawPaste] = useState(false);
   const [rawText, setRawText] = useState('');
@@ -216,13 +216,18 @@ function QuizEditor({ questions = [], onChange }) {
         }
         
         // Map correct index
-        const numVal = parseInt(correctText, 10);
-        if (!isNaN(numVal)) {
-          correctIndex = numVal - 1;
-        } else if (correctText.length === 1) {
-          const code = correctText.toLowerCase().charCodeAt(0);
-          if (code >= 97 && code <= 122) {
-            correctIndex = code - 97;
+        const optMatchIdx = options.findIndex(o => o.trim().toLowerCase() === correctText.trim().toLowerCase());
+        if (optMatchIdx !== -1) {
+          correctIndex = optMatchIdx;
+        } else {
+          const numVal = parseInt(correctText, 10);
+          if (!isNaN(numVal)) {
+            correctIndex = numVal - 1;
+          } else if (correctText.length === 1) {
+            const code = correctText.toLowerCase().charCodeAt(0);
+            if (code >= 97 && code <= 122) {
+              correctIndex = code - 97;
+            }
           }
         }
         correctIndex = Math.max(0, Math.min(options.length - 1, correctIndex));
@@ -297,6 +302,31 @@ function QuizEditor({ questions = [], onChange }) {
 
   return (
     <div className="space-y-4">
+      {/* Quiz Timer Setting Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+        <div className="flex items-center gap-2">
+          <IconClock size={18} className="text-amber-400 shrink-0" />
+          <div>
+            <span className="text-xs font-extrabold text-on-surface block">Quiz Timer Duration</span>
+            <span className="text-[11px] text-on-surface-variant">Default is 60 minutes. Students must finish within this limit.</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <input
+            type="number"
+            min="1"
+            max="300"
+            value={duration ?? 60}
+            onChange={(e) => {
+              const val = Math.max(1, parseInt(e.target.value, 10) || 60);
+              if (onDurationChange) onDurationChange(val);
+            }}
+            className="w-20 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-background text-on-surface text-xs font-extrabold text-center focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+          />
+          <span className="text-xs text-amber-400 font-extrabold font-mono">mins</span>
+        </div>
+      </div>
+
       {questions.map((q, qIdx) => (
         <div key={q._id || qIdx} className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
           <div className="flex items-start gap-2">
@@ -859,8 +889,12 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
             const res = await getLessonContent(item._id).catch(() => ({ content: '' }));
             onUpdate({ content: res.content || '' });
           } else if (item.type === 'quiz') {
-            const res = await getLessonQuiz(item._id).catch(() => ({ questions: [] }));
-            onUpdate({ questions: res.questions || [] });
+            const res = await getLessonQuiz(item._id).catch(() => ({ questions: [], duration: 60 }));
+            onUpdate({
+              questions: res.questions || [],
+              duration: res.duration || res.timeLimit || 60,
+              timeLimit: res.duration || res.timeLimit || 60
+            });
           } else if (item.type === 'qa') {
             const res = await getLessonQa(item._id).catch(() => ({ qas: [] }));
             onUpdate({ qas: res.qas || [] });
@@ -1147,6 +1181,8 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
           <QuizEditor
             questions={item.questions || []}
             onChange={qs => onUpdate({ questions: qs })}
+            duration={item.duration || item.timeLimit || 60}
+            onDurationChange={dur => onUpdate({ duration: dur, timeLimit: dur })}
           />
         </div>
       )}
@@ -1410,7 +1446,10 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   };
 
   const deleteSubject = (index) => {
-    setSubjects(prev => prev.filter((_, i) => i !== index));
+    const subTitle = subjects[index]?.title || `Subject ${index + 1}`;
+    if (window.confirm(`Are you sure you want to delete "${subTitle}" and all its chapters & items?`)) {
+      setSubjects(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const moveSubject = (index, direction) => {
@@ -1503,27 +1542,36 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
 
                  if (localItem) {
                     const isNewItem = !localItem._id || String(localItem._id).startsWith('temp_') || String(localItem._id).startsWith('tmp_');
-                    
-                    if (localItem.content !== undefined || isNewItem) {
-                      savePromises.push(updateLessonContent(cleanItem._id, localItem.content || ''));
-                    }
-                    if (localItem.questions !== undefined || isNewItem) {
-                      const cleanQs = (localItem.questions || []).map(q => {
-                        const { _id: qid, ...qrest } = q;
-                        const cq = { ...qrest };
-                        if (qid && !String(qid).startsWith('tmp_') && !String(qid).startsWith('temp_')) cq._id = qid;
-                        return cq;
-                      });
-                      savePromises.push(updateLessonQuiz(cleanItem._id, cleanQs));
-                    }
-                    if (localItem.qas !== undefined || isNewItem) {
-                       const cleanQas = (localItem.qas || []).map(p => {
-                          const { _id: pid, ...prest } = p;
-                          const cp = { ...prest };
-                          if (pid && !String(pid).startsWith('tmp_') && !String(pid).startsWith('temp_')) cp._id = pid;
-                          return cp;
-                       });
-                       savePromises.push(updateLessonQa(cleanItem._id, cleanQas));
+                    const itemType = localItem.type || cleanItem.type || 'notes';
+
+                    if (itemType === 'notes' || itemType === 'reading' || itemType === 'lesson') {
+                      if (localItem.content !== undefined || isNewItem) {
+                        savePromises.push(updateLessonContent(cleanItem._id, localItem.content || ''));
+                      }
+                    } else if (itemType === 'quiz') {
+                      if (localItem.questions !== undefined || isNewItem) {
+                        const cleanQs = (localItem.questions || []).map(q => {
+                          const { _id: qid, ...qrest } = q;
+                          const cq = { ...qrest };
+                          if (qid && !String(qid).startsWith('tmp_') && !String(qid).startsWith('temp_')) cq._id = qid;
+                          return cq;
+                        });
+                        savePromises.push(updateLessonQuiz(cleanItem._id, {
+                          questions: cleanQs,
+                          duration: localItem.duration || localItem.timeLimit || 60,
+                          timeLimit: localItem.duration || localItem.timeLimit || 60
+                        }));
+                      }
+                    } else if (itemType === 'qa') {
+                      if (localItem.qas !== undefined || isNewItem) {
+                         const cleanQas = (localItem.qas || []).map(p => {
+                            const { _id: pid, ...prest } = p;
+                            const cp = { ...prest };
+                            if (pid && !String(pid).startsWith('tmp_') && !String(pid).startsWith('temp_')) cp._id = pid;
+                            return cp;
+                         });
+                         savePromises.push(updateLessonQa(cleanItem._id, cleanQas));
+                      }
                     }
                  }
                }
@@ -1819,9 +1867,12 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                       }));
                     }}
                     onDelete={() => {
-                      updateSubject(selectedSubjectIndex, prev => ({
-                        chapters: (prev.chapters || []).filter((_, i) => i !== idx)
-                      }));
+                      const chTitle = chapter?.title || `Chapter ${idx + 1}`;
+                      if (window.confirm(`Are you sure you want to delete "${chTitle}" and all its items?`)) {
+                        updateSubject(selectedSubjectIndex, prev => ({
+                          chapters: (prev.chapters || []).filter((_, i) => i !== idx)
+                        }));
+                      }
                     }}
                     onMoveUp={() => {
                       updateSubject(selectedSubjectIndex, prev => {

@@ -103,26 +103,48 @@ export const submitQuiz = async (req, res) => {
     const { quizId, answers } = req.body;
     const userId = req.user._id;
 
-    const quiz = await Quiz.findById(quizId);
-    if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+    let quiz = await Quiz.findById(quizId).catch(() => null);
+    let courseId = quiz?.courseId;
+    let questions = quiz?.questions;
+
+    if (!quiz) {
+      const lQuiz = await LessonQuiz.findOne({ $or: [{ _id: quizId }, { itemId: quizId }] }).catch(() => null);
+      if (lQuiz) {
+        questions = lQuiz.questions;
+        const course = await Course.findOne({ "subjects.chapters.items._id": lQuiz.itemId }).catch(() => null);
+        if (course) courseId = course._id;
+      }
+    }
+
+    if (!quiz && !questions) return res.status(404).json({ message: 'Quiz not found' });
 
     let score = 0;
-    const processedAnswers = answers.map((ans) => {
-      const question = quiz.questions.id(ans.questionId);
+    const processedAnswers = (answers || []).map((ans) => {
+      let question = null;
+      if (quiz && quiz.questions?.id) {
+        question = quiz.questions.id(ans.questionId);
+      } else if (questions) {
+        question = questions.find(q => String(q._id) === String(ans.questionId)) || questions[ans.questionId];
+      }
+      
       let isCorrect = false;
-
       if (question) {
-        if (question.questionType === 'mcq' || question.questionType === 'true_false') {
-          isCorrect = String(question.correctAnswer) === String(ans.userAnswer);
-        } else if (question.questionType === 'fill_in_the_blanks') {
-          isCorrect = String(question.correctAnswer).toLowerCase() === String(ans.userAnswer).toLowerCase();
+        const qType = question.questionType || question.type;
+        const correctAns = question.correctAnswer !== undefined ? question.correctAnswer : (question.correctIndex !== undefined ? question.correctIndex : question.correctText);
+
+        if (qType === 'mcq' || qType === 'true_false' || !qType) {
+          isCorrect = String(correctAns) === String(ans.userAnswer);
+        } else if (qType === 'fill_in_the_blanks') {
+          const userAnsStr = String(ans.userAnswer || '').trim().toLowerCase();
+          const targetStr = String(question.correctText || correctAns || '').trim().toLowerCase();
+          const targetArr = targetStr.split('/').map(s => s.trim()).filter(Boolean);
+          isCorrect = targetArr.includes(userAnsStr);
         }
         if (isCorrect) score += 1;
       }
       return { ...ans, isCorrect };
     });
 
-    // Save Submission
     const submission = await Submission.create({
       userId,
       quizId,
@@ -130,26 +152,30 @@ export const submitQuiz = async (req, res) => {
       score,
     });
 
-    // Update User Progress
-    const user = await User.findById(userId);
-    const existingProgress = user.progress.find(p => p.courseId.toString() === quiz.courseId.toString());
+    if (courseId) {
+      const user = await User.findById(userId);
+      if (user) {
+        let existingProgress = user.progress.find(p => p.courseId.toString() === courseId.toString());
 
-    if (existingProgress) {
-      if (score > existingProgress.score) {
-        existingProgress.score = score;
+        if (existingProgress) {
+          if (score > (existingProgress.score || 0)) {
+            existingProgress.score = score;
+          }
+          existingProgress.completed = true;
+        } else {
+          user.progress.push({
+            courseId: courseId,
+            completed: true,
+            score,
+          });
+        }
+        await user.save();
       }
-      existingProgress.completed = true;
-    } else {
-      user.progress.push({
-        courseId: quiz.courseId,
-        completed: true,
-        score,
-      });
     }
-    await user.save();
 
     res.status(201).json({ submission, message: 'Quiz submitted successfully', score });
   } catch (error) {
+    console.error("submitQuiz Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -214,7 +240,12 @@ export const getLessonQuiz = async (req, res) => {
     }
 
     const doc = await LessonQuiz.findOne({ itemId: req.params.itemId });
-    res.json({ questions: doc ? doc.questions : [] });
+    const durVal = doc?.duration || doc?.timeLimit || 60;
+    res.json({
+      questions: doc ? doc.questions : [],
+      duration: durVal,
+      timeLimit: durVal
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -222,10 +253,13 @@ export const getLessonQuiz = async (req, res) => {
 
 export const updateLessonQuiz = async (req, res) => {
   try {
-    const { questions } = req.body;
+    const { questions, duration, timeLimit } = req.body;
+    const questionsArray = Array.isArray(questions) ? questions : (req.body.questions || []);
+    const durVal = Number(duration || timeLimit) || 60;
+
     const doc = await LessonQuiz.findOneAndUpdate(
       { itemId: req.params.itemId },
-      { questions },
+      { questions: questionsArray, duration: durVal, timeLimit: durVal },
       { upsert: true, new: true }
     );
     res.json(doc);

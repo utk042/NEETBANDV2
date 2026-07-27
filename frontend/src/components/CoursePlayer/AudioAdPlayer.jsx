@@ -25,6 +25,12 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
     }
   };
 
+  const handleError = () => {
+    if (currentTrackIndex < tracks.length - 1) {
+      setCurrentTrackIndex(prev => prev + 1);
+    }
+  };
+
   const isAd = isFree && !isNormalSong && currentTrackIndex < AD_URLS.length && originalAudio;
 
   return (
@@ -41,6 +47,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
           autoPlay={currentTrackIndex > 0} 
           src={tracks[currentTrackIndex]} 
           onEnded={handleEnded}
+          onError={handleError}
           className="w-full max-w-md mt-4" 
         />
       ) : (

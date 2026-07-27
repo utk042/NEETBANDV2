@@ -27,8 +27,9 @@ export default React.memo(function CourseLessonSidebar({
   }, [selectedSubjectIdx]);
 
   useEffect(() => {
-    if (selectedChapterIdx !== null && selectedChapterIdx >= 0) {
-      setExpandedChapters(prev => ({ ...prev, [selectedChapterIdx]: true }));
+    if (selectedChapterIdx !== null && selectedChapterIdx >= 0 && selectedSubjectIdx !== null) {
+      const key = `${selectedSubjectIdx}_${selectedChapterIdx}`;
+      setExpandedChapters(prev => ({ ...prev, [key]: true }));
     }
   }, [selectedChapterIdx, selectedSubjectIdx]);
 
@@ -69,11 +70,13 @@ export default React.memo(function CourseLessonSidebar({
             return <div className="p-4 text-xs text-on-surface-variant/50 text-center italic">No content in this subject.</div>;
           }
           return activeSidebarSubject.chapters.map((chapter, cIdx) => {
+            const chKey = `${sidebarSubjectIdx}_${cIdx}`;
+            const isExpanded = !!expandedChapters[chKey];
             return (
               <div key={chapter._id || cIdx} className="bg-surface-container-lowest">
                 {/* Sidebar Chapter Header */}
                 <button 
-                  onClick={() => setExpandedChapters(prev => ({ ...prev, [cIdx]: !prev[cIdx] }))}
+                  onClick={() => setExpandedChapters(prev => ({ ...prev, [chKey]: !prev[chKey] }))}
                   className="w-full text-left px-4 py-3 bg-surface-container-low/60 flex items-center justify-between hover:bg-surface-container/50 transition-colors"
                 >
                   <span className="text-xs font-extrabold text-on-surface truncate pr-2">
@@ -81,12 +84,12 @@ export default React.memo(function CourseLessonSidebar({
                   </span>
                   <IconChevronDown 
                     size={14} 
-                    className={`text-on-surface-variant transition-transform duration-200 ${expandedChapters[cIdx] ? 'rotate-180' : ''}`}
+                    className={`text-on-surface-variant transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                   />
                 </button>
 
                 {/* Sidebar Items list under chapter */}
-                {expandedChapters[cIdx] && (
+                {isExpanded && (
                   <div className="divide-y divide-outline/5 animate-in slide-in-from-top-2 duration-200">
                   {(chapter.items || []).map((subItem, itemIdx) => {
                     const isSelected = sidebarSubjectIdx === selectedSubjectIdx && cIdx === selectedChapterIdx && itemIdx === selectedItemIdx;

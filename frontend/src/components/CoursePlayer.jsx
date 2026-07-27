@@ -46,9 +46,34 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
       .finally(() => setCourseLoading(false));
   }, [courseId, user]);
 
-  const selectedSubjectIdx = subjectIdxParam !== undefined ? parseInt(subjectIdxParam, 10) - 1 : null;
-  const selectedChapterIdx = chapterIdxParam !== undefined ? parseInt(chapterIdxParam, 10) - 1 : null;
-  const selectedItemIdx = itemIdxParam !== undefined ? parseInt(itemIdxParam, 10) - 1 : null;
+  const parseParamIdx = (val) => {
+    if (val === undefined || val === null) return null;
+    const parsed = parseInt(val, 10);
+    return isNaN(parsed) ? null : parsed - 1;
+  };
+
+  let selectedSubjectIdx = parseParamIdx(subjectIdxParam);
+  let selectedChapterIdx = parseParamIdx(chapterIdxParam);
+  let selectedItemIdx = parseParamIdx(itemIdxParam);
+
+  if (course?.subjects) {
+    if (selectedSubjectIdx !== null && (selectedSubjectIdx < 0 || selectedSubjectIdx >= course.subjects.length)) {
+      selectedSubjectIdx = null;
+      selectedChapterIdx = null;
+      selectedItemIdx = null;
+    } else if (selectedSubjectIdx !== null && selectedChapterIdx !== null) {
+      const sub = course.subjects[selectedSubjectIdx];
+      if (selectedChapterIdx < 0 || selectedChapterIdx >= (sub?.chapters?.length || 0)) {
+        selectedChapterIdx = null;
+        selectedItemIdx = null;
+      } else if (selectedItemIdx !== null) {
+        const items = getChapterItems(sub?.chapters?.[selectedChapterIdx]);
+        if (selectedItemIdx < 0 || selectedItemIdx >= items.length) {
+          selectedItemIdx = null;
+        }
+      }
+    }
+  }
 
   // Overview folder drill-down state
   const [folderLevel, setFolderLevel] = useState('chapters'); 
@@ -183,7 +208,11 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           resData = { content: res.content };
         } else if (activeItem.type === 'quiz') {
           const res = await getLessonQuiz(activeItem._id);
-          resData = { questions: res.questions };
+          resData = {
+            questions: res.questions || [],
+            duration: res.duration || res.timeLimit || activeItem.duration || 60,
+            timeLimit: res.timeLimit || res.duration || activeItem.duration || 60
+          };
         } else if (activeItem.type === 'qa') {
           const res = await getLessonQa(activeItem._id);
           resData = { qas: res.qas };
@@ -573,7 +602,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               if (prevItem) {
                 const prevSub = course.subjects[prevItem.sIdx];
                 const prevCap = prevSub?.chapters?.[prevItem.cIdx];
-                const prevItemObj = prevCap?.items?.[prevItem.iIdx];
+                const prevItemObj = getChapterItems(prevCap)[prevItem.iIdx];
                 if (prevItemObj) {
                   navigate(`/course/${course._id}/${getSlugType(prevItemObj.type)}/${prevItem.sIdx + 1}/${prevItem.cIdx + 1}/${prevItem.iIdx + 1}`);
                 }
@@ -589,7 +618,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               if (nextItem) {
                 const nextSub = course.subjects[nextItem.sIdx];
                 const nextCap = nextSub?.chapters?.[nextItem.cIdx];
-                const nextItemObj = nextCap?.items?.[nextItem.iIdx];
+                const nextItemObj = getChapterItems(nextCap)[nextItem.iIdx];
                 if (nextItemObj) {
                   navigate(`/course/${course._id}/${getSlugType(nextItemObj.type)}/${nextItem.sIdx + 1}/${nextItem.cIdx + 1}/${nextItem.iIdx + 1}`);
                 }

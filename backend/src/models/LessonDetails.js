@@ -23,7 +23,9 @@ const lessonContentSchema = new mongoose.Schema({
 // Model for Item Quizzes
 const lessonQuizSchema = new mongoose.Schema({
   itemId:    { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
-  questions: [questionSchema]
+  questions: [questionSchema],
+  duration:  { type: Number, default: 60 },
+  timeLimit: { type: Number, default: 60 }
 }, { timestamps: true });
 
 // Model for Item Q&A Lists

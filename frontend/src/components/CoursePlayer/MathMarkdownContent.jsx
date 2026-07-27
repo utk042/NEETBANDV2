@@ -7,21 +7,39 @@ export default React.memo(function MathMarkdownContent({ content, className = ''
   const containerRef = React.useRef(null);
 
   useEffect(() => {
-    if (containerRef.current && window.renderMathInElement) {
-      try {
-        window.renderMathInElement(containerRef.current, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true },
-          ],
-          throwOnError: false,
-        });
-      } catch (err) {
-        console.error("KaTeX auto-render failed:", err);
+    let interval = null;
+    let attempts = 0;
+
+    const tryRender = () => {
+      attempts++;
+      if (containerRef.current && window.renderMathInElement) {
+        try {
+          window.renderMathInElement(containerRef.current, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true },
+            ],
+            throwOnError: false,
+          });
+        } catch (err) {
+          console.error("KaTeX auto-render failed:", err);
+        }
+        if (interval) clearInterval(interval);
+      } else if (attempts > 20) {
+        if (interval) clearInterval(interval);
       }
+    };
+
+    tryRender();
+    if (!window.renderMathInElement) {
+      interval = setInterval(tryRender, 200);
     }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [content]);
 
   const processedContent = React.useMemo(() => {

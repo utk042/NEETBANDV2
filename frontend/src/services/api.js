@@ -298,11 +298,12 @@ export const getLessonQuiz = async (itemId) => {
   return res.json();
 };
 
-export const updateLessonQuiz = async (itemId, questions) => {
+export const updateLessonQuiz = async (itemId, quizPayload) => {
+  const body = Array.isArray(quizPayload) ? { questions: quizPayload } : quizPayload;
   const res = await apiFetch(`${API_URL}/lms/items/${itemId}/quiz`, {
     method: 'PUT',
     headers: getLmsHeaders(),
-    body: JSON.stringify({ questions }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
