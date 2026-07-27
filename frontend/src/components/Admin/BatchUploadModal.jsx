@@ -137,6 +137,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
           className={inputClass}
           placeholder="e.g. 1"
           value={song.chapterNumber}
+          onChange={(e) => onChange({ chapterNumber: e.target.value })}
         />
       </div>
       <div>
@@ -151,17 +152,26 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
       </div>
       <div>
         <label className={labelClass}>Song Type</label>
-        <select
+        <SearchableSelect
           className={inputClass}
           value={song.songType}
-          onChange={(e) => onChange({ songType: e.target.value })}
-        >
-          <option value="Study">Study Song</option>
-          <option value="Normal">Normal Song</option>
-        </select>
+          onChange={(val) => {
+            const updates = { songType: val };
+            if (val === 'Normal') {
+              updates.audioRollsEnabled = false;
+              updates.popupsEnabled = false;
+            }
+            onChange(updates);
+          }}
+          placeholder="Select song type..."
+          options={[
+            { value: 'Study', label: 'Study Song' },
+            { value: 'Normal', label: 'Normal Song' },
+          ]}
+        />
       </div>
 
-      <div className="sm:col-span-2 flex items-center gap-6 pt-1">
+      <div className={`sm:col-span-2 flex items-center gap-6 pt-1 transition-opacity ${song.songType === 'Normal' ? 'opacity-40 pointer-events-none' : ''}`}>
         <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-on-surface-variant">
           <span>Audio Ads</span>
           <div className="relative">
@@ -169,6 +179,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
               type="checkbox"
               className="sr-only peer"
               checked={song.audioRollsEnabled}
+              disabled={song.songType === 'Normal'}
               onChange={(e) => onChange({ audioRollsEnabled: e.target.checked })}
             />
             <div className="w-8 h-4 bg-surface-variant rounded-full peer peer-checked:bg-primary relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:border-slate-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4" />
@@ -184,6 +195,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
               type="checkbox"
               className="sr-only peer"
               checked={song.popupsEnabled}
+              disabled={song.songType === 'Normal'}
               onChange={(e) => onChange({ popupsEnabled: e.target.checked })}
             />
             <div className="w-8 h-4 bg-surface-variant rounded-full peer peer-checked:bg-primary relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:border-slate-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4" />
@@ -192,7 +204,9 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
             {song.popupsEnabled ? 'On' : 'Off'}
           </span>
         </label>
-
+        {song.songType === 'Normal' && (
+          <span className="text-xs text-on-surface-variant/50 italic">Disabled for Normal Songs</span>
+        )}
       </div>
     </div>
   );

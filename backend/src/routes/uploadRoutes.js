@@ -43,9 +43,13 @@ const storage = multer.diskStorage({
       }
     }
 
+    const originalBase = path.basename(file.originalname, ext || path.extname(file.originalname));
+    const safeBase = originalBase.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    const suffix = safeBase ? `-${safeBase}` : '';
+
     cb(
       null,
-      `${file.fieldname}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`
+      `${file.fieldname}-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}${ext}`
     );
   },
 });
@@ -56,7 +60,10 @@ router.post('/', upload.single('file'), (req, res) => {
   const type = req.body.type || 'others';
   // The static middleware in index.js serves the 'uploads' directory at /uploads
   // So the file will be accessible at /uploads/type/filename
-  res.json({ url: `/uploads/${type}/${req.file.filename}` });
+  res.json({
+    url: `/uploads/${type}/${req.file.filename}`,
+    originalName: req.file.originalname
+  });
 });
 
 router.post('/parse', upload.single('file'), async (req, res) => {

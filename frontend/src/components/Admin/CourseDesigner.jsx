@@ -1369,6 +1369,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'settings'
   const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(null);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(null);
@@ -1377,6 +1378,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   const handleFileUpload = async (eOrFile) => {
     const file = eOrFile?.target ? eOrFile.target.files?.[0] : eOrFile;
     if (!file) return;
+    setThumbnailUploading(true);
     try {
       const res = await uploadFile(file, 'courses/thumbnails');
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -1384,6 +1386,8 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
       setMeta(m => ({ ...m, thumbnail: fullUrl }));
     } catch (err) {
       toast.error("Failed to upload file: " + err.message);
+    } finally {
+      setThumbnailUploading(false);
     }
   };
   const addSubject = () => {
@@ -1950,10 +1954,17 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                 <DragDropWrapper onFileDrop={handleFileUpload} className="flex flex-col gap-1.5 mt-4">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Course Thumbnail Image URL</label>
-                    <label className="text-[10px] font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
-                      <IconCloudUpload size={14} /> Upload Image
-                      <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                    </label>
+                    {thumbnailUploading ? (
+                      <div className="text-[10px] font-bold text-primary flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                        <IconLoader2 size={12} className="animate-spin" />
+                        <span>Uploading...</span>
+                      </div>
+                    ) : (
+                      <label className="text-[10px] font-bold text-primary cursor-pointer hover:underline flex items-center gap-1">
+                        <IconCloudUpload size={14} /> Upload Image
+                        <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                      </label>
+                    )}
                   </div>
                   <input
                     type="text"

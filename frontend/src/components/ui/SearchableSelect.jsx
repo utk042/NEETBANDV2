@@ -3,8 +3,29 @@ import React, { useState, useEffect, useRef } from 'react';
 export default function SearchableSelect({ options, value, onChange, placeholder, className, creatable = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const wrapperRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // Compute fixed position from trigger's bounding rect
+  const updateDropdownPosition = () => {
+    if (!wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const dropdownHeight = 260;
+    const openUpward = spaceBelow < dropdownHeight && rect.top > spaceBelow;
+
+    setDropdownStyle({
+      position: 'fixed',
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      zIndex: 99999,
+      ...(openUpward
+        ? { bottom: `${viewportHeight - rect.top}px`, top: 'auto' }
+        : { top: `${rect.bottom + 4}px`, bottom: 'auto' }),
+    });
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -17,31 +38,59 @@ export default function SearchableSelect({ options, value, onChange, placeholder
   }, []);
 
   useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+    if (isOpen) {
+      updateDropdownPosition();
+      searchInputRef.current?.focus();
     }
+  }, [isOpen]);
+
+  // Recompute on scroll/resize while open
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = () => updateDropdownPosition();
+    window.addEventListener('scroll', handler, true);
+    window.addEventListener('resize', handler);
+    return () => {
+      window.removeEventListener('scroll', handler, true);
+      window.removeEventListener('resize', handler);
+    };
   }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value) || (creatable && value ? { value, label: value } : null);
   const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(searchTerm.toLowerCase()));
-  
   const exactMatch = options.find(opt => opt.label.toLowerCase() === searchTerm.trim().toLowerCase());
   const showCreateOption = creatable && searchTerm.trim() !== '' && !exactMatch;
 
+  const handleToggle = () => {
+    setSearchTerm('');
+    setIsOpen(prev => !prev);
+  };
+
   return (
     <div className="relative" ref={wrapperRef}>
-      <div 
+      {/* Trigger */}
+      <div
         className={`${className} cursor-pointer flex justify-between items-center`}
-        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+        onClick={handleToggle}
       >
-        <span className={selectedOption ? "text-on-surface" : "text-on-surface-variant/40 line-clamp-1"}>
+        <span className={selectedOption ? 'text-on-surface' : 'text-on-surface-variant/40 line-clamp-1'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <svg className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+        <svg
+          className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
       </div>
 
+      {/* Dropdown — position:fixed escapes overflow:hidden without a portal */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-surface border border-outline-variant/40 rounded-xl shadow-lg flex flex-col overflow-hidden">
+        <div
+          style={dropdownStyle}
+          className="bg-surface border border-outline-variant/40 rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          {/* Search */}
           <div className="p-2 border-b border-outline-variant/20 bg-surface">
             <input
               ref={searchInputRef}
@@ -53,35 +102,46 @@ export default function SearchableSelect({ options, value, onChange, placeholder
               onClick={(e) => e.stopPropagation()}
             />
           </div>
+
+          {/* Options */}
           <div className="overflow-y-auto max-h-48 no-scrollbar">
-            <div 
+            {/* Clear / placeholder option */}
+            <div
               className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${!value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
-              onClick={() => { onChange(''); setIsOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); onChange(''); setIsOpen(false); }}
             >
               {placeholder}
             </div>
-            
+
+            {/* Create new option */}
             {showCreateOption && (
               <div
                 className="px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 text-primary font-medium flex items-center gap-2"
-                onClick={() => { onChange(searchTerm.trim()); setIsOpen(false); }}
+                onMouseDown={(e) => { e.preventDefault(); onChange(searchTerm.trim()); setIsOpen(false); }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m-7-7h14"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14m-7-7h14" />
+                </svg>
                 Create "{searchTerm.trim()}"
               </div>
             )}
 
-            {filteredOptions.length > 0 ? filteredOptions.map(opt => (
-              <div
-                key={opt.value}
-                className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${value === opt.value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
-              >
-                {opt.label}
-              </div>
-            )) : !showCreateOption && (
-              <div className="px-4 py-3 text-sm text-on-surface-variant text-center">No results found</div>
-            )}
+            {/* Matched options */}
+            {filteredOptions.length > 0
+              ? filteredOptions.map(opt => (
+                  <div
+                    key={opt.value}
+                    className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${value === opt.value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
+                    onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setIsOpen(false); }}
+                  >
+                    {opt.label}
+                  </div>
+                ))
+              : !showCreateOption && (
+                  <div className="px-4 py-3 text-sm text-on-surface-variant text-center">
+                    No results found
+                  </div>
+                )}
           </div>
         </div>
       )}

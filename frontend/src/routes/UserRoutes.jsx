@@ -22,6 +22,7 @@ const AboutUs = lazyWithRetry(() => import('../components/AboutUs'));
 const ContactUs = lazyWithRetry(() => import('../components/ContactUs'));
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import useScrollAnimations from '../hooks/useScrollAnimations';
+import useSeoHead from '../hooks/useSeoHead';
 const LoginSignup = lazyWithRetry(() => import('../components/LoginSignup'));
 const AuthCallback = lazyWithRetry(() => import('../components/AuthCallback'));
 const ResetPassword = lazyWithRetry(() => import('../components/ResetPassword'));
@@ -80,6 +81,9 @@ export default function UserRoutes() {
   const { user, isAuthLoading, login, logout } = useUserAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Dynamic SEO, GEO & AEO metadata management
+  useSeoHead();
   const currentPage = location.pathname === '/' ? 'home' : location.pathname.split('/')[1] || 'home';
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const isCourseItemView = pathSegments[0] === 'course' && pathSegments.length > 2;

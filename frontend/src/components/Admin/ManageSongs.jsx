@@ -166,6 +166,7 @@ export default function ManageSongs() {
     popupsEnabled: true, popupPositions: [10, 40, 75], popupHtml: ''
   });
   const [editingSongId, setEditingSongId] = useState(null);
+  const [uploadedFileName, setUploadedFileName] = useState('');
 
   const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
 
@@ -268,6 +269,9 @@ export default function ManageSongs() {
     if (!file) return;
     try {
       setUploadProgress(prev => ({ ...prev, [field]: 0 }));
+      if (field === 'audioUrl' && file.name) {
+        setUploadedFileName(file.name);
+      }
       const res = await uploadFile(file, folderType, (progress) => {
         setUploadProgress(prev => ({ ...prev, [field]: progress }));
       });
@@ -276,12 +280,16 @@ export default function ManageSongs() {
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
       if (field === 'audioUrl') {
         setAudioUrlValid(null);
-        if (file && file.name) {
-          const autoTitle = cleanSongTitle(file.name);
-          setFormData(prev => ({
-            ...prev,
-            title: (!prev.title?.trim() || /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(prev.title)) ? autoTitle : cleanSongTitle(prev.title)
-          }));
+        const sourceName = file?.name || res.originalName;
+        if (sourceName) {
+          const autoTitle = cleanSongTitle(sourceName);
+          if (autoTitle) {
+            setFormData(prev => ({
+              ...prev,
+              // Only auto-set if: title is empty, or title still has an extension, or title looks like a hash
+              title: (!prev.title?.trim() || /\.[a-zA-Z0-9]{2,4}$/.test(prev.title.trim())) ? autoTitle : prev.title
+            }));
+          }
         }
       }
       toast.success("File uploaded successfully");
@@ -316,6 +324,7 @@ export default function ManageSongs() {
   const handleOpenAddModal = () => {
     setAudioUrlValid(null);
     setTestingAudioUrl(false);
+    setUploadedFileName('');
     setFormData({
       title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
       watermarkUrl: adConfig.watermarkUrl || '',
@@ -332,6 +341,7 @@ export default function ManageSongs() {
   const handleEditClick = (song) => {
     setAudioUrlValid(null);
     setTestingAudioUrl(false);
+    setUploadedFileName('');
     setFormData({
       title: song.title || '',
       class: song.class || '',
@@ -450,6 +460,7 @@ export default function ManageSongs() {
         popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
         popupPositions: adConfig.popupPositions || [10, 40, 75], popupHtml: adConfig.popupHtml || ''
       });
+      setUploadedFileName('');
       setEditingSongId(null);
       setIsAddSongModalOpen(false);
       fetchSongs();
@@ -581,13 +592,13 @@ export default function ManageSongs() {
                   <div className="flex flex-col md:col-span-2">
                     <div className="flex items-center justify-between mb-1">
                       <label className={labelClass}>Song Title</label>
-                      {(formData.audioUrl || formData.title) && (
+                      {(formData.audioUrl || uploadedFileName) && (
                         <button
                           type="button"
                           onClick={() => {
-                            const src = (formData.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(formData.title))
-                              ? formData.title
-                              : (formData.audioUrl || formData.title);
+                            // Prefer the original uploaded filename (most reliable source),
+                            // fall back to the server URL (works for new uploads with embedded original name)
+                            const src = uploadedFileName || formData.audioUrl;
                             const clean = cleanSongTitle(src);
                             if (clean) setFormData(prev => ({ ...prev, title: clean }));
                           }}
@@ -606,8 +617,10 @@ export default function ManageSongs() {
                       value={formData.title} 
                       onChange={e => setFormData({...formData, title: e.target.value})} 
                       onBlur={() => {
-                        if (formData.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(formData.title)) {
-                          setFormData(prev => ({ ...prev, title: cleanSongTitle(prev.title) }));
+                        // Strip any accidentally-typed or pasted file extension on blur
+                        if (formData.title && /\.[a-zA-Z0-9]{2,5}$/.test(formData.title.trim())) {
+                          const cleaned = cleanSongTitle(formData.title);
+                          if (cleaned) setFormData(prev => ({ ...prev, title: cleaned }));
                         }
                       }}
                     />
@@ -698,10 +711,19 @@ export default function ManageSongs() {
                                 setAudioUrlValid(null);
                               }} 
                             />
-                            <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                              <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'audioUrl', 'songs/audio'); e.target.value = ''; }} />
-                            </label>
+                            {uploadProgress.audioUrl !== undefined ? (
+                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                <span>{uploadProgress.audioUrl}%</span>
+                                <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.audioUrl}%` }} />
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                <IconUpload size={12} stroke={2.5} /> Upload
+                                <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'audioUrl', 'songs/audio'); e.target.value = ''; }} />
+                              </label>
+                            )}
                           </div>
                           <button
                             type="button"
@@ -777,7 +799,13 @@ export default function ManageSongs() {
                   </div>
 
                   {/* AUDIO & POPUP AD SETTINGS */}
-                  <div className="flex flex-col gap-6 p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 mt-2">
+                  {formData.songType === 'Normal' && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-semibold mt-2">
+                      <span>⚠️</span>
+                      <span>Audio Ads &amp; Popup Ads are disabled for Normal Songs.</span>
+                    </div>
+                  )}
+                  <div className={`flex flex-col gap-6 p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 mt-2 transition-opacity ${formData.songType === 'Normal' ? 'opacity-40 pointer-events-none select-none' : ''}`}>
                     {/* AUDIO ROLL / WATERMARK SECTION */}
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
@@ -962,7 +990,7 @@ export default function ManageSongs() {
                             </div>
                           </div>
                           <div className="text-xs text-on-surface-variant">Standard ad-free track. Plays fully for everyone, ignoring subscription logic.</div>
-                          <input type="radio" className="sr-only" name="songType" value="Normal" checked={formData.songType === 'Normal'} onChange={() => setFormData({...formData, songType: 'Normal'})} />
+                          <input type="radio" className="sr-only" name="songType" value="Normal" checked={formData.songType === 'Normal'} onChange={() => setFormData({...formData, songType: 'Normal', audioRollsEnabled: false, popupsEnabled: false})} />
                         </label>
                       </div>
                     </div>

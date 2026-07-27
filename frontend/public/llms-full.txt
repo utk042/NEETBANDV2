@@ -1,0 +1,63 @@
+# NeetBand Full Product & Knowledge Specification
+
+## Overview
+
+NeetBand ([https://neetband.com](https://neetband.com)) is an auditory learning platform designed specifically for students preparing for the National Eligibility cum Entrance Test (NEET UG) in India. The platform leverages auditory mnemonics, structured musical compositions, and clear audio summaries to make complex medical entrance exam concepts easy to retain.
+
+## Why Auditory Learning for NEET?
+
+1. **Memory Retention**: Research shows musical rhythms and rhymes significantly enhance long-term memory recall for complex lists, scientific names, and multi-step pathways.
+2. **Eye Health & Ergonomics**: Traditional NEET preparation requires 10-14 hours of daily screen or textbook reading. NeetBand allows active learning while walking, resting, or traveling, reducing digital eye strain.
+3. **Anytime Revision**: Audio tracks allow effortless repetition of high-weightage topics without cognitive fatigue.
+
+---
+
+## Detailed Syllabus & Module Structure
+
+### 1. NEET Biology
+- **Diversity in Living World**: Taxonomy, Plant & Animal Kingdom classifications.
+- **Structural Organisation in Animals & Plants**: Plant Anatomy, Morphology, Animal Tissues.
+- **Cell Structure and Function**: Cell Organelles, Biomolecules, Cell Cycle & Mitosis/Meiosis.
+- **Plant Physiology**: Transport in Plants, Mineral Nutrition, Photosynthesis, Respiration, Plant Growth.
+- **Human Physiology**: Digestion, Breathing & Exchange of Gases, Body Fluids & Circulation, Excretory Products, Locomotion, Neural Control, Chemical Coordination.
+- **Reproduction**: Sexual Reproduction in Flowering Plants, Human Reproduction, Reproductive Health.
+- **Genetics and Evolution**: Principles of Inheritance, Molecular Basis of Inheritance, Human Evolution.
+- **Biology and Human Welfare**: Health & Disease, Microbes in Human Welfare.
+- **Biotechnology**: Principles, Processes, and Real-world Applications.
+- **Ecology and Environment**: Organisms & Populations, Ecosystems, Biodiversity & Conservation.
+
+### 2. NEET Chemistry
+- **Physical Chemistry**: Mole Concept, Atomic Structure, Chemical Kinetics, Electrochemistry, Thermodynamics, Solutions, Equilibrium.
+- **Inorganic Chemistry**: Periodic Table Trends, Chemical Bonding, Coordination Compounds, p-Block, d-Block & f-Block Elements.
+- **Organic Chemistry**: IUPAC Nomenclature, General Organic Chemistry (GOC), Hydrocarbons, Organic Reaction Mechanisms, Biomolecules, Polymers.
+
+### 3. NEET Physics
+- **Mechanics**: Kinematics, Laws of Motion, Work Energy Power, System of Particles & Rotational Motion, Gravitation.
+- **Electrodynamics**: Electrostatics, Current Electricity, Moving Charges & Magnetism, Electromagnetic Induction.
+- **Optics & Modern Physics**: Ray Optics, Wave Optics, Dual Nature of Matter, Atoms & Nuclei, Semiconductor Electronics.
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+### What is NeetBand?
+NeetBand is an educational auditory learning platform where NEET aspirants listen to expert-crafted study songs, audio summaries, and revision tracks covering the full NCERT syllabus for Biology, Chemistry, and Physics.
+
+### Is NeetBand aligned with the NCERT curriculum?
+Yes. Every track, song, and summary on NeetBand is strictly mapped to the NTA NEET-UG NCERT syllabus guidelines.
+
+### Can I download tracks for offline listening?
+Yes. NeetBand supports Progressive Web App (PWA) offline playback so you can listen anywhere without consuming cellular data.
+
+### How does audio study help reduce eye strain?
+By shifting hours of passive reading to active auditory listening, NeetBand gives your eyes a rest from screen light and dense printed text while keeping your brain engaged in active learning.
+
+---
+
+## Platform Links & Support
+
+- **Website**: https://neetband.com
+- **Courses**: https://neetband.com/course
+- **Student Hub**: https://neetband.com/hub
+- **Blog**: https://neetband.com/blog
+- **Contact**: https://neetband.com/contact
