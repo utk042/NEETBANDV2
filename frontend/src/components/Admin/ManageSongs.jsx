@@ -659,13 +659,17 @@ export default function ManageSongs() {
                         const newChapter = val;
                         let nextNumber = formData.chapterNumber;
                         if (newChapter) {
-                          const songsInChapter = songs.filter(s => s.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase());
-                          const originalSong = editingSongId ? songs.find(s => s._id === editingSongId) : null;
-                          
-                          if (originalSong && originalSong.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase()) {
-                            nextNumber = originalSong.chapterNumber || Math.max(1, songsInChapter.length);
+                          const leadingMatch = newChapter.match(/^(?:chapter|ch|unit)?\s*(\d+)/i);
+                          if (leadingMatch) {
+                            nextNumber = parseInt(leadingMatch[1], 10);
                           } else {
-                            nextNumber = songsInChapter.length + 1;
+                            const songsInChapter = songs.filter(s => s.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase());
+                            const originalSong = editingSongId ? songs.find(s => s._id === editingSongId) : null;
+                            if (originalSong && originalSong.chapter?.trim().toLowerCase() === newChapter.trim().toLowerCase()) {
+                              nextNumber = originalSong.chapterNumber || Math.max(1, songsInChapter.length);
+                            } else {
+                              nextNumber = songsInChapter.length + 1;
+                            }
                           }
                         }
                         setFormData({...formData, chapter: newChapter, chapterNumber: nextNumber});

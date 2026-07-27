@@ -38,16 +38,22 @@ export function cleanSongTitle(fileName) {
   // Uses lastIndexOf to avoid stripping dots inside the title (e.g. "v1.0" in "Biology v1.0.mp3").
   const lastDotIdx = baseName.lastIndexOf('.');
   if (lastDotIdx !== -1) {
-    const ext = baseName.slice(lastDotIdx + 1).toLowerCase();
+    const ext = baseName.slice(lastDotIdx + 1).toLowerCase().trim();
     if (AUDIO_EXTENSIONS.has(ext)) {
       baseName = baseName.slice(0, lastDotIdx);
     }
   }
 
-  const result = baseName
+  let result = baseName
     .replace(/[-_]/g, ' ')   // Replace underscores and hyphens with spaces
     .replace(/\s+/g, ' ')    // Normalize multiple spaces into single space
     .trim();
+
+  // Final safety net: strip any known audio extension that somehow survived the steps above
+  result = result.replace(
+    /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4|m4p|mp2|aiff|aif|caf|mid|midi|mpeg|mpga|amr|pdf|docx|doc|txt)$/i,
+    ''
+  ).trim();
 
   // If the result is a pure server-generated hash or looks like a raw upload prefix
   // (all lowercase alphanumeric, no spaces, 8+ chars), return empty string so the

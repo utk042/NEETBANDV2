@@ -75,28 +75,30 @@ const STATUS = {
 };
 
 // ─── Per-song settings panel ────────────────────────────────────────────────
-function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters }) {
+function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters, hideTitle = false }) {
   const inputClass =
     'w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm';
   const labelClass = 'text-[11px] font-bold text-on-surface-variant mb-1 ml-0.5 uppercase tracking-wide block';
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
-      <div className="sm:col-span-2">
-        <label className={labelClass}>Song Title *</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Song title..."
-          value={song.title}
-          onChange={(e) => onChange({ title: e.target.value })}
-          onBlur={() => {
-            if (song.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(song.title)) {
-              onChange({ title: cleanSongTitle(song.title) });
-            }
-          }}
-        />
-      </div>
+      {!hideTitle && (
+        <div className="sm:col-span-2">
+          <label className={labelClass}>Song Title *</label>
+          <input
+            type="text"
+            className={inputClass}
+            placeholder="Song title..."
+            value={song.title || ''}
+            onChange={(e) => onChange({ title: e.target.value })}
+            onBlur={() => {
+              if (song.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(song.title)) {
+                onChange({ title: cleanSongTitle(song.title) });
+              }
+            }}
+          />
+        </div>
+      )}
       <div>
         <label className={labelClass}>Class / Grade</label>
         <SearchableSelect
@@ -124,7 +126,17 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
         <SearchableSelect
           className={inputClass}
           value={song.chapter}
-          onChange={(val) => onChange({ chapter: val })}
+          onChange={(val) => {
+            const newChapter = val;
+            let nextNum = song.chapterNumber;
+            if (newChapter) {
+              const leadingMatch = newChapter.match(/^(?:chapter|ch|unit)?\s*(\d+)/i);
+              if (leadingMatch) {
+                nextNum = parseInt(leadingMatch[1], 10);
+              }
+            }
+            onChange({ chapter: newChapter, chapterNumber: nextNum });
+          }}
           placeholder="Select or create..."
           options={availableChapters.map((ch) => ({ value: ch, label: ch }))}
           creatable
@@ -213,9 +225,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
 }
 
 // ─── Single song row in the batch list ──────────────────────────────────────
-function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters }) {
-  const [expanded, setExpanded] = useState(index === 0);
-
+function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters, isExpanded, onToggleExpand }) {
   const availableSubjects =
     item.settings.class && classToSubjects[item.settings.class]
       ? classToSubjects[item.settings.class]
@@ -248,13 +258,13 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
     <div className={`rounded-xl border transition-all duration-200 overflow-hidden ${
       item.status === STATUS.DONE ? 'border-emerald-500/30 bg-emerald-500/5' :
       item.status === STATUS.ERROR ? 'border-red-500/30 bg-red-500/5' :
-      expanded ? 'border-primary/30 bg-primary/5' :
+      isExpanded ? 'border-primary/30 bg-primary/5' :
       'border-outline-variant/30 bg-surface-container-low'
     }`}>
       {/* Row header */}
       <div
         className="flex items-center gap-3 p-3 cursor-pointer select-none"
-        onClick={() => isActive && setExpanded(!expanded)}
+        onClick={() => isActive && onToggleExpand()}
       >
         {/* Track icon / spinner */}
         <div className={`w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold ${
@@ -305,7 +315,7 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
 
         {isActive && (
           <div className="text-on-surface-variant/60 shrink-0">
-            {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+            {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
           </div>
         )}
       </div>
@@ -321,7 +331,7 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
       )}
 
       {/* Expanded settings */}
-      {expanded && isActive && (
+      {isExpanded && isActive && (
         <div className="px-3 pb-4 border-t border-outline-variant/20 pt-2">
           <SongSettingsPanel
             song={item.settings}
@@ -342,8 +352,9 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
 export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, courses, songs }) {
   const [items, setItems] = useState([]);          // { id, file, settings, status, uploadProgress, error, duration }
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sharedMode, setSharedMode] = useState(false);
+  const [expandedId, setExpandedId] = useState('shared'); // 'shared', item.id, or null
   const [sharedSettings, setSharedSettings] = useState(null);
+  const [appliedToast, setAppliedToast] = useState(false);
   const [dropActive, setDropActive] = useState(false);
   const [dropCounter, setDropCounter] = useState(0);
   const fileInputRef = useRef(null);
@@ -355,19 +366,19 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     if (isOpen) {
       setItems([]);
       setIsSubmitting(false);
-      setSharedMode(false);
+      setExpandedId('shared');
       setSharedSettings(defaultSongSettings(adConfig));
+      setAppliedToast(false);
       setDropActive(false);
       setDropCounter(0);
     }
-  }, [isOpen]);
+  }, [isOpen, adConfig]);
 
   const addFiles = useCallback((files) => {
     const audioFiles = Array.from(files).filter(isAudioFile);
     if (audioFiles.length === 0) return;
 
     const newItems = audioFiles.map((file) => {
-      // Try to auto-detect duration
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const item = {
         id,
@@ -441,21 +452,24 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
-  // Apply shared settings to all pending items
+  // Apply shared settings to all pending items (excluding title)
   const applySharedToAll = () => {
+    const { title, ...restShared } = sharedSettings || {};
     setItems((prev) =>
       prev.map((item) =>
         item.status === STATUS.PENDING || item.status === STATUS.ERROR
           ? {
               ...item,
               settings: {
-                ...sharedSettings,
-                title: item.settings.title || cleanSongTitle(item.file.name),
+                ...item.settings,
+                ...restShared,
               },
             }
           : item
       )
     );
+    setAppliedToast(true);
+    setTimeout(() => setAppliedToast(false), 2000);
   };
 
   const handleSubmit = async () => {
@@ -490,15 +504,11 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
       // 2. Create song record
       updateItem(item.id, { status: STATUS.PROCESSING });
       try {
-        const settings = sharedMode
-          ? { ...sharedSettings, title: item.settings.title }
-          : item.settings;
-
         const payload = {
-          ...settings,
+          ...item.settings,
           audioUrl,
           duration: item.duration || '',
-          courseId: settings.courseId || null,
+          courseId: item.settings.courseId || null,
         };
         await createSong(payload);
         updateItem(item.id, { status: STATUS.DONE });
@@ -638,18 +648,18 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                 </div>
               )}
 
-              {/* Shared settings toggle */}
+              {/* Shared settings card */}
               {!allDone && (
                 <div className={`rounded-xl border transition-all ${
-                  sharedMode ? 'border-primary/40 bg-primary/5' : 'border-outline-variant/30 bg-surface-container-low'
+                  expandedId === 'shared' ? 'border-primary/40 bg-primary/5' : 'border-outline-variant/30 bg-surface-container-low'
                 }`}>
                   <button
                     type="button"
-                    onClick={() => setSharedMode(!sharedMode)}
+                    onClick={() => setExpandedId(expandedId === 'shared' ? null : 'shared')}
                     className="w-full flex items-center gap-3 p-3 text-left"
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                      sharedMode ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'
+                      expandedId === 'shared' ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'
                     }`}>
                       <IconSettings size={17} />
                     </div>
@@ -658,13 +668,13 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                       <p className="text-xs text-on-surface-variant/70">Apply the same class, subject, chapter & ads to all songs</p>
                     </div>
                     <div className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                      sharedMode ? 'text-primary' : 'text-on-surface-variant/50'
+                      expandedId === 'shared' ? 'text-primary' : 'text-on-surface-variant/50'
                     }`}>
-                      {sharedMode ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+                      {expandedId === 'shared' ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
                     </div>
                   </button>
 
-                  {sharedMode && sharedSettings && (
+                  {expandedId === 'shared' && sharedSettings && (
                     <div className="px-3 pb-4 border-t border-outline-variant/20 pt-2">
                       <SongSettingsPanel
                         song={sharedSettings}
@@ -674,14 +684,15 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                         existingClasses={existingClasses}
                         availableSubjects={availSharedSubjects}
                         availableChapters={availSharedChapters}
+                        hideTitle={true}
                       />
                       <button
                         type="button"
                         onClick={applySharedToAll}
                         className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-bold transition-colors"
                       >
-                        <IconCopy size={15} />
-                        Apply to all songs
+                        {appliedToast ? <IconCheck size={15} className="text-emerald-500" /> : <IconCopy size={15} />}
+                        {appliedToast ? 'Applied to all songs!' : 'Apply to all songs'}
                       </button>
                     </div>
                   )}
@@ -695,6 +706,8 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                     key={item.id}
                     item={item}
                     index={index}
+                    isExpanded={expandedId === item.id}
+                    onToggleExpand={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     onChange={(patch) => updateItem(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
                     courses={courses}
@@ -758,3 +771,4 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     </div>
   );
 }
+
