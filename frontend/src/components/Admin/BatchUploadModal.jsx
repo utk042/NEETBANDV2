@@ -19,6 +19,8 @@ import {
   IconArrowRight,
 } from '@tabler/icons-react';
 
+import DragDropWrapper from '../ui/DragDropWrapper';
+
 const AUDIO_EXTS = [
   'mp3', 'mpeg', 'mpga', 'wav', 'flac', 'aac', 'ogg', 'm4a',
   'opus', 'wma', 'm4p', 'mp2', 'aiff', 'aif', 'caf', 'webm',
@@ -76,9 +78,35 @@ const STATUS = {
 
 // ─── Per-song settings panel ────────────────────────────────────────────────
 function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters, hideTitle = false }) {
+  const [lyricsProgress, setLyricsProgress] = useState(null);
+
   const inputClass =
     'w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm';
   const labelClass = 'text-[11px] font-bold text-on-surface-variant mb-1 ml-0.5 uppercase tracking-wide block';
+
+  const handleLyricsUpload = async (eOrFile) => {
+    let file;
+    if (eOrFile && eOrFile.target && eOrFile.target.files) {
+      file = eOrFile.target.files[0];
+    } else {
+      file = eOrFile;
+    }
+    if (!file) return;
+
+    setLyricsProgress(0);
+    try {
+      const res = await uploadFile(file, 'songs/lyrics', (progress) => {
+        setLyricsProgress(progress);
+      });
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const fullUrl = res.url.startsWith('http') ? res.url : `${backendUrl}${res.url.startsWith('/') ? '' : '/'}${res.url}`;
+      onChange({ lyricsUrl: fullUrl });
+    } catch (err) {
+      alert('Failed to upload lyrics file: ' + err.message);
+    } finally {
+      setLyricsProgress(null);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
@@ -183,6 +211,43 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
         />
       </div>
 
+      {!hideTitle && (
+        <div className="sm:col-span-2">
+          <label className={labelClass}>
+            Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span>
+          </label>
+          <DragDropWrapper onFileDrop={(file) => handleLyricsUpload(file)}>
+            <div className="relative">
+              <input
+                type="url"
+                placeholder="https://..."
+                className={`${inputClass} pr-28`}
+                value={song.lyricsUrl || ''}
+                onChange={(e) => onChange({ lyricsUrl: e.target.value })}
+              />
+              {lyricsProgress !== null ? (
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                  <span>{lyricsProgress}%</span>
+                  <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${lyricsProgress}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                  <IconUpload size={12} stroke={2.5} /> Upload
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".ttml,.txt,.lrc"
+                    onChange={(e) => handleLyricsUpload(e)}
+                  />
+                </label>
+              )}
+            </div>
+          </DragDropWrapper>
+        </div>
+      )}
+
       <div className={`sm:col-span-2 flex items-center gap-6 pt-1 transition-opacity ${song.songType === 'Normal' ? 'opacity-40 pointer-events-none' : ''}`}>
         <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-on-surface-variant">
           <span>Audio Ads</span>
@@ -225,7 +290,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
 }
 
 // ─── Single song row in the batch list ──────────────────────────────────────
-function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters, isExpanded, onToggleExpand }) {
+function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters, isExpanded, onToggleExpand }) {
   const availableSubjects =
     item.settings.class && classToSubjects[item.settings.class]
       ? classToSubjects[item.settings.class]
@@ -291,15 +356,26 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
             <span>{formatBytes(item.file.size)}</span>
             {item.duration && <><span>·</span><span>{formatSeconds(item.duration)}</span></>}
             {item.status === STATUS.ERROR && item.error && (
-              <span className="text-red-500 truncate max-w-[180px]">— {item.error}</span>
+              <span className="text-red-500 truncate max-w-[200px]" title={item.error}>— {item.error}</span>
             )}
           </div>
         </div>
 
-        {/* Status badge */}
-        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${statusColors[item.status]}`}>
-          {statusLabel[item.status]}
-        </span>
+        {/* Status badge & Retry button */}
+        <div className="flex items-center gap-2 shrink-0">
+          {item.status === STATUS.ERROR && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRetry(); }}
+              className="text-[11px] font-bold px-2 py-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 transition-colors"
+            >
+              Retry
+            </button>
+          )}
+          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${statusColors[item.status]}`}>
+            {statusLabel[item.status]}
+          </span>
+        </div>
 
         {/* Remove / expand */}
         {item.status !== STATUS.DONE && item.status !== STATUS.UPLOADING && item.status !== STATUS.PROCESSING && (
@@ -359,6 +435,11 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
   const [dropCounter, setDropCounter] = useState(0);
   const fileInputRef = useRef(null);
 
+  const sharedSettingsRef = useRef(sharedSettings);
+  useEffect(() => {
+    sharedSettingsRef.current = sharedSettings;
+  }, [sharedSettings]);
+
   const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
 
   // Reset when modal opens
@@ -374,9 +455,19 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     }
   }, [isOpen, adConfig]);
 
+  const updateItem = useCallback((id, patch) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  }, []);
+
+  const removeItem = useCallback((id) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
   const addFiles = useCallback((files) => {
     const audioFiles = Array.from(files).filter(isAudioFile);
     if (audioFiles.length === 0) return;
+
+    const { title, ...activeShared } = sharedSettingsRef.current || {};
 
     const newItems = audioFiles.map((file) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -385,6 +476,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         file,
         settings: {
           ...defaultSongSettings(adConfig),
+          ...activeShared,
           title: cleanSongTitle(file.name),
         },
         status: STATUS.PENDING,
@@ -393,17 +485,33 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         duration: null,
       };
 
-      // Auto-detect duration in background
-      const audio = new Audio();
-      audio.src = URL.createObjectURL(file);
-      audio.onloadedmetadata = () => {
-        if (audio.duration && !isNaN(audio.duration)) {
-          setItems((prev) =>
-            prev.map((i) => i.id === id ? { ...i, duration: Math.round(audio.duration) } : i)
-          );
-        }
-        URL.revokeObjectURL(audio.src);
-      };
+      // Auto-detect duration safely with blob revocation & error cleanup
+      try {
+        const audio = new Audio();
+        const objectUrl = URL.createObjectURL(file);
+        audio.src = objectUrl;
+
+        const cleanup = () => {
+          audio.onloadedmetadata = null;
+          audio.onerror = null;
+          try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+        };
+
+        audio.onloadedmetadata = () => {
+          if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
+            setItems((prev) =>
+              prev.map((i) => (i.id === id ? { ...i, duration: Math.round(audio.duration) } : i))
+            );
+          }
+          cleanup();
+        };
+
+        audio.onerror = () => {
+          cleanup();
+        };
+      } catch (err) {
+        console.warn('Audio metadata auto-detection failed', err);
+      }
 
       return item;
     });
@@ -444,14 +552,6 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     }
   }, [addFiles]);
 
-  const updateItem = useCallback((id, patch) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-  }, []);
-
-  const removeItem = useCallback((id) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
-
   // Apply shared settings to all pending items (excluding title)
   const applySharedToAll = () => {
     const { title, ...restShared } = sharedSettings || {};
@@ -472,15 +572,72 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
     setTimeout(() => setAppliedToast(false), 2000);
   };
 
+  const retrySingleItem = useCallback(async (id) => {
+    let targetItem = null;
+    setItems((prev) => {
+      targetItem = prev.find((i) => i.id === id);
+      return prev;
+    });
+
+    if (!targetItem) return;
+
+    setIsSubmitting(true);
+    updateItem(id, { status: STATUS.UPLOADING, uploadProgress: 0, error: null });
+
+    let audioUrl = '';
+    try {
+      const res = await uploadFile(targetItem.file, 'songs/audio', (progress) => {
+        updateItem(id, { uploadProgress: progress });
+      });
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      audioUrl = res.url.startsWith('http') ? res.url : `${backendUrl}${res.url.startsWith('/') ? '' : '/'}${res.url}`;
+    } catch (err) {
+      updateItem(id, { status: STATUS.ERROR, error: `Upload failed: ${err.message}` });
+      setIsSubmitting(false);
+      return;
+    }
+
+    updateItem(id, { status: STATUS.PROCESSING });
+    try {
+      const payload = {
+        ...targetItem.settings,
+        audioUrl,
+        duration: typeof targetItem.duration === 'number' && !isNaN(targetItem.duration) ? targetItem.duration : undefined,
+        chapterNumber: targetItem.settings.chapterNumber !== '' && !isNaN(Number(targetItem.settings.chapterNumber))
+          ? Number(targetItem.settings.chapterNumber)
+          : null,
+        courseId: targetItem.settings.courseId || null,
+      };
+      await createSong(payload);
+      updateItem(id, { status: STATUS.DONE, error: null });
+    } catch (err) {
+      updateItem(id, { status: STATUS.ERROR, error: `Save failed: ${err.message}` });
+    }
+
+    setIsSubmitting(false);
+
+    setItems((latestItems) => {
+      const allDone = latestItems.length > 0 && latestItems.every((i) => i.status === STATUS.DONE);
+      if (allDone) {
+        setTimeout(() => onDone?.(), 300);
+      }
+      return latestItems;
+    });
+  }, [onDone, updateItem]);
+
   const handleSubmit = async () => {
-    const pending = items.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR);
+    let pending = [];
+    setItems((prev) => {
+      pending = prev.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR);
+      return prev;
+    });
+
     if (pending.length === 0) return;
 
     // Validate titles
     const missingTitle = pending.find((i) => !i.settings.title?.trim());
     if (missingTitle) {
-      const el = document.getElementById(`song-title-${missingTitle.id}`);
-      if (el) el.focus();
+      setExpandedId(missingTitle.id);
       return;
     }
 
@@ -494,8 +651,8 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         const res = await uploadFile(item.file, 'songs/audio', (progress) => {
           updateItem(item.id, { uploadProgress: progress });
         });
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        audioUrl = `${backendUrl}${res.url}`;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        audioUrl = res.url.startsWith('http') ? res.url : `${backendUrl}${res.url.startsWith('/') ? '' : '/'}${res.url}`;
       } catch (err) {
         updateItem(item.id, { status: STATUS.ERROR, error: `Upload failed: ${err.message}` });
         continue;
@@ -507,11 +664,14 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         const payload = {
           ...item.settings,
           audioUrl,
-          duration: item.duration || '',
+          duration: typeof item.duration === 'number' && !isNaN(item.duration) ? item.duration : undefined,
+          chapterNumber: item.settings.chapterNumber !== '' && !isNaN(Number(item.settings.chapterNumber))
+            ? Number(item.settings.chapterNumber)
+            : null,
           courseId: item.settings.courseId || null,
         };
         await createSong(payload);
-        updateItem(item.id, { status: STATUS.DONE });
+        updateItem(item.id, { status: STATUS.DONE, error: null });
       } catch (err) {
         updateItem(item.id, { status: STATUS.ERROR, error: `Save failed: ${err.message}` });
       }
@@ -519,14 +679,14 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
 
     setIsSubmitting(false);
 
-    // If all done, notify parent
-    const finalItems = items.map((i) =>
-      pending.find((p) => p.id === i.id && i.status !== STATUS.ERROR) ? { ...i, status: STATUS.DONE } : i
-    );
-    const allDone = finalItems.every((i) => i.status === STATUS.DONE);
-    if (allDone) {
-      onDone?.();
-    }
+    // Verify completion with live state closure callback
+    setItems((latestItems) => {
+      const allDone = latestItems.length > 0 && latestItems.every((i) => i.status === STATUS.DONE);
+      if (allDone) {
+        setTimeout(() => onDone?.(), 300);
+      }
+      return latestItems;
+    });
   };
 
   const pendingCount = items.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR).length;
@@ -710,6 +870,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                     onToggleExpand={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     onChange={(patch) => updateItem(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
+                    onRetry={() => retrySingleItem(item.id)}
                     courses={courses}
                     adConfig={adConfig}
                     existingClasses={existingClasses}

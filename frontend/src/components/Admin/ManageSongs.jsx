@@ -33,13 +33,14 @@ const WaveformSlider = ({ positions, onChange, audioUrl }) => {
     }
     
     let isCancelled = false;
+    let audioContext = null;
     const generateWaveform = async () => {
       setIsLoading(true);
       try {
         const fullAudioUrl = getFullUrl(audioUrl);
         const response = await fetch(fullAudioUrl);
         const arrayBuffer = await response.arrayBuffer();
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
         if (isCancelled) return;
@@ -68,12 +69,20 @@ const WaveformSlider = ({ positions, onChange, audioUrl }) => {
         for(let i = 0; i < 50; i++) fallback.push(Math.max(20, Math.sin(i * 0.5) * 40 + Math.random() * 40 + 20));
         setRealBars(fallback);
       } finally {
+        if (audioContext && audioContext.state !== 'closed') {
+          try { audioContext.close(); } catch (_) {}
+        }
         setIsLoading(false);
       }
     };
     
     generateWaveform();
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+      if (audioContext && audioContext.state !== 'closed') {
+        try { audioContext.close(); } catch (_) {}
+      }
+    };
   }, [audioUrl]);
 
   const waveformBars = realBars.length > 0 ? realBars : Array.from({length: 50}).fill(10);
@@ -444,6 +453,16 @@ export default function ManageSongs() {
       const payload = { ...formData };
       if (!payload.courseId) {
         payload.courseId = null;
+      }
+      if (payload.duration === '' || payload.duration === null || payload.duration === undefined || isNaN(Number(payload.duration))) {
+        delete payload.duration;
+      } else {
+        payload.duration = Number(payload.duration);
+      }
+      if (payload.chapterNumber === '' || payload.chapterNumber === null || payload.chapterNumber === undefined || isNaN(Number(payload.chapterNumber))) {
+        payload.chapterNumber = null;
+      } else {
+        payload.chapterNumber = Number(payload.chapterNumber);
       }
 
       if (editingSongId) {

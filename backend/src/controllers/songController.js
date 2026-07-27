@@ -1,23 +1,81 @@
 import Song from '../models/Song.js';
 import AdConfig from '../models/AdConfig.js';
 
+function sanitizeSongPayload(payload = {}) {
+  const data = { ...payload };
+
+  if (typeof data.title === 'string') data.title = data.title.trim();
+  if (typeof data.audioUrl === 'string') data.audioUrl = data.audioUrl.trim();
+
+  if (!data.courseId || data.courseId === '') {
+    data.courseId = null;
+  }
+
+  if (data.duration !== undefined && data.duration !== null) {
+    if (typeof data.duration === 'string') {
+      const trimmed = data.duration.trim();
+      if (trimmed === '') {
+        delete data.duration;
+      } else {
+        const parsed = Number(trimmed);
+        if (!isNaN(parsed) && parsed >= 0) {
+          data.duration = parsed;
+        } else {
+          delete data.duration;
+        }
+      }
+    } else if (typeof data.duration === 'number' && isNaN(data.duration)) {
+      delete data.duration;
+    }
+  }
+
+  if (data.chapterNumber !== undefined && data.chapterNumber !== null) {
+    if (typeof data.chapterNumber === 'string') {
+      const trimmed = data.chapterNumber.trim();
+      if (trimmed === '') {
+        data.chapterNumber = null;
+      } else {
+        const parsed = Number(trimmed);
+        data.chapterNumber = !isNaN(parsed) ? parsed : null;
+      }
+    } else if (typeof data.chapterNumber === 'number' && isNaN(data.chapterNumber)) {
+      data.chapterNumber = null;
+    }
+  }
+
+  if (Array.isArray(data.watermarkPositions)) {
+    data.watermarkPositions = data.watermarkPositions
+      .map(p => Number(p))
+      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
+  }
+  if (Array.isArray(data.popupPositions)) {
+    data.popupPositions = data.popupPositions
+      .map(p => Number(p))
+      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
+  }
+
+  return data;
+}
+
 // @desc    Create a new song
 // @route   POST /api/songs
 // @access  Private/Admin
 export const createSong = async (req, res) => {
   try {
-    const { title, audioUrl, duration } = req.body || {};
-    if (!title || typeof title !== 'string' || !title.trim()) {
+    const sanitized = sanitizeSongPayload(req.body);
+    const { title, audioUrl, duration } = sanitized;
+
+    if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
-    if (!audioUrl || typeof audioUrl !== 'string' || !audioUrl.trim()) {
+    if (!audioUrl) {
       return res.status(400).json({ message: 'Audio URL is required' });
     }
     if (duration !== undefined && duration !== null && (typeof duration !== 'number' || duration < 0)) {
       return res.status(400).json({ message: 'Duration cannot be negative' });
     }
 
-    const song = new Song(req.body);
+    const song = new Song(sanitized);
     const createdSong = await song.save();
     res.status(201).json(createdSong);
   } catch (error) {
@@ -65,18 +123,20 @@ export const getSongById = async (req, res) => {
 // @access  Private/Admin
 export const updateSong = async (req, res) => {
   try {
-    const { title, audioUrl, duration } = req.body || {};
-    if (title !== undefined && (!title || typeof title !== 'string' || !title.trim())) {
+    const sanitized = sanitizeSongPayload(req.body);
+    const { title, audioUrl, duration } = sanitized;
+
+    if (title !== undefined && !title) {
       return res.status(400).json({ message: 'Title is required' });
     }
-    if (audioUrl !== undefined && (!audioUrl || typeof audioUrl !== 'string' || !audioUrl.trim())) {
+    if (audioUrl !== undefined && !audioUrl) {
       return res.status(400).json({ message: 'Audio URL is required' });
     }
     if (duration !== undefined && duration !== null && (typeof duration !== 'number' || duration < 0)) {
       return res.status(400).json({ message: 'Duration cannot be negative' });
     }
 
-    const song = await Song.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const song = await Song.findByIdAndUpdate(req.params.id, sanitized, { new: true, runValidators: true });
     if (song) {
       res.json(song);
     } else {
