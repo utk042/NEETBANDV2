@@ -435,6 +435,11 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
   const [dropCounter, setDropCounter] = useState(0);
   const fileInputRef = useRef(null);
 
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   const sharedSettingsRef = useRef(sharedSettings);
   useEffect(() => {
     sharedSettingsRef.current = sharedSettings;
@@ -573,12 +578,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
   };
 
   const retrySingleItem = useCallback(async (id) => {
-    let targetItem = null;
-    setItems((prev) => {
-      targetItem = prev.find((i) => i.id === id);
-      return prev;
-    });
-
+    const targetItem = itemsRef.current.find((i) => i.id === id);
     if (!targetItem) return;
 
     setIsSubmitting(true);
@@ -599,14 +599,15 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
 
     updateItem(id, { status: STATUS.PROCESSING });
     try {
+      const freshItem = itemsRef.current.find((i) => i.id === id) || targetItem;
       const payload = {
-        ...targetItem.settings,
+        ...freshItem.settings,
         audioUrl,
-        duration: typeof targetItem.duration === 'number' && !isNaN(targetItem.duration) ? targetItem.duration : undefined,
-        chapterNumber: targetItem.settings.chapterNumber !== '' && !isNaN(Number(targetItem.settings.chapterNumber))
-          ? Number(targetItem.settings.chapterNumber)
+        duration: typeof freshItem.duration === 'number' && !isNaN(freshItem.duration) ? freshItem.duration : undefined,
+        chapterNumber: freshItem.settings.chapterNumber !== '' && !isNaN(Number(freshItem.settings.chapterNumber))
+          ? Number(freshItem.settings.chapterNumber)
           : null,
-        courseId: targetItem.settings.courseId || null,
+        courseId: freshItem.settings.courseId || null,
       };
       await createSong(payload);
       updateItem(id, { status: STATUS.DONE, error: null });
@@ -616,34 +617,60 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
 
     setIsSubmitting(false);
 
-    setItems((latestItems) => {
-      const allDone = latestItems.length > 0 && latestItems.every((i) => i.status === STATUS.DONE);
-      if (allDone) {
-        setTimeout(() => onDone?.(), 300);
-      }
-      return latestItems;
-    });
+    const finalItems = itemsRef.current;
+    const allDone = finalItems.length > 0 && finalItems.every((i) => i.status === STATUS.DONE);
+    if (allDone) {
+      setTimeout(() => onDone?.(), 300);
+    }
   }, [onDone, updateItem]);
 
   const handleSubmit = async () => {
-    let pending = [];
-    setItems((prev) => {
-      pending = prev.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR);
-      return prev;
-    });
+    if (isSubmitting) return;
+
+    const currentItems = itemsRef.current;
+    const pending = currentItems.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR);
 
     if (pending.length === 0) return;
 
-    // Validate titles
-    const missingTitle = pending.find((i) => !i.settings.title?.trim());
-    if (missingTitle) {
-      setExpandedId(missingTitle.id);
+    // Auto-merge shared settings into pending items if individual fields are empty
+    const { title: _t, ...activeShared } = sharedSettingsRef.current || {};
+
+    let hasMissingTitle = false;
+    let missingTitleId = null;
+
+    const itemsToProcess = pending.map((item) => {
+      const mergedSettings = { ...item.settings };
+      Object.keys(activeShared).forEach((key) => {
+        if (
+          (mergedSettings[key] === '' || mergedSettings[key] === undefined || mergedSettings[key] === null) &&
+          activeShared[key] !== '' && activeShared[key] !== undefined && activeShared[key] !== null
+        ) {
+          mergedSettings[key] = activeShared[key];
+        }
+      });
+      if (!mergedSettings.title?.trim()) {
+        hasMissingTitle = true;
+        if (!missingTitleId) missingTitleId = item.id;
+      }
+      return { ...item, settings: mergedSettings };
+    });
+
+    if (hasMissingTitle) {
+      if (missingTitleId) setExpandedId(missingTitleId);
       return;
     }
 
+    // Update state with merged settings
+    setItems((prev) =>
+      prev.map((item) => {
+        const updated = itemsToProcess.find((p) => p.id === item.id);
+        return updated ? updated : item;
+      })
+    );
+
     setIsSubmitting(true);
 
-    for (const item of pending) {
+    for (const item of itemsToProcess) {
       // 1. Upload audio file
       updateItem(item.id, { status: STATUS.UPLOADING, uploadProgress: 0, error: null });
       let audioUrl = '';
@@ -661,14 +688,15 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
       // 2. Create song record
       updateItem(item.id, { status: STATUS.PROCESSING });
       try {
+        const freshItem = itemsRef.current.find((i) => i.id === item.id) || item;
         const payload = {
-          ...item.settings,
+          ...freshItem.settings,
           audioUrl,
-          duration: typeof item.duration === 'number' && !isNaN(item.duration) ? item.duration : undefined,
-          chapterNumber: item.settings.chapterNumber !== '' && !isNaN(Number(item.settings.chapterNumber))
-            ? Number(item.settings.chapterNumber)
+          duration: typeof freshItem.duration === 'number' && !isNaN(freshItem.duration) ? freshItem.duration : undefined,
+          chapterNumber: freshItem.settings.chapterNumber !== '' && !isNaN(Number(freshItem.settings.chapterNumber))
+            ? Number(freshItem.settings.chapterNumber)
             : null,
-          courseId: item.settings.courseId || null,
+          courseId: freshItem.settings.courseId || null,
         };
         await createSong(payload);
         updateItem(item.id, { status: STATUS.DONE, error: null });
@@ -679,14 +707,12 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
 
     setIsSubmitting(false);
 
-    // Verify completion with live state closure callback
-    setItems((latestItems) => {
-      const allDone = latestItems.length > 0 && latestItems.every((i) => i.status === STATUS.DONE);
-      if (allDone) {
-        setTimeout(() => onDone?.(), 300);
-      }
-      return latestItems;
-    });
+    // Verify completion
+    const finalItems = itemsRef.current;
+    const allDone = finalItems.length > 0 && finalItems.every((i) => i.status === STATUS.DONE);
+    if (allDone) {
+      setTimeout(() => onDone?.(), 300);
+    }
   };
 
   const pendingCount = items.filter((i) => i.status === STATUS.PENDING || i.status === STATUS.ERROR).length;

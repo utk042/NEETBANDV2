@@ -449,6 +449,10 @@ export default function ManageSongs() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (Object.keys(uploadProgress).length > 0) {
+      toast.info("Please wait for file upload to complete before saving.");
+      return;
+    }
     try {
       const payload = { ...formData };
       if (!payload.courseId) {
@@ -1031,9 +1035,16 @@ export default function ManageSongs() {
               <button 
                 form="add-song-form"
                 type="submit" 
-                className="bg-primary text-on-primary px-8 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-md shadow-primary/20 whitespace-nowrap"
+                disabled={Object.keys(uploadProgress).length > 0}
+                className="bg-primary text-on-primary px-8 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-md shadow-primary/20 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingSongId ? <><IconEdit size={18} stroke={2.5} /> Update Song</> : <><IconPlus size={18} stroke={2.5} /> Add Song</>}
+                {Object.keys(uploadProgress).length > 0 ? (
+                  <><IconLoader2 size={18} className="animate-spin" /> Uploading...</>
+                ) : editingSongId ? (
+                  <><IconEdit size={18} stroke={2.5} /> Update Song</>
+                ) : (
+                  <><IconPlus size={18} stroke={2.5} /> Add Song</>
+                )}
               </button>
             </div>
           </div>
