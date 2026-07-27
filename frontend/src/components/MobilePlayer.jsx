@@ -6,8 +6,8 @@ import { usePlayer } from '../contexts/PlayerContext';
 
 export default function MobilePlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, globalTracks, isPlaying, currentTime, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
-    playbackError, retryPlayback
+    currentTrack, globalTracks, isPlaying, currentTime, duration, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
+    playbackError, retryPlayback, isAudioRollActive, activeRollType
   } = usePlayer();
 
   const displayTrack = currentTrack || (globalTracks && globalTracks.length > 0 ? globalTracks[0] : {
@@ -18,8 +18,8 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
   });
 
   const currentSeconds = currentTime || 0;
-  const totalSeconds = displayTrack.durationSeconds || 260;
-  const progressPercent = Math.min((currentSeconds / totalSeconds) * 100, 100);
+  const totalSeconds = (currentTrack && duration > 0) ? duration : (displayTrack.durationSeconds || 0);
+  const progressPercent = totalSeconds > 0 ? Math.min((currentSeconds / totalSeconds) * 100, 100) : 0;
 
   const handleWrapperKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -50,7 +50,9 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
         onClick={(e) => {
           e.stopPropagation();
           const rect = e.currentTarget.getBoundingClientRect();
+          if (!rect || rect.width <= 0) return;
           const pct = (e.clientX - rect.left) / rect.width;
+          if (isNaN(pct) || !isFinite(pct)) return;
           handleSeek(Math.max(0, Math.min(pct * totalSeconds, totalSeconds)));
         }}
       >
@@ -67,12 +69,14 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
-            <span className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : 'text-on-surface-variant opacity-70'}`}>
+            <span className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : isAudioRollActive ? 'text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}>
               {playbackError ? (
                 <span className="flex items-center gap-1">
                   <IconAlertTriangle size={12} className="shrink-0" />
                   Playback error • Tap to retry
                 </span>
+              ) : isAudioRollActive ? (
+                activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'
               ) : displayTrack.chapter}
             </span>
           </div>
@@ -92,9 +96,9 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           <button 
             onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
-            aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
           >
-            {isPlaying ? (
+            {(isPlaying || isAudioRollActive) ? (
               <IconPlayerPauseFilled size={24} className="text-on-surface" aria-hidden="true" />
             ) : (
               <IconPlayerPlayFilled size={24} className="text-on-surface" aria-hidden="true" />

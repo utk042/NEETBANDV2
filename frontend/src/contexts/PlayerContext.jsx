@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, recordSongRepeat, recordSongShare } from '../services/api';
 import { useDialog } from './DialogContext';
 import logoImg from '../assets/logo.png';
+import { resolveAudioUrl, formatTime } from '../utils/urlUtils';
 
 const PlayerContext = createContext(null);
 
@@ -12,6 +13,7 @@ export function PlayerProvider({ children, user }) {
   const [globalTracks, setGlobalTracks] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [queue, setQueue] = useState([]);
@@ -34,10 +36,23 @@ export function PlayerProvider({ children, user }) {
   const adQueueRef = useRef(null); // pending song to play after ads
 
   const [playedWatermarks, setPlayedWatermarks] = useState([]);
+  const playedWatermarksRef = useRef([]);
+
   const { confirm } = useDialog();
 
   const audioRef = useRef(null); // main audio element (in DOM via PlayerProvider render)
   const audioRetryCountRef = useRef(0);
+  const retryTimeoutRef = useRef(null);
+  const activePlayRequestIdRef = useRef(0);
+  const isPlayingRef = useRef(false);
+  isPlayingRef.current = isPlaying;
+  const isMutedRef = useRef(isMuted);
+  isMutedRef.current = isMuted;
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const pendingSeekTimeRef = useRef(null);
+  const currentAdIndexRef = useRef(0);
+
   const adAudioRef = useRef(null); // ad audio element (pre-roll)
   const midRollAudioRef = useRef(null); // mid-roll ad audio element
   const watermarkAudioRef = useRef(null); // watermark audio element
@@ -53,32 +68,177 @@ export function PlayerProvider({ children, user }) {
   // Global Ad Config state
   const [adConfig, setAdConfig] = useState(null);
   const [playedAudioRolls, setPlayedAudioRolls] = useState([]);
+  const playedAudioRollsRef = useRef([]);
+
   const [playedPopups, setPlayedPopups] = useState([]);
+  const playedPopupsRef = useRef([]);
+
   const [showConfigPopup, setShowConfigPopup] = useState(false);
+
+  // Audio roll & guest roll state tracking (with synchronous ref control to block race conditions)
+  const [isAudioRollActive, setIsAudioRollActive] = useState(false);
+  const isAudioRollActiveRef = useRef(false);
+
+  const [activeRollType, setActiveRollType] = useState(null); // 'midroll' | 'guestAd' | null
+  const [pendingSeekTime, setPendingSeekTime] = useState(null);
+
+  const isDuckedRef = useRef(false);
+
+  const setAudioRollActive = useCallback((val) => {
+    isAudioRollActiveRef.current = val;
+    setIsAudioRollActive(val);
+  }, []);
+
+  // Helper to stop all ad audio elements cleanly and restore main volume
+  const stopAllAdAudio = useCallback(() => {
+    isDuckedRef.current = false;
+    isAudioRollActiveRef.current = false;
+    setIsAudioRollActive(false);
+    setActiveRollType(null);
+    setIsPlayingAd(false);
+    adQueueRef.current = null;
+
+    if (adAudioRef.current) {
+      try {
+        adAudioRef.current.pause();
+        adAudioRef.current.currentTime = 0;
+      } catch (e) {}
+    }
+    if (midRollAudioRef.current) {
+      try {
+        midRollAudioRef.current.pause();
+        midRollAudioRef.current.currentTime = 0;
+      } catch (e) {}
+    }
+    if (guestAdAudioRef.current) {
+      try {
+        guestAdAudioRef.current.pause();
+        guestAdAudioRef.current.currentTime = 0;
+      } catch (e) {}
+    }
+    if (watermarkAudioRef.current) {
+      try {
+        watermarkAudioRef.current.pause();
+        watermarkAudioRef.current.currentTime = 0;
+      } catch (e) {}
+    }
+    if (audioRef.current) {
+      const v = isMutedRef.current ? 0 : volumeRef.current;
+      audioRef.current.volume = v;
+    }
+  }, []);
+
+  const stopWatermark = useCallback(() => {
+    isDuckedRef.current = false;
+    if (watermarkAudioRef.current) {
+      try {
+        watermarkAudioRef.current.pause();
+        watermarkAudioRef.current.currentTime = 0;
+      } catch (e) {}
+    }
+    if (audioRef.current) {
+      const v = isMutedRef.current ? 0 : volumeRef.current;
+      audioRef.current.volume = v;
+    }
+  }, []);
+
+  // Synchronous ref state helpers for event listeners
+  const updatePlayedAudioRolls = useCallback((val) => {
+    const next = typeof val === 'function' ? val(playedAudioRollsRef.current) : val;
+    playedAudioRollsRef.current = next;
+    setPlayedAudioRolls(next);
+  }, []);
+
+  const updatePlayedWatermarks = useCallback((val) => {
+    const next = typeof val === 'function' ? val(playedWatermarksRef.current) : val;
+    playedWatermarksRef.current = next;
+    setPlayedWatermarks(next);
+  }, []);
+
+  const updatePlayedPopups = useCallback((val) => {
+    const next = typeof val === 'function' ? val(playedPopupsRef.current) : val;
+    playedPopupsRef.current = next;
+    setPlayedPopups(next);
+  }, []);
+
+  const cancelPendingRetry = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Safe play helper handling Promise rejections (e.g. AbortError or NotAllowedError)
+  const safePlay = useCallback((audioEl, requestId) => {
+    if (!audioEl) return Promise.reject(new Error('No audio element provided'));
+    const promise = audioEl.play();
+    if (promise !== undefined) {
+      return promise.catch(err => {
+        if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+          console.warn('Audio play request interrupted or user interaction needed:', err.message || err);
+        } else {
+          console.error('Audio play error:', err);
+        }
+        if (requestId !== undefined && requestId !== activePlayRequestIdRef.current) {
+          return;
+        }
+        throw err;
+      });
+    }
+    return Promise.resolve();
+  }, []);
+
+  // Native media event listeners for main audio element synchronization
+  const handleAudioPlay = useCallback(() => {
+    if (!isPlayingAd && !isAudioRollActiveRef.current) {
+      setIsPlaying(true);
+      setIsBuffering(false);
+    }
+  }, [isPlayingAd]);
+
+  const handleAudioPause = useCallback(() => {
+    if (!isPlayingAd && !isAudioRollActiveRef.current) {
+      setIsPlaying(false);
+      stopWatermark();
+    }
+  }, [isPlayingAd, stopWatermark]);
+
+  const handleAudioWaiting = useCallback(() => {
+    setIsBuffering(true);
+  }, []);
+
+  const handleAudioPlaying = useCallback(() => {
+    setIsBuffering(false);
+  }, []);
+
+  const handleAudioDurationChange = useCallback(() => {
+    if (audioRef.current) {
+      const rawDur = audioRef.current.duration;
+      if (!isNaN(rawDur) && isFinite(rawDur) && rawDur > 0) {
+        setDuration(rawDur);
+      }
+    }
+  }, []);
 
   // Fetch songs on mount
   useEffect(() => {
     getSongs().then(data => {
       const mapped = data.map(s => {
-        const durationSecs = s.duration || 200;
-        let formattedDuration = '';
-        if (typeof durationSecs === 'number' || !isNaN(Number(durationSecs))) {
-          const totalSecs = Number(durationSecs);
-          const mins = Math.floor(totalSecs / 60);
-          const secs = Math.floor(totalSecs % 60);
-          formattedDuration = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        } else {
-          formattedDuration = String(durationSecs);
-        }
+        const durationSecs = Number(s.duration) || 200;
+        const formattedDuration = formatTime(durationSecs);
+        const resolvedAudio = resolveAudioUrl(s.audioUrl);
+        const resolvedWatermark = s.watermarkUrl ? resolveAudioUrl(s.watermarkUrl) : '';
 
         return {
           ...s,
-          id: s._id,
+          id: s._id || s.id,
           grade: s.class,
           cover: s.thumbnailUrl || logoImg,
           durationSeconds: durationSecs,
           duration: formattedDuration,
           songType: s.songType || 'Study',
+          audioUrl: resolvedAudio,
+          watermarkUrl: resolvedWatermark,
         };
       });
       setGlobalTracks(mapped);
@@ -102,14 +262,27 @@ export function PlayerProvider({ children, user }) {
       .catch(() => setAdConfig(null));
   }, []);
 
-  // Sync volume & mute to audio element
+  // Sync volume & mute to all audio elements
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted, currentTrack]);
+    const v = isMuted ? 0 : volume;
+    const mainV = isDuckedRef.current ? v * 0.2 : v;
+    if (audioRef.current) audioRef.current.volume = mainV;
+    if (adAudioRef.current) adAudioRef.current.volume = v;
+    if (midRollAudioRef.current) midRollAudioRef.current.volume = v;
+    if (guestAdAudioRef.current) guestAdAudioRef.current.volume = v;
+    if (watermarkAudioRef.current) watermarkAudioRef.current.volume = v;
+  }, [volume, isMuted]);
 
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      cancelPendingRetry();
+    };
+  }, [cancelPendingRetry]);
 
+  // Sync state values to refs for use in async event handlers
+  useEffect(() => { pendingSeekTimeRef.current = pendingSeekTime; }, [pendingSeekTime]);
+  useEffect(() => { currentAdIndexRef.current = currentAdIndex; }, [currentAdIndex]);
 
   const showGuestLoginPrompt = useCallback(() => {
     confirm("Login Required", "Please login to continue listening.", {
@@ -122,39 +295,58 @@ export function PlayerProvider({ children, user }) {
   }, [confirm]);
 
   const handleAudioError = useCallback((e) => {
+    if (!audioRef.current || !currentTrack?.audioUrl) return;
+    if (!audioRef.current.src || audioRef.current.src === window.location.href) return;
+
     console.warn('Audio playback error encountered:', e);
+    cancelPendingRetry();
+
     if (audioRetryCountRef.current < 3) {
       audioRetryCountRef.current += 1;
       const delay = Math.pow(2, audioRetryCountRef.current - 1) * 1000; // 1s, 2s, 4s backoff
       console.log(`Retrying audio playback (Attempt ${audioRetryCountRef.current}/3) in ${delay}ms...`);
-      setTimeout(() => {
+      retryTimeoutRef.current = setTimeout(() => {
         if (audioRef.current && currentTrack?.audioUrl) {
+          const targetUrl = resolveAudioUrl(currentTrack.audioUrl);
+          if (audioRef.current.src !== targetUrl) {
+            audioRef.current.src = targetUrl;
+          }
           audioRef.current.load();
-          if (isPlaying) {
-            audioRef.current.play().catch(err => console.error('Retry play failed:', err));
+          if (isPlayingRef.current && !isAudioRollActiveRef.current) {
+            safePlay(audioRef.current, activePlayRequestIdRef.current).catch(err => {
+              console.error('Retry play failed:', err);
+              setIsPlaying(false);
+            });
           }
         }
       }, delay);
     } else {
       setIsPlaying(false);
+      setIsBuffering(false);
       setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
     }
-  }, [currentTrack, isPlaying]);
+  }, [currentTrack, safePlay, cancelPendingRetry]);
 
   const retryPlayback = useCallback(() => {
     setPlaybackError(null);
     audioRetryCountRef.current = 0;
+    cancelPendingRetry();
+
     if (audioRef.current && currentTrack?.audioUrl) {
+      const targetUrl = resolveAudioUrl(currentTrack.audioUrl);
+      audioRef.current.src = targetUrl;
       audioRef.current.load();
-      audioRef.current.play().then(() => {
+      safePlay(audioRef.current, activePlayRequestIdRef.current).then(() => {
         setIsPlaying(true);
+        setIsBuffering(false);
       }).catch(err => {
         console.error('Manual retry play failed:', err);
         setIsPlaying(false);
+        setIsBuffering(false);
         setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
       });
     }
-  }, [currentTrack]);
+  }, [currentTrack, safePlay, cancelPendingRetry]);
 
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
@@ -163,8 +355,11 @@ export function PlayerProvider({ children, user }) {
     const t = (isNaN(rawTime) || !isFinite(rawTime) || rawTime < 0) ? 0 : rawTime;
     setCurrentTime(t);
 
-    const rawDur = audioRef.current.duration || currentTrack.durationSeconds || 1;
-    const d = (isNaN(rawDur) || !isFinite(rawDur) || rawDur <= 0) ? 1 : rawDur;
+    const rawDur = audioRef.current.duration;
+    const fallbackDur = currentTrack.durationSeconds || 0;
+    const d = (rawDur && isFinite(rawDur) && rawDur > 0) ? rawDur : (fallbackDur > 0 ? fallbackDur : 0);
+
+    if (d <= 0) return;
 
     let pct = t / d;
     if (isNaN(pct) || !isFinite(pct) || pct < 0) pct = 0;
@@ -173,19 +368,20 @@ export function PlayerProvider({ children, user }) {
     const segment = Math.min(Math.floor(pct * 10), 9);
     if (segment !== lastDropOffSegment.current && segment >= 0) {
       lastDropOffSegment.current = segment;
-      if (currentTrack._id || currentTrack.id) {
-        recordSongDropOff(currentTrack._id || currentTrack.id, segment);
+      const id = currentTrack._id || currentTrack.id;
+      if (id) {
+        recordSongDropOff(id, segment);
       }
     }
 
     const isNormalSong = currentTrack.songType === 'Normal';
 
     // Guest user restriction (only 1st song of every chapter is free up to 20%)
-    const isFirstSongOfChapter = globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === (currentTrack._id || currentTrack.id);
+    const trackId = currentTrack._id || currentTrack.id;
+    const isFirstSongOfChapter = currentTrack.chapter
+      ? (globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === trackId || globalTracks.find(t => t.chapter === currentTrack.chapter)?._id === trackId)
+      : true;
 
-    // Only enforce the 20% preview cap on the *first* song of the chapter.
-    // Non-first-chapter songs are already blocked from starting in playWithAds;
-    // letting this fire on them too would wall off guests who somehow reach mid-track.
     if (!isNormalSong && !user?.isLoggedIn && isFirstSongOfChapter && pct >= 0.2) {
       if (!playedGuestAd) {
         setPlayedGuestAd(true);
@@ -193,74 +389,85 @@ export function PlayerProvider({ children, user }) {
         setIsPlaying(false);
 
         if (guestAdAudioRef.current && adConfig?.guestAdUrl) {
-          const url = adConfig.guestAdUrl;
-          let finalUrl = url;
-          if (!url.startsWith('http') && !url.match(/^[a-zA-Z]:\\/)) {
-            finalUrl = `${API_URL}${url}`;
-          }
+          const finalUrl = resolveAudioUrl(adConfig.guestAdUrl);
+          setAudioRollActive(true);
+          setActiveRollType('guestAd');
           guestAdAudioRef.current.src = finalUrl;
+          guestAdAudioRef.current.load();
           guestAdAudioRef.current.currentTime = 0;
-          guestAdAudioRef.current.play().catch(e => {
+          safePlay(guestAdAudioRef.current).catch(e => {
             console.error('Failed to play guest ad', e);
+            setAudioRollActive(false);
+            setActiveRollType(null);
             showGuestLoginPrompt();
           });
         } else {
           showGuestLoginPrompt();
         }
+      } else {
+        audioRef.current.pause();
+        setIsPlaying(false);
+        showGuestLoginPrompt();
       }
       return;
     }
 
-    // Watermark/Ads logic for free users
+    // Watermark logic for free users
     if (!isNormalSong && !user?.isPremium && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
       const pct100 = pct * 100;
-      const pos = currentTrack.watermarkPositions.find(p => pct100 >= p && pct100 < p + 2); // Trigger within a small window
-      if (pos !== undefined && !playedWatermarks.includes(pos)) {
-        setPlayedWatermarks(prev => [...prev, pos]);
+      const currentWatermarks = playedWatermarksRef.current;
+      const pos = currentTrack.watermarkPositions.find(p => pct100 >= p && !currentWatermarks.includes(p));
+      if (pos !== undefined) {
+        updatePlayedWatermarks(prev => [...prev, pos]);
         if (watermarkAudioRef.current) {
-          audioRef.current.volume = 0.2; // Dip main volume
-          watermarkAudioRef.current.src = currentTrack.watermarkUrl;
+          isDuckedRef.current = true;
+          const baseVol = isMutedRef.current ? 0 : volumeRef.current;
+          audioRef.current.volume = baseVol * 0.2; // Dip main volume proportionally
+          watermarkAudioRef.current.src = resolveAudioUrl(currentTrack.watermarkUrl);
+          watermarkAudioRef.current.load();
           watermarkAudioRef.current.currentTime = 0;
-          watermarkAudioRef.current.play().catch(e => {
-            console.error(e);
-            if (audioRef.current && !isMuted) audioRef.current.volume = volume;
+          safePlay(watermarkAudioRef.current).catch(e => {
+            console.error('Watermark play error:', e);
+            stopWatermark();
           });
-
         }
       }
     }
 
     // Unified Audio Roll & Popup Ad Logic (Guests & Non-Premium)
-    if (!isNormalSong && !user?.isPremium) {
+    if (!isNormalSong && !user?.isPremium && !isAudioRollActiveRef.current) {
       const pct100 = pct * 100;
       const audioRollsActive = currentTrack.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
       const popupsActive = currentTrack.popupsEnabled ?? adConfig?.popupsEnabled ?? true;
 
-      // Audio Roll Check — uses ONLY adConfig positions/URL (the global mid-roll ad config).
-      // Per-song watermarkPositions/watermarkUrl are handled exclusively by the volume-dip
-      // watermark block above (lines 198-214). They must never share position arrays,
-      // otherwise both blocks fire at the same moment: watermark dips volume AND audio roll
-      // pauses the track and plays the same URL through a second audio element simultaneously.
       const audioPositions = adConfig?.audioRollPositions;
       const audioUrl = adConfig?.audioRollUrl;
+      const currentRolls = playedAudioRollsRef.current;
 
       if (audioRollsActive && audioPositions && audioPositions.length > 0 && audioUrl) {
-        const audioPos = audioPositions.find(p => pct100 >= p && pct100 < p + 2);
-        if (audioPos !== undefined && !playedAudioRolls.includes(audioPos)) {
-          setPlayedAudioRolls(prev => [...prev, audioPos]);
+        const unplayedPositions = audioPositions.filter(p => pct100 >= p && !currentRolls.includes(p));
+        if (unplayedPositions.length > 0) {
+          const audioPos = Math.min(...unplayedPositions);
+          updatePlayedAudioRolls(prev => [...prev, audioPos]);
+
           // Pause main audio, play audio roll ad
           audioRef.current.pause();
           setIsPlaying(false);
+          setAudioRollActive(true);
+          setActiveRollType('midroll');
           
           if (midRollAudioRef.current) {
-            const url = audioUrl;
-            midRollAudioRef.current.src = url.startsWith('http') ? url : `${API_URL}${url}`;
+            const finalUrl = resolveAudioUrl(audioUrl);
+            midRollAudioRef.current.src = finalUrl;
+            midRollAudioRef.current.load();
             midRollAudioRef.current.currentTime = 0;
-            midRollAudioRef.current.play().catch(e => {
-              console.error(e);
+            safePlay(midRollAudioRef.current).catch(e => {
+              console.error('Audio roll playback error:', e);
+              setAudioRollActive(false);
+              setActiveRollType(null);
               if (audioRef.current) {
-                if (!isMuted) audioRef.current.volume = volume;
-                audioRef.current.play().catch(err => console.error(err));
+                audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
+                safePlay(audioRef.current, activePlayRequestIdRef.current).catch(err => console.error(err));
                 setIsPlaying(true);
               }
             });
@@ -273,37 +480,49 @@ export function PlayerProvider({ children, user }) {
         ? currentTrack.popupPositions
         : adConfig?.popupPositions;
       const popupHtml = currentTrack.popupHtml || adConfig?.popupHtml;
+      const currentPopups = playedPopupsRef.current;
 
       if (popupsActive && popupPositions && popupPositions.length > 0 && popupHtml) {
         const popupPos = popupPositions.find(p => pct100 >= p && pct100 < p + 2);
-        if (popupPos !== undefined && !playedPopups.includes(popupPos)) {
-          setPlayedPopups(prev => [...prev, popupPos]);
+        if (popupPos !== undefined && !currentPopups.includes(popupPos)) {
+          updatePlayedPopups(prev => [...prev, popupPos]);
           setShowConfigPopup(true);
         }
       }
     }
-  // Dependencies: isMuted/volume needed for the volume-restore branches;
-  // playedGuestAd needed so the guest-cap check reads current state, not stale closure;
-  // showGuestLoginPrompt must be stable (it is, via useCallback) but must be listed.
-  }, [currentTrack, user, playedWatermarks, playedAudioRolls, playedPopups, adConfig, confirm, globalTracks, isMuted, volume, playedGuestAd, showGuestLoginPrompt]);
+  }, [currentTrack, user, adConfig, globalTracks, playedGuestAd, showGuestLoginPrompt, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, safePlay, stopWatermark, setAudioRollActive]);
 
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
       const rawDur = audioRef.current.duration;
       const validDur = (isNaN(rawDur) || !isFinite(rawDur) || rawDur < 0) ? 0 : rawDur;
       setDuration(validDur);
-    }
-  }, []);
 
-  // Play ad sequence then the actual track
-  const playWithAds = useCallback(async (track) => {
+      if (pendingSeekTime !== null && !isAudioRollActiveRef.current) {
+        const target = Math.max(0, Math.min(pendingSeekTime, validDur || pendingSeekTime));
+        try {
+          audioRef.current.currentTime = target;
+          setCurrentTime(target);
+        } catch (e) {
+          console.warn('Seek on metadata load failed:', e);
+        }
+        setPendingSeekTime(null);
+      }
+    }
+  }, [pendingSeekTime]);
+
+  // Play ad sequence or directly start the track
+  const playWithAds = useCallback((track) => {
+    if (!track) return;
     const isNormalSong = track.songType === 'Normal';
+    const trackId = track._id || track.id;
 
     // Guest Limit check
-    const isFirstSongOfChapter = globalTracks.find(t => t.chapter === track.chapter)?.id === (track._id || track.id);
+    const isFirstSongOfChapter = track.chapter
+      ? (globalTracks.find(t => t.chapter === track.chapter)?.id === trackId || globalTracks.find(t => t.chapter === track.chapter)?._id === trackId)
+      : true;
     
     if (!isNormalSong && !user?.isLoggedIn && !isFirstSongOfChapter) {
-      // Guests cannot play anything except the 1st song of a chapter
       confirm("Login Required", "Please login to access more songs.", {
         showCancel: false,
         confirmText: 'Login',
@@ -314,38 +533,61 @@ export function PlayerProvider({ children, user }) {
       return;
     }
 
-    // Pre-roll ads are disabled. Mid-roll audio rolls (triggered inside handleTimeUpdate
-    // at adConfig.audioRollPositions) are the sole ad-interruption mechanism.
-    // Always play the track directly here.
-    setCurrentTrack(track);
+    stopAllAdAudio();
+    setPendingSeekTime(null);
+    setCurrentTime(0);
+
     setPlaybackError(null);
     audioRetryCountRef.current = 0;
-    setIsPlayingAd(false);
-    setIsPlaying(true);
-    lastDropOffSegment.current = -1;
-    if (track._id || track.id) recordSongPlay(track._id || track.id);
-  }, [user, confirm, globalTracks]);
+    cancelPendingRetry();
 
-  // Handle ad ended
-  const handleAdEnded = useCallback(() => {
-    const nextIdx = currentAdIndex + 1;
-    if (nextIdx < adAudioUrls.length) {
-      setCurrentAdIndex(nextIdx);
+    lastDropOffSegment.current = -1;
+
+    const audioRollsActive = track.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
+
+    if (!isNormalSong && !user?.isPremium && adAudioUrls.length > 0 && track.audioUrl && audioRollsActive) {
+      // Queue pre-roll ads
+      adQueueRef.current = track;
+      setCurrentAdIndex(0);
+      setIsPlayingAd(true);
+      setIsPlaying(false);
+      if (audioRef.current) audioRef.current.pause();
     } else {
-      // All ads done — play the real track
-      const track = adQueueRef.current;
+      // Direct track playback
       setIsPlayingAd(false);
       setCurrentTrack(track);
       setIsPlaying(true);
-      lastDropOffSegment.current = -1;
-      if (track?._id || track?.id) recordSongPlay(track._id || track.id);
+      if (trackId) recordSongPlay(trackId);
     }
-  }, [currentAdIndex, adAudioUrls.length]);
+  }, [user, confirm, globalTracks, cancelPendingRetry, stopAllAdAudio, adAudioUrls, adConfig]);
+
+  // Handle ad ended
+  const handleAdEnded = useCallback(() => {
+    if (!adQueueRef.current && !isPlayingAd) return;
+    const nextIdx = currentAdIndexRef.current + 1;
+    if (nextIdx < adAudioUrls.length) {
+      currentAdIndexRef.current = nextIdx;
+      setCurrentAdIndex(nextIdx);
+    } else {
+      // All pre-roll ads done — play the queued track
+      const track = adQueueRef.current;
+      adQueueRef.current = null;
+      setIsPlayingAd(false);
+      if (track) {
+        setCurrentTrack(track);
+        setIsPlaying(true);
+        lastDropOffSegment.current = -1;
+        const id = track._id || track.id;
+        if (id) recordSongPlay(id);
+      }
+    }
+  }, [adAudioUrls.length, isPlayingAd]);
 
   const handleNext = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
     if (list.length === 0) return;
-    let idx = list.findIndex(t => t.id === currentTrack?.id);
+    const currentId = currentTrack?._id || currentTrack?.id;
+    let idx = list.findIndex(t => (t._id || t.id) === currentId);
     let nextIdx;
     if (isShuffled) {
       nextIdx = Math.floor(Math.random() * list.length);
@@ -366,16 +608,21 @@ export function PlayerProvider({ children, user }) {
     const id = currentTrack._id || currentTrack.id;
     if (id) recordSongComplete(id);
     if (repeatMode === 'one') {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
+      updatePlayedWatermarks([]);
+      updatePlayedAudioRolls([]);
+      updatePlayedPopups([]);
+      setPlayedGuestAd(false);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        safePlay(audioRef.current, activePlayRequestIdRef.current).catch(err => {
+          if (err && err.name !== 'AbortError') setIsPlaying(false);
+        });
+      }
       if (id) recordSongRepeat(id);
       return;
     }
     handleNext();
-  // handleNext must be in deps: without it, handleEnded captures a stale closure
-  // that holds old queue/globalTracks/currentTrack values — causing wrong-track navigation
-  // when a song ends naturally.
-  }, [currentTrack, repeatMode, handleNext]);
+  }, [currentTrack, repeatMode, handleNext, safePlay, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups]);
 
   const handlePrev = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
@@ -385,17 +632,146 @@ export function PlayerProvider({ children, user }) {
       audioRef.current.currentTime = 0;
       return;
     }
-    const idx = list.findIndex(t => t.id === currentTrack?.id);
+    const currentId = currentTrack?._id || currentTrack?.id;
+    const idx = list.findIndex(t => (t._id || t.id) === currentId);
     const prevIdx = (idx - 1 + list.length) % list.length;
     playWithAds(list[prevIdx]);
   }, [queue, globalTracks, currentTrack, playWithAds]);
 
   const handleSeek = useCallback((time) => {
-    setCurrentTime(time);
-    if (audioRef.current) audioRef.current.currentTime = time;
-  }, []);
+    if (!currentTrack || !audioRef.current) return;
+    if (time === null || time === undefined || isNaN(time) || !isFinite(time)) return;
+
+    const rawDur = audioRef.current.duration || currentTrack.durationSeconds || 1;
+    const dur = (isNaN(rawDur) || !isFinite(rawDur) || rawDur <= 0) ? 1 : rawDur;
+    const clampedTime = Math.max(0, Math.min(time, dur));
+    const isNormalSong = currentTrack.songType === 'Normal';
+
+    // If an audio roll is currently playing, queue the pending seek target
+    if (isAudioRollActiveRef.current) {
+      setPendingSeekTime(clampedTime);
+      return;
+    }
+
+    stopWatermark();
+
+    // 1. Guest limit enforcement (max 20% of duration for 1st song of chapter)
+    const trackId = currentTrack._id || currentTrack.id;
+    const isFirstSongOfChapter = currentTrack.chapter
+      ? (globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === trackId || globalTracks.find(t => t.chapter === currentTrack.chapter)?._id === trackId)
+      : true;
+    if (!isNormalSong && !user?.isLoggedIn) {
+      const maxAllowedTime = 0.2 * dur;
+      if (time >= maxAllowedTime || !isFirstSongOfChapter) {
+        const clampedTarget = Math.min(time, maxAllowedTime);
+        setCurrentTime(clampedTarget);
+        if (audioRef.current && audioRef.current.readyState >= 1) {
+          audioRef.current.currentTime = clampedTarget;
+        } else {
+          setPendingSeekTime(clampedTarget);
+        }
+        audioRef.current?.pause();
+        setIsPlaying(false);
+
+        if (!playedGuestAd && isFirstSongOfChapter) {
+          setPlayedGuestAd(true);
+          if (guestAdAudioRef.current && adConfig?.guestAdUrl) {
+            const finalUrl = resolveAudioUrl(adConfig.guestAdUrl);
+            setAudioRollActive(true);
+            setActiveRollType('guestAd');
+            guestAdAudioRef.current.src = finalUrl;
+            guestAdAudioRef.current.load();
+            guestAdAudioRef.current.currentTime = 0;
+            safePlay(guestAdAudioRef.current).catch(e => {
+              console.error('Failed to play guest ad:', e);
+              setAudioRollActive(false);
+              setActiveRollType(null);
+              showGuestLoginPrompt();
+            });
+          } else {
+            showGuestLoginPrompt();
+          }
+        } else {
+          showGuestLoginPrompt();
+        }
+        return;
+      }
+    }
+
+    // 2. Audio Roll enforcement for free / non-premium users
+    if (!isNormalSong && !user?.isPremium) {
+      const targetPct100 = (time / dur) * 100;
+      const audioRollsActive = currentTrack.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
+      const audioPositions = adConfig?.audioRollPositions;
+      const audioUrl = adConfig?.audioRollUrl;
+      const currentRolls = playedAudioRollsRef.current;
+
+      if (audioRollsActive && audioPositions && audioPositions.length > 0 && audioUrl) {
+        const skippedUnplayed = audioPositions.filter(p => targetPct100 >= p && !currentRolls.includes(p));
+        if (skippedUnplayed.length > 0) {
+          const earliestRollPos = Math.min(...skippedUnplayed);
+          const rollTime = (earliestRollPos / 100) * dur;
+
+          updatePlayedAudioRolls(prev => [...prev, earliestRollPos]);
+          setPendingSeekTime(time);
+
+          setCurrentTime(rollTime);
+          if (audioRef.current && audioRef.current.readyState >= 1) {
+            audioRef.current.currentTime = rollTime;
+          }
+          audioRef.current?.pause();
+          setIsPlaying(false);
+
+          setAudioRollActive(true);
+          setActiveRollType('midroll');
+          if (midRollAudioRef.current) {
+            const finalUrl = resolveAudioUrl(audioUrl);
+            midRollAudioRef.current.src = finalUrl;
+            midRollAudioRef.current.load();
+            midRollAudioRef.current.currentTime = 0;
+            safePlay(midRollAudioRef.current).catch(e => {
+              console.error('Audio roll playback error on seek:', e);
+              setAudioRollActive(false);
+              setActiveRollType(null);
+              if (audioRef.current) {
+                audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
+                if (audioRef.current.readyState >= 1) {
+                  audioRef.current.currentTime = time;
+                }
+                safePlay(audioRef.current, activePlayRequestIdRef.current).catch(err => console.error(err));
+                setIsPlaying(true);
+              }
+            });
+          }
+          return;
+        }
+      }
+    }
+
+    // Standard seek if no roll skipped or guest limit hit
+    setCurrentTime(clampedTime);
+    if (audioRef.current) {
+      if (audioRef.current.readyState >= 1) {
+        audioRef.current.currentTime = clampedTime;
+      } else {
+        setPendingSeekTime(clampedTime);
+      }
+    }
+  }, [currentTrack, user, globalTracks, playedGuestAd, adConfig, showGuestLoginPrompt, updatePlayedAudioRolls, safePlay, stopWatermark, setAudioRollActive]);
 
   const togglePlay = useCallback(() => {
+    if (isAudioRollActiveRef.current) {
+      const activeElement = activeRollType === 'midroll' ? midRollAudioRef.current : guestAdAudioRef.current;
+      if (activeElement) {
+        if (!activeElement.paused) {
+          activeElement.pause();
+        } else {
+          safePlay(activeElement).catch(e => console.error('Failed to resume ad roll:', e));
+        }
+      }
+      return;
+    }
+
     const trackToPlay = currentTrack || (globalTracks.length > 0 ? globalTracks[0] : null);
     if (!trackToPlay || !trackToPlay.audioUrl) return;
     if (!currentTrack) {
@@ -406,23 +782,28 @@ export function PlayerProvider({ children, user }) {
       audioRef.current?.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current?.play().catch(() => setIsPlaying(false));
-      setIsPlaying(true);
+      safePlay(audioRef.current, activePlayRequestIdRef.current)
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
     }
-  }, [isPlaying, currentTrack, globalTracks, playWithAds]);
+  }, [isPlaying, currentTrack, globalTracks, playWithAds, activeRollType, safePlay]);
 
   const handleTrackSelect = useCallback((track) => {
-    if (currentTrack?.id === track.id) {
+    const currentId = currentTrack?._id || currentTrack?.id;
+    const targetId = track?._id || track?.id;
+    if (currentId && currentId === targetId) {
       togglePlay();
     } else {
       playWithAds(track);
       // Update recently played
-      setRecentlyPlayedTrackIds(prev => {
-        const filtered = prev.filter(id => id !== track.id);
-        const next = [track.id, ...filtered].slice(0, 10);
-        localStorage.setItem('neetband_recently_played', JSON.stringify(next));
-        return next;
-      });
+      if (targetId) {
+        setRecentlyPlayedTrackIds(prev => {
+          const filtered = prev.filter(id => id !== targetId);
+          const next = [targetId, ...filtered].slice(0, 10);
+          localStorage.setItem('neetband_recently_played', JSON.stringify(next));
+          return next;
+        });
+      }
     }
   }, [currentTrack, togglePlay, playWithAds]);
 
@@ -442,14 +823,24 @@ export function PlayerProvider({ children, user }) {
     if (navigator.share) {
       navigator.share({ title: t.title, text: `Listen to ${t.title} on NeetBand!`, url: window.location.href });
     }
-    if (t._id || t.id) recordSongShare(t._id || t.id);
+    const id = t._id || t.id;
+    if (id) recordSongShare(id);
   }, [currentTrack]);
 
   // PIP support (premium only)
+  const stopPipAnimation = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
   const requestPip = useCallback(async () => {
     if (!currentTrack || !user?.isPremium) return;
     try {
-      if (!pipVideoRef.current) return;
+      if (!pipVideoRef.current || !canvasRef.current) return;
+      stopPipAnimation();
+
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       canvas.width = 512;
@@ -461,7 +852,6 @@ export function PlayerProvider({ children, user }) {
         img.src = currentTrack.cover;
       }
       
-      // Draw album art onto canvas
       const drawFrame = () => {
         ctx.fillStyle = '#0d1b2a';
         ctx.fillRect(0, 0, 512, 512);
@@ -470,7 +860,6 @@ export function PlayerProvider({ children, user }) {
           ctx.drawImage(img, 0, 0, 512, 512);
         }
         
-        // Draw title
         ctx.fillStyle = '#ecc246';
         ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
@@ -484,52 +873,226 @@ export function PlayerProvider({ children, user }) {
       await pipVideoRef.current.requestPictureInPicture();
     } catch (e) {
       console.warn('PIP failed:', e);
+      stopPipAnimation();
     }
-  }, [currentTrack, user]);
+  }, [currentTrack, user, stopPipAnimation]);
 
   // Sync play/pause to audio element when isPlaying changes
   useEffect(() => {
-    if (!audioRef.current || isPlayingAd) return;
+    if (!audioRef.current || isPlayingAd || isAudioRollActiveRef.current) return;
     if (isPlaying) {
-      audioRef.current.play().catch(() => setIsPlaying(false));
+      if (audioRef.current.paused) {
+        safePlay(audioRef.current, activePlayRequestIdRef.current).catch(err => {
+          if (err && err.name !== 'AbortError') setIsPlaying(false);
+        });
+      }
     } else {
-      audioRef.current.pause();
+      if (!audioRef.current.paused) {
+        audioRef.current.pause();
+      }
     }
-  }, [isPlaying, isPlayingAd]);
+  }, [isPlaying, isPlayingAd, safePlay]);
 
-  // When track changes, reset and play
+  const currentTrackId = currentTrack?._id || currentTrack?.id;
+
+  // When track changes, reset audio element
   useEffect(() => {
+    activePlayRequestIdRef.current += 1;
+    const reqId = activePlayRequestIdRef.current;
+
     audioRetryCountRef.current = 0;
+    cancelPendingRetry();
     setPlaybackError(null);
-    if (!currentTrack?.audioUrl || !audioRef.current) return;
-    audioRef.current.src = currentTrack.audioUrl;
+    setIsBuffering(false);
+
+    stopAllAdAudio();
+    setPendingSeekTime(null);
+    setCurrentTime(0);
+
+    const trackId = currentTrack?._id || currentTrack?.id;
+    if (!currentTrack?.audioUrl || !audioRef.current || !trackId) return;
+
+    const finalUrl = resolveAudioUrl(currentTrack.audioUrl);
+    audioRef.current.src = finalUrl;
     audioRef.current.load();
     lastDropOffSegment.current = -1;
-    setPlayedWatermarks([]); // reset played watermarks
-    setPlayedAudioRolls([]); // reset ad triggers
-    setPlayedGuestAd(false); // reset guest ad trigger
-    setPlayedPopups([]);
+
+    updatePlayedWatermarks([]);
+    updatePlayedAudioRolls([]);
+    updatePlayedPopups([]);
+    setPlayedGuestAd(false);
     setShowConfigPopup(false);
-    if (isPlaying) {
-      audioRef.current.play().catch(() => setIsPlaying(false));
+
+    if (isPlayingRef.current && !isPlayingAd) {
+      safePlay(audioRef.current, reqId).catch(err => {
+        if (reqId === activePlayRequestIdRef.current && err && err.name !== 'AbortError') {
+          setIsPlaying(false);
+        }
+      });
     }
-  }, [currentTrack?.audioUrl]);
+  }, [currentTrackId, safePlay, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, stopAllAdAudio, cancelPendingRetry]);
 
   // When ad index changes and ads are playing, update ad audio src
   useEffect(() => {
     if (!isPlayingAd || !adAudioRef.current) return;
     const rawUrl = adAudioUrls[currentAdIndex];
     if (!rawUrl) { handleAdEnded(); return; }
-    const url = rawUrl.startsWith('http') ? rawUrl : `${API_URL}${rawUrl}`;
+    const url = resolveAudioUrl(rawUrl);
     adAudioRef.current.src = url;
     adAudioRef.current.load();
-    adAudioRef.current.play().catch(() => handleAdEnded());
-  }, [isPlayingAd, currentAdIndex]);
+    safePlay(adAudioRef.current).catch(() => handleAdEnded());
+  }, [isPlayingAd, currentAdIndex, adAudioUrls, handleAdEnded, safePlay]);
+
+  // Update Media Session API: metadata & action handlers
+  useEffect(() => {
+    if (!currentTrack || !('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title || 'NeetBand',
+        artist: currentTrack.subject || 'NeetBand',
+        album: currentTrack.chapter || currentTrack.grade || '',
+        artwork: currentTrack.cover ? [{ src: currentTrack.cover, sizes: '512x512', type: 'image/png' }] : [],
+      });
+
+      const isAnyActive = isPlaying || isPlayingAd || isAudioRollActive;
+      navigator.mediaSession.playbackState = isAnyActive ? 'playing' : 'paused';
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (isAudioRollActiveRef.current) {
+          const activeElement = activeRollType === 'midroll' ? midRollAudioRef.current : guestAdAudioRef.current;
+          if (activeElement && activeElement.paused) {
+            safePlay(activeElement).catch(console.error);
+          }
+        } else if (isPlayingAd) {
+          if (adAudioRef.current && adAudioRef.current.paused) {
+            safePlay(adAudioRef.current).catch(console.error);
+          }
+        } else {
+          safePlay(audioRef.current, activePlayRequestIdRef.current);
+          setIsPlaying(true);
+        }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isAudioRollActiveRef.current) {
+          const activeElement = activeRollType === 'midroll' ? midRollAudioRef.current : guestAdAudioRef.current;
+          activeElement?.pause();
+        } else if (isPlayingAd) {
+          adAudioRef.current?.pause();
+        } else {
+          audioRef.current?.pause();
+          setIsPlaying(false);
+        }
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', handlePrev);
+      navigator.mediaSession.setActionHandler('nexttrack', handleNext);
+
+      if ('setActionHandler' in navigator.mediaSession) {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.seekTime !== undefined && details.seekTime !== null) {
+            handleSeek(details.seekTime);
+          }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+          const skipTime = details.seekOffset || 10;
+          const ct = audioRef.current?.currentTime || 0;
+          handleSeek(Math.max(0, ct - skipTime));
+        });
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+          const skipTime = details.seekOffset || 10;
+          const dur = audioRef.current?.duration || currentTrack?.durationSeconds || 0;
+          const ct = audioRef.current?.currentTime || 0;
+          handleSeek(Math.min(dur, ct + skipTime));
+        });
+      }
+    } catch (e) {
+      console.warn('MediaSession configuration warning:', e);
+    }
+
+    return () => {
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.setActionHandler('play', null);
+          navigator.mediaSession.setActionHandler('pause', null);
+          navigator.mediaSession.setActionHandler('previoustrack', null);
+          navigator.mediaSession.setActionHandler('nexttrack', null);
+          if ('setActionHandler' in navigator.mediaSession) {
+            navigator.mediaSession.setActionHandler('seekto', null);
+            navigator.mediaSession.setActionHandler('seekbackward', null);
+            navigator.mediaSession.setActionHandler('seekforward', null);
+          }
+        } catch (e) {}
+      }
+    };
+  }, [currentTrack, handlePrev, handleNext, handleSeek, activeRollType, isPlaying, isPlayingAd, isAudioRollActive, safePlay]);
+
+  // Update Media Session position state (separate effect to avoid handler thrashing on every time update)
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !duration || duration <= 0 || !isFinite(duration)) return;
+    try {
+      if ('setPositionState' in navigator.mediaSession) {
+        const pos = Math.min(Math.max(0, currentTime), duration);
+        if (isFinite(pos)) {
+          navigator.mediaSession.setPositionState({
+            duration: duration,
+            playbackRate: 1,
+            position: pos
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore position state errors silently
+    }
+  }, [currentTime, duration]);
+
+  // Handle Picture-in-Picture event cleanup
+  useEffect(() => {
+    const video = pipVideoRef.current;
+    if (!video) return;
+    const handleLeavePip = () => {
+      stopPipAnimation();
+    };
+    video.addEventListener('leavepictureinpicture', handleLeavePip);
+    return () => {
+      video.removeEventListener('leavepictureinpicture', handleLeavePip);
+      stopPipAnimation();
+    };
+  }, [stopPipAnimation]);
+
+  // Desktop Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const target = e.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        setIsMuted(prev => !prev);
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        handleSeek(Math.max(0, currentTime - 5));
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        const dur = audioRef.current?.duration || currentTrack?.durationSeconds || 0;
+        handleSeek(Math.min(dur, currentTime + 5));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePlay, handleSeek, currentTime, currentTrack]);
+
+  const isAnyAudioActive = isPlaying || isPlayingAd || isAudioRollActive;
 
   const value = {
     globalTracks, setGlobalTracks,
     currentTrack, setCurrentTrack,
     isPlaying, setIsPlaying,
+    isAnyAudioActive,
+    isBuffering,
     currentTime, setCurrentTime,
     duration,
     queue, setQueue,
@@ -540,27 +1103,13 @@ export function PlayerProvider({ children, user }) {
     favoritedTrackIds, toggleFavorite,
     recentlyPlayedTrackIds,
     isPlayingAd, currentAdIndex, adAudioUrls,
+    isAudioRollActive, activeRollType,
     togglePlay, handleTrackSelect, handleNext, handlePrev, handleSeek,
     handleShare, requestPip,
-    audioRef, // expose for components that need direct access
-    showConfigPopup, setShowConfigPopup, adConfig, // expose popup state
+    audioRef,
+    showConfigPopup, setShowConfigPopup, adConfig,
     playbackError, setPlaybackError, retryPlayback
   };
-
-  // Update Media Session API
-  useEffect(() => {
-    if (!currentTrack || !('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentTrack.title || 'NeetBand',
-      artist: currentTrack.subject || 'NeetBand',
-      album: currentTrack.chapter || currentTrack.grade || '',
-      artwork: currentTrack.cover ? [{ src: currentTrack.cover, sizes: '512x512', type: 'image/png' }] : [],
-    });
-    navigator.mediaSession.setActionHandler('play', () => { audioRef.current?.play(); setIsPlaying(true); });
-    navigator.mediaSession.setActionHandler('pause', () => { audioRef.current?.pause(); setIsPlaying(false); });
-    navigator.mediaSession.setActionHandler('previoustrack', handlePrev);
-    navigator.mediaSession.setActionHandler('nexttrack', handleNext);
-  }, [currentTrack, handlePrev, handleNext]);
 
   return (
     <PlayerContext.Provider value={value}>
@@ -569,8 +1118,15 @@ export function PlayerProvider({ children, user }) {
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onDurationChange={handleAudioDurationChange}
         onEnded={handleEnded}
         onError={handleAudioError}
+        onPlay={handleAudioPlay}
+        onPause={handleAudioPause}
+        onWaiting={handleAudioWaiting}
+        onPlaying={handleAudioPlaying}
+        onCanPlay={handleAudioPlaying}
+        onStalled={handleAudioWaiting}
         preload="metadata"
         style={{ display: 'none' }}
       />
@@ -578,55 +1134,160 @@ export function PlayerProvider({ children, user }) {
         ref={adAudioRef}
         onEnded={handleAdEnded}
         onError={handleAdEnded}
+        onWaiting={handleAudioWaiting}
+        onPlaying={handleAudioPlaying}
+        onStalled={handleAudioWaiting}
         preload="metadata"
         style={{ display: 'none' }}
       />
       <audio
         ref={midRollAudioRef}
+        onWaiting={handleAudioWaiting}
+        onPlaying={handleAudioPlaying}
+        onStalled={handleAudioWaiting}
+        onPause={() => {
+          if (isAudioRollActiveRef.current && activeRollType === 'midroll') {
+            setIsBuffering(false);
+          }
+        }}
         onEnded={() => {
-          if (audioRef.current) {
-            if (!isMuted) audioRef.current.volume = volume;
-            audioRef.current.play().catch(e => console.error(e));
+          const reqId = activePlayRequestIdRef.current;
+          setAudioRollActive(false);
+          setActiveRollType(null);
+
+          const dur = audioRef.current?.duration || currentTrack?.durationSeconds || 1;
+          const targetTime = pendingSeekTimeRef.current;
+          setPendingSeekTime(null);
+
+          // Check if there are any remaining skipped rolls before targetTime
+          if (targetTime !== null && !user?.isPremium && currentTrack?.songType !== 'Normal') {
+            const targetPct = (targetTime / dur) * 100;
+            const audioPositions = (currentTrack?.audioRollPositions && currentTrack.audioRollPositions.length > 0)
+              ? currentTrack.audioRollPositions
+              : (adConfig?.audioRollPositions || []);
+            const remainingSkipped = audioPositions.filter(p => targetPct >= p && !playedAudioRollsRef.current.includes(p));
+            if (remainingSkipped.length > 0) {
+              const nextRollPos = Math.min(...remainingSkipped);
+              updatePlayedAudioRolls(prev => [...prev, nextRollPos]);
+              setPendingSeekTime(targetTime);
+              setAudioRollActive(true);
+              setActiveRollType('midroll');
+              if (midRollAudioRef.current && (adConfig?.audioRollUrl || currentTrack?.audioRollUrl)) {
+                const finalUrl = resolveAudioUrl(currentTrack?.audioRollUrl || adConfig.audioRollUrl);
+                midRollAudioRef.current.src = finalUrl;
+                midRollAudioRef.current.load();
+                midRollAudioRef.current.currentTime = 0;
+                safePlay(midRollAudioRef.current).catch(console.error);
+              }
+              return;
+            }
+          }
+
+          if (audioRef.current && reqId === activePlayRequestIdRef.current) {
+            audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
+            if (targetTime !== null && isFinite(targetTime) && targetTime >= 0) {
+              if (audioRef.current.readyState >= 1) {
+                audioRef.current.currentTime = targetTime;
+                setCurrentTime(targetTime);
+              } else {
+                setPendingSeekTime(targetTime);
+              }
+            }
+            safePlay(audioRef.current, reqId).catch(e => console.error(e));
             setIsPlaying(true);
           }
         }}
         onError={() => {
           console.warn('Mid-roll ad audio error, resuming track playback');
-          if (audioRef.current) {
-            if (!isMuted) audioRef.current.volume = volume;
-            audioRef.current.play().catch(e => console.error(e));
+          const reqId = activePlayRequestIdRef.current;
+          setAudioRollActive(false);
+          setActiveRollType(null);
+
+          const dur = audioRef.current?.duration || currentTrack?.durationSeconds || 1;
+          const targetTime = pendingSeekTimeRef.current;
+          setPendingSeekTime(null);
+
+          if (targetTime !== null && !user?.isPremium && currentTrack?.songType !== 'Normal') {
+            const targetPct = (targetTime / dur) * 100;
+            const audioPositions = (currentTrack?.audioRollPositions && currentTrack.audioRollPositions.length > 0)
+              ? currentTrack.audioRollPositions
+              : (adConfig?.audioRollPositions || []);
+            const remainingSkipped = audioPositions.filter(p => targetPct >= p && !playedAudioRollsRef.current.includes(p));
+            if (remainingSkipped.length > 0) {
+              const nextRollPos = Math.min(...remainingSkipped);
+              updatePlayedAudioRolls(prev => [...prev, nextRollPos]);
+              setPendingSeekTime(targetTime);
+              setAudioRollActive(true);
+              setActiveRollType('midroll');
+              if (midRollAudioRef.current && (adConfig?.audioRollUrl || currentTrack?.audioRollUrl)) {
+                const finalUrl = resolveAudioUrl(currentTrack?.audioRollUrl || adConfig.audioRollUrl);
+                midRollAudioRef.current.src = finalUrl;
+                midRollAudioRef.current.load();
+                midRollAudioRef.current.currentTime = 0;
+                safePlay(midRollAudioRef.current).catch(console.error);
+              }
+              return;
+            }
+          }
+
+          if (audioRef.current && reqId === activePlayRequestIdRef.current) {
+            audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
+            if (targetTime !== null && isFinite(targetTime) && targetTime >= 0) {
+              if (audioRef.current.readyState >= 1) {
+                audioRef.current.currentTime = targetTime;
+                setCurrentTime(targetTime);
+              } else {
+                setPendingSeekTime(targetTime);
+              }
+            }
+            safePlay(audioRef.current, reqId).catch(e => console.error(e));
             setIsPlaying(true);
           }
-        }}
-        preload="auto"
-        style={{ display: 'none' }}
-      />
-      <audio
-        ref={watermarkAudioRef}
-        onEnded={() => {
-          if (audioRef.current && !isMuted) audioRef.current.volume = volume;
-        }}
-        onError={() => {
-          console.warn('Watermark audio error');
-          if (audioRef.current && !isMuted) audioRef.current.volume = volume;
         }}
         preload="auto"
         style={{ display: 'none' }}
       />
       <audio
         ref={guestAdAudioRef}
-        onEnded={showGuestLoginPrompt}
-        onError={showGuestLoginPrompt}
+        onWaiting={handleAudioWaiting}
+        onPlaying={handleAudioPlaying}
+        onStalled={handleAudioWaiting}
+        onPause={() => {
+          if (isAudioRollActiveRef.current && activeRollType === 'guestAd') {
+            setIsBuffering(false);
+          }
+        }}
+        onEnded={() => {
+          setAudioRollActive(false);
+          setActiveRollType(null);
+          setPendingSeekTime(null);
+          if (audioRef.current) audioRef.current.pause();
+          setIsPlaying(false);
+          showGuestLoginPrompt();
+        }}
+        onError={() => {
+          console.warn('Guest ad audio error');
+          setAudioRollActive(false);
+          setActiveRollType(null);
+          setPendingSeekTime(null);
+          if (audioRef.current) audioRef.current.pause();
+          setIsPlaying(false);
+          showGuestLoginPrompt();
+        }}
+        preload="auto"
+        style={{ display: 'none' }}
+      />
+      <audio
+        ref={watermarkAudioRef}
+        onEnded={stopWatermark}
+        onError={stopWatermark}
         preload="auto"
         style={{ display: 'none' }}
       />
       {/* Hidden video + canvas for PIP */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       <video ref={pipVideoRef} style={{ display: 'none' }} muted playsInline />
-      {/* Ad banner overlay when ad is playing */}
-      {/* Removed per user request */}
 
-      
       {/* HTML Config Popup Modal */}
       {showConfigPopup && (currentTrack?.popupHtml || adConfig?.popupHtml) && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">

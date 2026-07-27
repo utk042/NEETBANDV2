@@ -9,14 +9,16 @@ import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
+import { formatTime } from '../utils/urlUtils';
 
 export default function StickyPlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, globalTracks, isPlaying, currentTime, isMuted, setIsMuted, volume, setVolume,
+    currentTrack, globalTracks, isPlaying, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
     togglePlay, handleNext, handlePrev, handleSeek,
     favoritedTrackIds, toggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
-    requestPip, playbackError, retryPlayback
+    requestPip, playbackError, retryPlayback,
+    isAudioRollActive, activeRollType
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -30,14 +32,8 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
     durationSeconds: 0
   });
 
-  const formatTime = (s) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
-  };
-
   const currentSeconds = currentTime || 0;
-  const totalSeconds = displayTrack.durationSeconds || 372;
+  const totalSeconds = (currentTrack && duration > 0) ? duration : (displayTrack.durationSeconds || 0);
   const progressPercent = totalSeconds > 0 ? Math.min((currentSeconds / totalSeconds) * 100, 100) : 0;
 
   React.useEffect(() => {
@@ -201,7 +197,9 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
   const handleScrub = (e) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
     const pct = (e.clientX - rect.left) / rect.width;
+    if (isNaN(pct) || !isFinite(pct)) return;
     handleSeek(Math.max(0, Math.min(pct * totalSeconds, totalSeconds)));
   };
 
@@ -275,7 +273,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           </div>
         </div>
 
-        {/* Center — Live Lyrics or Error Alert (1/3) */}
+        {/* Center — Live Lyrics, Ad Status, or Error Alert (1/3) */}
         <div className="w-1/3 flex justify-center text-center min-w-0">
           {playbackError ? (
             <div className="flex items-center gap-1.5 text-xs font-medium text-red-500 truncate">
@@ -287,6 +285,11 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
               >
                 Retry
               </button>
+            </div>
+          ) : isAudioRollActive ? (
+            <div className="flex items-center gap-2 text-xs font-extrabold text-amber-400 animate-pulse tracking-wide uppercase truncate">
+              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-ping"></span>
+              {activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'}
             </div>
           ) : (
             <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem]">
@@ -321,10 +324,10 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           <button
             onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="bg-primary text-on-primary rounded-full w-9 h-9 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-            aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
-            title={playbackError ? 'Retry Playback' : isPlaying ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
+            title={playbackError ? 'Retry Playback' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
           >
-            {playbackError ? <IconRotate size={18} /> : isPlaying ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
+            {playbackError ? <IconRotate size={18} /> : (isPlaying || isAudioRollActive) ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
           </button>
 
           <button

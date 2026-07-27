@@ -13,7 +13,7 @@ export default function AdSettings() {
   const [popupPositions, setPopupPositions] = useState([10, 40, 75]);
   const [popupHtml, setPopupHtml] = useState('');
   const [popupsEnabled, setPopupsEnabled] = useState(true);
-  const [guestAdUrl, setGuestAdUrl] = useState('C:\\Users\\UTKARSH\\Downloads\\Post Roll Ad.mp3.mpeg');
+  const [guestAdUrl, setGuestAdUrl] = useState('');
 
   // Upload progress state
   const [uploadingAudio, setUploadingAudio] = useState(false);

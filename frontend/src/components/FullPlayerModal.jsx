@@ -9,16 +9,19 @@ import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
+import { formatTime } from '../utils/urlUtils';
 
 export default function FullPlayerModal({ isOpen, onClose }) {
   const {
-    currentTrack, isPlaying, currentTime, isMuted, setIsMuted, volume, setVolume,
+    currentTrack, isPlaying, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
     togglePlay, handleNext: onNext, handlePrev: onPrev, handleSeek: onSeek,
     favoritedTrackIds, toggleFavorite: onToggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
-    requestPip, playbackError, retryPlayback
+    requestPip, playbackError, retryPlayback,
+    isAudioRollActive, activeRollType
   } = usePlayer();
   const { user } = useUserAuth();
+
 
   const navigate = useNavigate();
   const [lyrics, setLyrics] = useState([]);
@@ -67,8 +70,8 @@ export default function FullPlayerModal({ isOpen, onClose }) {
   const displayTrack = currentTrack;
 
   const currentSeconds = currentTime || 0;
-  const totalSeconds = displayTrack?.durationSeconds || 1;
-  const progressPercent = Math.min((currentSeconds / totalSeconds) * 100, 100);
+  const totalSeconds = (displayTrack && duration > 0) ? duration : (displayTrack?.durationSeconds || 1);
+  const progressPercent = totalSeconds > 0 ? Math.min((currentSeconds / totalSeconds) * 100, 100) : 0;
 
   useEffect(() => {
     if (!displayTrack?.lyricsUrl) {
@@ -243,19 +246,16 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     }
   }, [activeLyricIndex, showLyrics]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
   const handleScrub = (e) => {
     if (!onSeek) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
     const clickX = e.clientX - rect.left;
     const width = rect.width;
     const newPercent = clickX / width;
+    if (isNaN(newPercent) || !isFinite(newPercent)) return;
     const newTime = Math.floor(newPercent * totalSeconds);
+    if (isNaN(newTime) || !isFinite(newTime)) return;
     onSeek(Math.max(0, Math.min(newTime, totalSeconds)));
   };
 
@@ -343,7 +343,9 @@ export default function FullPlayerModal({ isOpen, onClose }) {
           </button>
         </div>
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-0 w-[60%] text-center">
-          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest truncate w-full">Now Playing</span>
+          <span className={`text-xs font-bold uppercase tracking-widest truncate w-full ${isAudioRollActive ? 'text-amber-400 font-extrabold animate-pulse' : 'text-on-surface-variant'}`}>
+            {isAudioRollActive ? (activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing') : 'Now Playing'}
+          </span>
           <span className="text-sm font-semibold text-primary truncate w-full">{displayTrack.chapter || "NeetBand"}</span>
         </div>
         <div className="flex-1 flex justify-end items-center gap-2 z-10">
@@ -415,7 +417,10 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                             ? 'text-white/40 text-lg md:text-xl font-medium'
                             : 'text-white/70 text-lg md:text-xl font-semibold hover:text-white'
                       }`}
-                      onClick={() => onSeek && onSeek(lyric.begin)}
+                      onClick={() => {
+                        if (isAudioRollActive) return;
+                        onSeek && onSeek(lyric.begin);
+                      }}
                     >
                       {lyric.text}
                     </div>
@@ -528,10 +533,10 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               <button 
                 onClick={playbackError ? retryPlayback : togglePlay}
                 className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
-                aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
-                title={playbackError ? 'Retry Playback' : isPlaying ? 'Pause' : 'Play'}
+                aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
+                title={playbackError ? 'Retry Playback' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
               >
-                {playbackError ? <IconRotate size={40} /> : isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
+                {playbackError ? <IconRotate size={40} /> : (isPlaying || isAudioRollActive) ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
               </button>
               <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Next Track">
                 <IconPlayerSkipForwardFilled size={36} />
