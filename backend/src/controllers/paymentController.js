@@ -20,6 +20,15 @@ const sanitizeUser = (userDoc) => {
   return obj;
 };
 
+// Timing-safe signature comparison helper to prevent timing attacks
+const safeCompare = (a, b) => {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a, 'utf-8');
+  const bufB = Buffer.from(b, 'utf-8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
+
 // Internal idempotent order fulfillment helper
 export const fulfillOrderInternal = async ({
   orderId,
@@ -33,6 +42,12 @@ export const fulfillOrderInternal = async ({
   discountCode
 }) => {
   let order = await Order.findOne({ razorpayOrderId: orderId });
+
+  // Extract structured shipping details if passed as object
+  const shippingObj = typeof address === 'object' && address !== null ? address : {};
+  const actualAddress = typeof address === 'string' ? address : (shippingObj.address || null);
+  const actualPhone = phone || shippingObj.phone || null;
+  const actualBookTitle = bookTitle || shippingObj.bookTitle || 'NeetBand Mastery Guide';
 
   // If order document doesn't exist (e.g. legacy test calls), create an emergency order doc
   if (!order) {
@@ -49,7 +64,15 @@ export const fulfillOrderInternal = async ({
       amount,
       currency: 'INR',
       discountCode: normalizedCode,
-      shippingDetails: { address, phone, bookTitle },
+      shippingDetails: {
+        fullName: shippingObj.fullName || null,
+        email: shippingObj.email || null,
+        phone: actualPhone,
+        address: actualAddress,
+        state: shippingObj.state || null,
+        pinCode: shippingObj.pinCode || null,
+        bookTitle: actualBookTitle
+      },
       status: 'created'
     });
     await order.save();
@@ -57,11 +80,16 @@ export const fulfillOrderInternal = async ({
 
   // Preserve & update shipping details on Order if new info provided
   if (address || phone || bookTitle) {
+    const existingShipping = order.shippingDetails ? (order.shippingDetails.toObject ? order.shippingDetails.toObject() : order.shippingDetails) : {};
     order.shippingDetails = {
-      ...order.shippingDetails?.toObject(),
-      ...(address && { address }),
-      ...(phone && { phone }),
-      ...(bookTitle && { bookTitle })
+      ...existingShipping,
+      ...(shippingObj.fullName && { fullName: shippingObj.fullName }),
+      ...(shippingObj.email && { email: shippingObj.email }),
+      ...(actualAddress && { address: actualAddress }),
+      ...(shippingObj.state && { state: shippingObj.state }),
+      ...(shippingObj.pinCode && { pinCode: shippingObj.pinCode }),
+      ...(actualPhone && { phone: actualPhone }),
+      ...(actualBookTitle && { bookTitle: actualBookTitle })
     };
     await order.save();
   }
@@ -94,7 +122,7 @@ export const fulfillOrderInternal = async ({
         paidAt: new Date()
       }
     },
-            { returnDocument: 'after' }
+    { returnDocument: 'after' }
   );
 
   if (!atomicOrder) {
@@ -128,9 +156,9 @@ export const fulfillOrderInternal = async ({
         amountPaid: order.amount / 100,
         fullName: shipping.fullName || user.name || 'N/A',
         email: shipping.email || user.email || 'N/A',
-        bookTitle: shipping.bookTitle || bookTitle || 'NeetBand Mastery Guide',
-        address: shipping.address || address || 'N/A',
-        phone: shipping.phone || phone || 'N/A',
+        bookTitle: shipping.bookTitle || actualBookTitle || 'NeetBand Mastery Guide',
+        address: shipping.address || actualAddress || 'N/A',
+        phone: shipping.phone || actualPhone || 'N/A',
         paymentStatus: 'Completed',
         dispatchStatus: 'Pending Dispatch'
       });
@@ -146,67 +174,68 @@ export const fulfillOrderInternal = async ({
     const expiry = new Date();
     expiry.setFullYear(expiry.getFullYear() + 1);
     user.membershipExpiry = expiry;
-    
-    const activeDiscountCode = (discountCode || order.discountCode)?.trim().toUpperCase();
-    if (activeDiscountCode && activeDiscountCode !== 'HALFPRICE') {
-      const affiliate = await Affiliate.findOne({ promoCode: activeDiscountCode, isActive: true });
-      if (affiliate) {
-        // Prevent self-referral
-        const isSelfReferral = affiliate.email.toLowerCase() === user.email.toLowerCase() || 
-                               affiliate._id.toString() === user._id.toString();
+  }
 
-        if (!isSelfReferral && !user.affiliatePartner) {
-          // Atomically tag user
-          const updatedUser = await User.findOneAndUpdate(
-            { _id: user._id, affiliatePartner: { $exists: false } },
-            { $set: { affiliatePartner: affiliate._id } },
-                    { returnDocument: 'after' }
+  // Handle Affiliate Tagging & Commission for both Subscription and Book Orders
+  const activeDiscountCode = (discountCode || order.discountCode)?.trim().toUpperCase();
+  if (activeDiscountCode && activeDiscountCode !== 'HALFPRICE') {
+    const affiliate = await Affiliate.findOne({ promoCode: activeDiscountCode, isActive: true });
+    if (affiliate) {
+      // Prevent self-referral
+      const isSelfReferral = affiliate.email.toLowerCase() === (user.email || '').toLowerCase() || 
+                             affiliate._id.toString() === user._id.toString();
+
+      if (!isSelfReferral && !user.affiliatePartner) {
+        // Atomically tag user
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: user._id, affiliatePartner: { $exists: false } },
+          { $set: { affiliatePartner: affiliate._id } },
+          { returnDocument: 'after' }
+        );
+
+        if (updatedUser) {
+          user.affiliatePartner = affiliate._id;
+
+          // Ensure single commission entry per user purchase
+          const alreadyCommissioned = affiliate.walletTransactions.some(
+            tx => tx.sourceUserId && tx.sourceUserId.toString() === user._id.toString()
           );
 
-          if (updatedUser) {
-            user.affiliatePartner = affiliate._id;
+          if (!alreadyCommissioned) {
+            affiliate.affiliatedUsers.push({
+              userId: user._id,
+              plan: order.plan || 'premium_scholar',
+              joinedAt: new Date()
+            });
+            
+            // Actual amount paid by buyer in INR (order.amount is stored in paise)
+            const amountPaid = order.amount / 100;
 
-            // Ensure single commission entry per user purchase
-            const alreadyCommissioned = affiliate.walletTransactions.some(
-              tx => tx.sourceUserId && tx.sourceUserId.toString() === user._id.toString()
-            );
-
-            if (!alreadyCommissioned) {
-              affiliate.affiliatedUsers.push({
-                userId: user._id,
-                plan: order.plan || 'premium_scholar',
-                joinedAt: new Date()
-              });
-              
-              // Actual amount paid by buyer in INR (order.amount is stored in paise)
-              const amountPaid = order.amount / 100;
-
-              let commissionAmount = 0;
-              if (affiliate.commissionType === 'percentage') {
-                commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
-              } else {
-                commissionAmount = affiliate.commissionValue || 0;
-              }
-
-              if (commissionAmount > 0) {
-                affiliate.walletTransactions.push({
-                  type: 'commission',
-                  amount: Math.round(commissionAmount),
-                  sourceUserId: user._id,
-                  date: new Date(),
-                  notes: `Commission for referring user ${user.name || user.email} (Plan: ${order.plan})`
-                });
-              }
-
-              await affiliate.save();
+            let commissionAmount = 0;
+            if (affiliate.commissionType === 'percentage') {
+              commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
+            } else {
+              commissionAmount = affiliate.commissionValue || 0;
             }
+
+            if (commissionAmount > 0) {
+              affiliate.walletTransactions.push({
+                type: 'commission',
+                amount: Math.round(commissionAmount),
+                sourceUserId: user._id,
+                date: new Date(),
+                notes: `Commission for referring user ${user.name || user.email} (Plan: ${order.plan})`
+              });
+            }
+
+            await affiliate.save();
           }
         }
       }
     }
-
-    await user.save();
   }
+
+  await user.save();
 
   return { message: 'Payment verified successfully', user: sanitizeUser(user), claim: claimDoc, order };
 };
@@ -241,6 +270,9 @@ export const createOrder = async (req, res) => {
         amount = Math.round(amount * (1 - discountVal / 100));
       }
     }
+
+    // Enforce Razorpay minimum order requirement of ₹1 (100 paise)
+    amount = Math.max(100, amount);
 
     const options = {
       amount,
@@ -311,7 +343,8 @@ export const verifyPayment = async (req, res) => {
       .digest('hex');
 
     const isMockAllowed = process.env.ALLOW_MOCK_PAYMENTS === 'true' || process.env.NODE_ENV === 'test';
-    const isValidSignature = expectedSignature === razorpay_signature || (isMockAllowed && razorpay_signature === 'mock_signature');
+    const isValidSignature = safeCompare(expectedSignature, razorpay_signature) || 
+      (isMockAllowed && safeCompare('mock_signature', razorpay_signature));
 
     if (!isValidSignature) {
       return res.status(400).json({ message: 'Invalid payment signature verification' });
@@ -370,6 +403,7 @@ export const razorpayWebhook = async (req, res) => {
   try {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
+    const isTestEnv = process.env.NODE_ENV === 'test';
 
     // Verify webhook signature if secret is configured
     if (webhookSecret) {
@@ -377,17 +411,25 @@ export const razorpayWebhook = async (req, res) => {
         return res.status(400).json({ message: 'Missing Razorpay webhook signature' });
       }
 
-      const payload = req.rawBody || (typeof req.body === 'string' || Buffer.isBuffer(req.body) 
-        ? req.body 
-        : JSON.stringify(req.body));
+      const payload = req.rawBody 
+        ? req.rawBody 
+        : (typeof req.body === 'string' || Buffer.isBuffer(req.body) 
+            ? req.body 
+            : JSON.stringify(req.body));
 
       const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
         .update(payload)
         .digest('hex');
 
-      if (expectedSignature !== signature) {
+      if (!safeCompare(expectedSignature, signature)) {
         return res.status(400).json({ message: 'Invalid webhook signature' });
+      }
+    } else if (!isTestEnv) {
+      // In production/live environments, reject unauthenticated webhook calls if secret isn't configured
+      console.warn('Razorpay Webhook received without configured RAZORPAY_WEBHOOK_SECRET.');
+      if (signature) {
+        return res.status(400).json({ message: 'Razorpay webhook secret missing in configuration' });
       }
     }
 
@@ -421,3 +463,4 @@ export const razorpayWebhook = async (req, res) => {
     res.status(500).json({ message: 'Webhook processing error', error: error.message });
   }
 };
+

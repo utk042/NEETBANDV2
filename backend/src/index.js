@@ -48,7 +48,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  exposedHeaders: ['x-new-token']
+  exposedHeaders: ['x-new-token', 'x-rtb-fingerprint-id', 'request-id', 'X-RTB-Fingerprint-Id', 'Request-Id']
 }));
 app.use(express.json({
   verify: (req, res, buf) => {

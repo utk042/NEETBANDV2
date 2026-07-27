@@ -78,5 +78,10 @@
     }
   ],
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/",
+    "type": "classic"
+  }
 }

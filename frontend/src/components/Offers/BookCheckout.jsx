@@ -34,6 +34,14 @@ export default function BookCheckout() {
       return;
     }
 
+    if (!user || !user.isLoggedIn) {
+      setError('Please log in to complete your book purchase.');
+      setTimeout(() => {
+        navigate('/login', { state: { from: { pathname: '/offers/book/checkout' } } });
+      }, 1500);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError('');
@@ -59,7 +67,7 @@ export default function BookCheckout() {
           razorpay_payment_id: 'pay_mock_' + Date.now(),
           razorpay_signature: 'mock_signature',
           plan: 'book_order',
-          address: fullShippingAddress,
+          address: shippingDetails,
           phone,
           bookTitle: 'NeetBand Mastery Guide'
         };
@@ -92,7 +100,7 @@ export default function BookCheckout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               plan: 'book_order',
-              address: fullShippingAddress,
+              address: shippingDetails,
               phone,
               bookTitle: 'NeetBand Mastery Guide'
             };
