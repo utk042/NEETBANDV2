@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import { IconBook, IconChevronLeft } from '@tabler/icons-react';
+import React, { useState, useEffect } from 'react';
+import { IconBook, IconChevronLeft, IconCreditCard } from '@tabler/icons-react';
 import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
+import { createPaymentOrder, verifyPayment } from '../../services/api';
+import { useUserAuth } from '../../contexts/UserAuthContext';
+import { loadRazorpayScript } from '../../utils/razorpayUtils';
 
 export default function BookCheckout() {
   const navigate = useNavigate();
+  const { user, login } = useUserAuth();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -12,16 +17,120 @@ export default function BookCheckout() {
   const [state, setState] = useState('');
   const [pinCode, setPinCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handlePurchase = (e) => {
+  useEffect(() => {
+    if (user) {
+      if (user.name) setFullName(user.name);
+      if (user.email) setEmail(user.email);
+    }
+  }, [user]);
+
+  const handlePurchase = async (e) => {
     e.preventDefault();
-    if (!fullName || !email || !phone || !address || !state || !pinCode) return;
-    setIsLoading(true);
-    // Simulate payment API call
-    setTimeout(() => {
+    if (!fullName || !email || !phone || !address || !state || !pinCode) {
+      setError('Please fill in all shipping details');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError('');
+      setSuccessMessage('');
+
+      const fullShippingAddress = `${address}, ${state} - ${pinCode}`;
+      const shippingDetails = {
+        fullName,
+        email,
+        phone,
+        address: fullShippingAddress,
+        state,
+        pinCode,
+        bookTitle: 'NeetBand Mastery Guide'
+      };
+
+      const order = await createPaymentOrder('book_order', null, shippingDetails);
+
+      // Handle mock mode fallback when using dummy key
+      if (order.id && order.id.startsWith('order_mock_')) {
+        const verificationData = {
+          razorpay_order_id: order.id,
+          razorpay_payment_id: 'pay_mock_' + Date.now(),
+          razorpay_signature: 'mock_signature',
+          plan: 'book_order',
+          address: fullShippingAddress,
+          phone,
+          bookTitle: 'NeetBand Mastery Guide'
+        };
+        const verifyRes = await verifyPayment(verificationData);
+        if (verifyRes.user && login) {
+          login({ ...user, ...verifyRes.user });
+        }
+        setSuccessMessage('Book order placed successfully!');
+        setIsLoading(false);
+        setTimeout(() => navigate('/dashboard'), 2000);
+        return;
+      }
+
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        throw new Error('Razorpay SDK failed to load. Check your internet connection.');
+      }
+
+      const options = {
+        key: order.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'NeetBand',
+        description: 'NeetBand Mastery Guide Book Order',
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            const verificationData = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: 'book_order',
+              address: fullShippingAddress,
+              phone,
+              bookTitle: 'NeetBand Mastery Guide'
+            };
+            const verifyRes = await verifyPayment(verificationData);
+            if (verifyRes.user && login) {
+              login({ ...user, ...verifyRes.user });
+            }
+            setSuccessMessage('Payment successful! Your book order has been placed.');
+            setTimeout(() => navigate('/dashboard'), 2000);
+          } catch (err) {
+            setError(err.message || 'Payment verification failed. Please contact support.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+        prefill: {
+          name: fullName,
+          email: email,
+          contact: phone
+        },
+        modal: {
+          ondismiss: () => {
+            setIsLoading(false);
+          }
+        },
+        theme: { color: '#ecc246' }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        setError(`Payment failed: ${response.error?.description || 'Transaction declined'}`);
+        setIsLoading(false);
+      });
+      rzp.open();
+    } catch (err) {
+      setError(err.message || 'Could not initialize checkout. Please try again.');
       setIsLoading(false);
-      navigate('/dashboard'); // Or a success page
-    }, 1500);
+    }
   };
 
   return (
@@ -36,6 +145,18 @@ export default function BookCheckout() {
           </button>
           <h1 className="text-2xl font-bold text-on-surface">Book Checkout</h1>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-error/10 border border-error/20 text-error text-sm rounded-xl font-medium">
+            {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl font-medium">
+            {successMessage}
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
@@ -114,18 +235,24 @@ export default function BookCheckout() {
                 </div>
               </div>
 
-              {/* Simulated Payment Notice */}
-              <div className="p-4 bg-blue-500/10 text-blue-500 text-sm rounded-xl flex items-start gap-3">
+              <div className="p-4 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm rounded-xl flex items-start gap-3">
                 <IconBook size={20} className="shrink-0 mt-0.5" />
-                <p>For this demonstration, clicking "Process Payment" will simulate a successful transaction and redirect to your dashboard.</p>
+                <p>Secure online payment powered by Razorpay. Your order will be processed immediately upon completion.</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-outline/10">
                 <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:flex-1 py-3 whitespace-nowrap">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading} className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 whitespace-nowrap">
-                  {isLoading ? 'Processing...' : 'Process Payment'}
+                <Button type="submit" disabled={isLoading} className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 whitespace-nowrap flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <>
+                      <IconCreditCard size={20} />
+                      Pay ₹499 via Razorpay
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -139,7 +266,7 @@ export default function BookCheckout() {
                 <span className="text-on-surface font-bold text-sm">₹999</span>
               </div>
               <div className="flex justify-between items-center mb-4 text-amber-500">
-                <span className="text-sm font-bold">Premium Discount (50%)</span>
+                <span className="text-sm font-bold">Special Discount (50%)</span>
                 <span className="font-bold text-sm">-₹500</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-outline/10">

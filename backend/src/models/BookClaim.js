@@ -6,6 +6,25 @@ const bookClaimSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  order: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order'
+  },
+  razorpayOrderId: {
+    type: String
+  },
+  razorpayPaymentId: {
+    type: String
+  },
+  amountPaid: {
+    type: Number
+  },
+  fullName: {
+    type: String
+  },
+  email: {
+    type: String
+  },
   bookTitle: {
     type: String,
     default: "NeetBand Mastery Guide"

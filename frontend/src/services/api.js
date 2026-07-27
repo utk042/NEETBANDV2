@@ -443,11 +443,11 @@ export const parseDocumentFile = async (file) => {
 };
 
 // --- PAYMENTS ---
-export const createPaymentOrder = async (plan, discountCode) => {
+export const createPaymentOrder = async (plan, discountCode, shippingDetails) => {
   const res = await apiFetch(`${API_URL}/payments/order`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ plan, discountCode }),
+    body: JSON.stringify({ plan, discountCode, shippingDetails }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

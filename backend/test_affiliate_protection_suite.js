@@ -18,6 +18,7 @@ import connectDB from './src/config/db.js';
 import User from './src/models/User.js';
 import Affiliate from './src/models/Affiliate.js';
 import WithdrawalRequest from './src/models/WithdrawalRequest.js';
+import Order from './src/models/Order.js';
 
 import paymentRoutes from './src/routes/paymentRoutes.js';
 import affiliateRoutes from './src/routes/affiliateRoutes.js';
@@ -269,6 +270,7 @@ async function runAffiliateTestSuite() {
     // Clean up created entities
     await Affiliate.findByIdAndDelete(affiliate._id);
     await User.findByIdAndDelete(user._id);
+    await Order.deleteMany({ user: user._id });
     await WithdrawalRequest.deleteMany({ affiliateId: affiliate._id });
 
   } catch (err) {

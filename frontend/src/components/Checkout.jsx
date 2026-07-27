@@ -1,37 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { IconChevronLeft, IconTag, IconCreditCard } from '@tabler/icons-react';
+import { useSearchParams } from 'react-router-dom';
 import { createPaymentOrder, verifyPayment, verifyPromo } from '../services/api';
+import { loadRazorpayScript } from '../utils/razorpayUtils';
 
-export default function Checkout({ user, navigate, onCheckoutSuccess }) {
+export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }) {
+  const [searchParams] = useSearchParams();
+  const selectedPlan = planProp || searchParams.get('plan') || 'premium_scholar';
+  
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
+  const basePrice = selectedPlan === 'scale_plan' ? 999 : 299;
+  const planDisplayName = selectedPlan === 'scale_plan' ? 'Scale Plan Subscription' : 'Premium Scholar (Monthly)';
+
   // Require login
   useEffect(() => {
     if (!user || !user.isLoggedIn) {
       navigate('/login');
     }
   }, [user, navigate]);
-
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const scriptId = 'razorpay-checkout-js';
-      if (document.getElementById(scriptId)) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
@@ -56,15 +47,16 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
   };
 
   const calculateTotal = () => {
-    let total = 299;
+    let total = basePrice;
     if (appliedPromo) {
       if (appliedPromo.type === 'percentage') {
-        total = total * (1 - appliedPromo.value / 100);
+        const totalPaise = Math.round((basePrice * 100) * (1 - appliedPromo.value / 100));
+        total = totalPaise / 100;
       } else {
         total = Math.max(0, total - appliedPromo.value);
       }
     }
-    return Math.floor(total);
+    return Number(total.toFixed(2));
   };
 
   const handlePurchase = async () => {
@@ -73,15 +65,15 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
       setError('');
       
       const finalDiscountCode = appliedPromo ? appliedPromo.code : '';
-      const order = await createPaymentOrder('premium_scholar', finalDiscountCode);
+      const order = await createPaymentOrder(selectedPlan, finalDiscountCode);
 
       // Dev/staging mode: mock payment flow when using test Razorpay keys
-      if (order.id.startsWith('order_mock_')) {
+      if (order.id && order.id.startsWith('order_mock_')) {
         const verificationData = {
           razorpay_order_id: order.id,
           razorpay_payment_id: 'pay_mock_' + Date.now(),
           razorpay_signature: 'mock_signature',
-          plan: 'premium_scholar',
+          plan: selectedPlan,
           discountCode: finalDiscountCode
         };
         const verifyRes = await verifyPayment(verificationData);
@@ -100,7 +92,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
         amount: order.amount,
         currency: order.currency,
         name: 'NeetBand',
-        description: 'Premium Scholar Subscription',
+        description: `${planDisplayName} Purchase`,
         order_id: order.id,
         handler: async function (response) {
           try {
@@ -108,7 +100,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              plan: 'premium_scholar',
+              plan: selectedPlan,
               discountCode: finalDiscountCode
             };
             const verifyRes = await verifyPayment(verificationData);
@@ -126,23 +118,21 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
           email: user?.email || '',
         },
         modal: {
-          // User closed the Razorpay modal without completing payment
           ondismiss: () => {
             setIsLoading(false);
           }
         },
         theme: { color: '#ecc246' }
       };
+
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        setError(`Payment failed: ${response.error.description}`);
+        setError(`Payment failed: ${response.error?.description || 'Transaction declined'}`);
         setIsLoading(false);
       });
       rzp.open();
-      // NOTE: Do NOT call setIsLoading(false) here — the modal is async.
-      // It will be cleared in handler, payment.failed, or modal.ondismiss.
     } catch (err) {
-      setError('Could not initialize checkout. Please try again.');
+      setError(err.message || 'Could not initialize checkout. Please try again.');
       setIsLoading(false);
     }
   };
@@ -166,7 +156,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
         </div>
 
         {error && (
-          <div className="bg-error/10 text-error px-4 py-3 rounded-xl mb-6">
+          <div className="bg-error/10 text-error px-4 py-3 rounded-xl mb-6 font-medium text-sm">
             {error}
           </div>
         )}
@@ -175,84 +165,82 @@ export default function Checkout({ user, navigate, onCheckoutSuccess }) {
           {/* Left Column: Payment Details */}
           <div className="w-full lg:w-[55%] max-w-2xl bg-surface-container rounded-3xl p-6 lg:p-10 shadow-sm border border-outline-variant/30">
             <h2 className="text-xl lg:text-2xl font-bold text-on-surface mb-2">Complete Your Payment</h2>
-        <p className="text-on-surface-variant text-sm mb-6">Pay securely. All transactions are encrypted.</p>
+            <p className="text-on-surface-variant text-sm mb-6">Pay securely. All transactions are encrypted.</p>
 
-        {/* Voucher Code */}
-        <div className="mb-6">
-          <label className="flex items-center gap-2 font-bold text-sm text-on-surface mb-2">
-            <IconTag size={16} /> Have a Voucher Code?
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input 
-              type="text" 
-              placeholder="Enter voucher code"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-              className="flex-1 px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
-            />
-            <button 
-              onClick={handleApplyPromo}
-              className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap"
-            >
-              Apply
-            </button>
-          </div>
-          {promoMessage.text && (
-            <p className={`text-sm mt-2 font-medium ${promoMessage.type === 'error' ? 'text-error' : promoMessage.type === 'success' ? 'text-green-500' : 'text-on-surface-variant'}`}>
-              {promoMessage.text}
-            </p>
-          )}
-        </div>
-
-
-
-        {/* Payment Button */}
-        <div className="mt-4">
-          <button 
-            onClick={handlePurchase}
-            disabled={isLoading}
-            className="w-full bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed text-on-primary py-4 rounded-xl font-bold text-base transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[1px] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <span className="w-5 h-5 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></span>
-            ) : (
-              <>
-                <IconCreditCard size={20} />
-                Pay with Razorpay
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Right Column: Order Summary */}
-      <div className="w-full lg:w-[45%] max-w-2xl bg-surface-container rounded-3xl p-6 lg:p-10 shadow-sm border border-outline-variant/30 lg:mt-0">
-        <h2 className="text-xl lg:text-2xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-6">Order Summary</h2>
-        
-        <div className="flex flex-col gap-5 text-base mb-8">
-          <div className="flex justify-between items-center">
-            <span className="text-on-surface-variant">Plan:</span>
-            <span className="font-semibold text-on-surface text-right">Premium Scholar (Monthly)</span>
-          </div>
-          <div className="flex justify-between items-center border-t border-outline-variant/30 pt-5 mt-2">
-            <span className="text-on-surface-variant">Subtotal:</span>
-            <span className="font-semibold text-on-surface text-right">₹299</span>
-          </div>
-          {appliedPromo && (
-            <div className="flex justify-between items-center text-green-500">
-              <span>Discount ({appliedPromo.code}):</span>
-              <span className="font-semibold text-right">
-                -₹{299 - calculateTotal()}
-              </span>
+            {/* Voucher Code */}
+            <div className="mb-6">
+              <label className="flex items-center gap-2 font-bold text-sm text-on-surface mb-2">
+                <IconTag size={16} /> Have a Voucher Code?
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Enter voucher code"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  className="flex-1 px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                />
+                <button 
+                  onClick={handleApplyPromo}
+                  className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap"
+                >
+                  Apply
+                </button>
+              </div>
+              {promoMessage.text && (
+                <p className={`text-sm mt-2 font-medium ${promoMessage.type === 'error' ? 'text-error' : promoMessage.type === 'success' ? 'text-green-500' : 'text-on-surface-variant'}`}>
+                  {promoMessage.text}
+                </p>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="flex justify-between items-center text-xl font-bold text-on-surface border-t border-outline-variant/30 pt-6">
-          <span>Total Amount:</span>
-          <span>₹{calculateTotal()}</span>
-        </div>
-      </div>
+            {/* Payment Button */}
+            <div className="mt-4">
+              <button 
+                onClick={handlePurchase}
+                disabled={isLoading}
+                className="w-full bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed text-on-primary py-4 rounded-xl font-bold text-base transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[1px] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <span className="w-5 h-5 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <>
+                    <IconCreditCard size={20} />
+                    Pay ₹{calculateTotal()} via Razorpay
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Order Summary */}
+          <div className="w-full lg:w-[45%] max-w-2xl bg-surface-container rounded-3xl p-6 lg:p-10 shadow-sm border border-outline-variant/30 lg:mt-0">
+            <h2 className="text-xl lg:text-2xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-6">Order Summary</h2>
+            
+            <div className="flex flex-col gap-5 text-base mb-8">
+              <div className="flex justify-between items-center">
+                <span className="text-on-surface-variant">Plan:</span>
+                <span className="font-semibold text-on-surface text-right">{planDisplayName}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-outline-variant/30 pt-5 mt-2">
+                <span className="text-on-surface-variant">Subtotal:</span>
+                <span className="font-semibold text-on-surface text-right">₹{basePrice}</span>
+              </div>
+              {appliedPromo && (
+                <div className="flex justify-between items-center text-green-500">
+                  <span>Discount ({appliedPromo.code}):</span>
+                  <span className="font-semibold text-right">
+                    -₹{basePrice - calculateTotal()}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center text-xl font-bold text-on-surface border-t border-outline-variant/30 pt-6">
+              <span>Total Amount:</span>
+              <span>₹{calculateTotal()}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

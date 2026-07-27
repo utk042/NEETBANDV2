@@ -50,7 +50,11 @@ app.use(cors({
   credentials: true,
   exposedHeaders: ['x-new-token']
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
