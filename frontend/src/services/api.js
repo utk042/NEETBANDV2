@@ -88,13 +88,23 @@ export const loginWithSupabaseToken = async (accessToken) => {
 
 export const getUserProfile = async () => {
   const res = await apiFetch(`${API_URL}/auth/profile`, { headers: getHeaders() });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const errText = await res.text();
+    const err = new Error(errText);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 };
 
 export const getLmsUserProfile = async () => {
   const res = await apiFetch(`${API_URL}/auth/profile`, { headers: getLmsHeaders() });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const errText = await res.text();
+    const err = new Error(errText);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 };
 
@@ -104,7 +114,12 @@ export const getAffiliateUserProfile = async () => {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
   const res = await apiFetch(`${API_URL}/affiliates/profile`, { headers });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const errText = await res.text();
+    const err = new Error(errText);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 };
 

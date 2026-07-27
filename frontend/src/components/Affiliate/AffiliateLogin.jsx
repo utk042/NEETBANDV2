@@ -81,6 +81,7 @@ export default function AffiliateLogin({ onLoginSuccess, navigate }) {
       };
       
       localStorage.setItem('affiliate_token', data.token);
+      localStorage.setItem('neetband_affiliate_user', JSON.stringify(sessionUser));
       
       setTimeout(() => {
         setIsLoading(false);

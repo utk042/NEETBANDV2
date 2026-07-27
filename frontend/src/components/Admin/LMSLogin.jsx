@@ -84,6 +84,7 @@ export default function LMSLogin({ onLoginSuccess, navigate }) {
       };
       
       localStorage.setItem('lms_token', data.token);
+      localStorage.setItem('neetband_lms_user', JSON.stringify(sessionUser));
       
       setTimeout(() => {
         setIsLoading(false);

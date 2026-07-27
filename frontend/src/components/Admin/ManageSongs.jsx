@@ -4,6 +4,7 @@ import { useDialog } from '../../contexts/DialogContext';
 import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconStack2 } from '@tabler/icons-react';
 import logoImg from '../../assets/logo.png';
 import BatchUploadModal from './BatchUploadModal';
+import { cleanSongTitle } from '../../utils/songTitleUtils';
 
 const getFullUrl = (url) => {
   if (!url) return '';
@@ -275,6 +276,13 @@ export default function ManageSongs() {
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
       if (field === 'audioUrl') {
         setAudioUrlValid(null);
+        if (file && file.name) {
+          const autoTitle = cleanSongTitle(file.name);
+          setFormData(prev => ({
+            ...prev,
+            title: prev.title?.trim() ? prev.title : autoTitle
+          }));
+        }
       }
       toast.success("File uploaded successfully");
     } catch (err) {
@@ -571,7 +579,22 @@ export default function ManageSongs() {
               <form id="add-song-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                   <div className="flex flex-col md:col-span-2">
-                    <label className={labelClass}>Song Title</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className={labelClass}>Song Title</label>
+                      {formData.audioUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const clean = cleanSongTitle(formData.audioUrl);
+                            if (clean) setFormData(prev => ({ ...prev, title: clean }));
+                          }}
+                          className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                          title="Extract song title from audio filename without extension or underscores"
+                        >
+                          Auto-fill from filename
+                        </button>
+                      )}
+                    </div>
                     <input type="text" required placeholder="e.g. The Cell Cycle Rap" className={inputClass} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                   </div>
                   <div className="flex flex-col">
@@ -662,7 +685,7 @@ export default function ManageSongs() {
                             />
                             <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
                               <IconUpload size={12} stroke={2.5} /> Upload
-                              <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'audioUrl', 'songs/audio')} />
+                              <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'audioUrl', 'songs/audio'); e.target.value = ''; }} />
                             </label>
                           </div>
                           <button
@@ -781,7 +804,7 @@ export default function ManageSongs() {
                                 ) : (
                                   <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
                                     <IconUpload size={12} stroke={2.5} /> Upload
-                                    <input type="file" className="hidden" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a" onChange={e => handleFileUpload(e, 'watermarkUrl', 'songs/watermarks')} />
+                                    <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'watermarkUrl', 'songs/watermarks'); e.target.value = ''; }} />
                                   </label>
                                 )}
                               </div>

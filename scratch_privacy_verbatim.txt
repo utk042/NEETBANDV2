@@ -1,0 +1,184 @@
+## Privacy Policy
+NEET BAND respects your privacy. This Privacy Policy explains how we collect, use, store, protect, and share your information when you use our website, services, study songs, memberships, login features, payment features, advertisements, and related services.
+By using NEET BAND, you agree to the practices described in this Privacy Policy.
+## 1. About NEET BAND
+NEET BAND is an educational audio-learning platform that converts study topics into simple study songs to help students revise on the go.
+For any privacy-related question, you may contact us at:
+NEET BAND
+Address: Dr Biresh Guha Street, Kolkata-700017
+Phone: +91 9143240488
+Email: Contact@neetband.com
+Website: https://neetband.com/
+## 2. Information We Collect
+We may collect the following types of information:
+### A. Account Information
+When you create an account, register, subscribe, or log in, we may collect:
+- Name
+- Email address
+- Username
+- Password or login credentials
+- Phone number, if provided
+- Account status
+- Membership plan
+- Subscription details
+- Login history
+- Communication preferences
+### B. Google Social Login Information
+If you choose to sign in using Google, we may receive limited information from your Google account, such as:
+- Name
+- Email address
+- Google account ID
+- Profile picture, if provided by Google
+We use this information only to create your account, help you log in, identify your account, and provide access to NEET BAND services.
+We do not access your Gmail, Google Drive, Google Calendar, YouTube account, contacts, or other Google data unless you separately give explicit permission for such access.
+### C. Payment and Subscription Information
+When you purchase a membership or paid service, payment may be processed through third-party payment providers.
+We may collect and store:
+- Order details
+- Payment status
+- Subscription plan
+- Transaction ID
+- Invoice or billing record
+- Coupon code used, if any
+We do not store your full debit card, credit card, UPI PIN, net banking password, or sensitive payment credentials. These are handled by the payment gateway or payment processor.
+### D. Usage Information
+When you use our website, we may collect:
+- Pages visited
+- Songs played
+- Preview activity
+- Login time
+- Device type
+- Browser type
+- IP address
+- Approximate location based on IP address
+- Referral source
+- Time spent on the website
+- Clicks and navigation activity
+This helps us improve website performance, user experience, content quality, and security.
+### E. Cookies and Tracking Technologies
+We may use cookies, pixels, analytics tools, and similar technologies to:
+- Keep users logged in
+- Remember preferences
+- Improve website performance
+- Understand website traffic
+- Prevent fraud and abuse
+- Measure marketing performance
+- Show relevant advertisements or audio ads
+You can control cookies through your browser settings. However, disabling cookies may affect login, membership access, payment flow, and website functionality.
+### F. Communication Information
+If you contact us by email, form, phone, WhatsApp, or any other method, we may collect:
+- Your name
+- Contact details
+- Message content
+- Support request details
+- Feedback or complaint details
+## 3. How We Use Your Information
+We use your information for the following purposes:
+- To create and manage your account
+- To allow login through email or Google
+- To provide access to free or paid study songs
+- To manage memberships and subscriptions
+- To process payments and invoices
+- To provide customer support
+- To improve NEET BAND content and website experience
+- To personalize learning and revision experience
+- To detect and prevent fraud, abuse, or unauthorized access
+- To send important service updates
+- To send promotional messages, only where permitted
+- To comply with legal obligations
+- To measure website and advertisement performance
+- To provide ad-supported access where applicable
+## 4. Children and Student Users
+NEET BAND is designed for students, including school-going students. Because some users may be minors, we take children’s privacy seriously.
+If a user is below 18 years of age, the account should be created, purchased, or managed with the consent and supervision of a parent or legal guardian.
+We do not knowingly collect personal data from children without appropriate parent or guardian consent. If a parent or guardian believes that a child has provided personal information without consent, they may contact us at Contact@neetband.com, and we will take appropriate steps to review, restrict, correct, or delete such information where required.
+We do not knowingly sell children’s personal data.
+We do not knowingly use children’s personal data for behavioural advertising. Advertisements, if shown, may be contextual, general, or based on non-personal aggregated usage information.
+## 5. Google User Data
+When you use Google Login, NEET BAND may access basic profile information from your Google account only for authentication and account creation.
+We use Google user data only for:
+- Logging you into NEET BAND
+- Creating or linking your NEET BAND account
+- Identifying your account
+- Preventing duplicate accounts
+- Providing access to website features
+We do not sell Google user data.
+We do not use Google user data for unrelated advertising.
+We do not transfer Google user data to third parties except where necessary to operate our service, comply with law, protect security, or with your explicit consent.
+You may revoke NEET BAND’s access to your Google account from your Google Account permissions page at any time.
+## 6. Advertisements and Sponsored Content
+NEET BAND may offer free access supported by advertisements, including audio ads, display ads, sponsor messages, or educational partner messages.
+Advertisers or sponsors may receive limited aggregated reports such as:
+- Number of ad plays
+- Number of impressions
+- General campaign performance
+- Non-personal usage statistics
+We do not provide advertisers with your personal account details such as your name, email, phone number, or individual learning activity unless you explicitly consent or submit your details directly to that advertiser.
+## 7. Sharing of Information
+We may share limited information with trusted third parties who help us operate NEET BAND, including:
+- Website hosting providers
+- Payment gateways
+- Email service providers
+- Analytics providers
+- Security and fraud-prevention tools
+- Customer support tools
+- Advertising or sponsorship partners, in aggregated or limited form
+- Legal or regulatory authorities, if required by law
+These third parties are expected to use the information only for the purpose of providing their services to us.
+## 8. Payment Providers
+Payments are processed by third-party payment gateways or payment service providers. Their privacy policies and terms may apply when you make a payment.
+We recommend that you review the privacy policy of the relevant payment provider before completing a transaction.
+## 9. Data Retention
+We retain personal information only as long as necessary for the purposes described in this Privacy Policy, including:
+- Maintaining your account
+- Providing membership access
+- Keeping payment and invoice records
+- Resolving disputes
+- Preventing fraud
+- Complying with legal, tax, accounting, or regulatory requirements
+When information is no longer required, we may delete, anonymize, or securely archive it.
+## 10. Data Security
+We use reasonable technical and organizational measures to protect your information from unauthorized access, misuse, loss, alteration, or disclosure.
+However, no website, internet transmission, payment system, or storage system is 100% secure. You are responsible for keeping your login details confidential and for using a strong password.
+If you suspect unauthorized access to your account, contact us immediately at Contact@neetband.com.
+## 11. Your Rights
+Subject to applicable law, you may request to:
+- Access your personal information
+- Correct inaccurate information
+- Update your account details
+- Withdraw consent where processing is based on consent
+- Request deletion of your account or personal data
+- Opt out of promotional communication
+- Raise a privacy-related complaint
+To make a privacy request, contact us at:
+Email: Contact@neetband.com
+We may ask for verification before processing your request.
+## 12. Promotional Emails and Messages
+We may send service-related messages such as login alerts, payment confirmations, subscription updates, and important account notices.
+We may also send promotional messages about NEET BAND features, offers, study content, or educational updates. You may opt out of promotional emails by using the unsubscribe option or contacting us.
+Even after opting out of promotional messages, you may still receive important account, payment, security, or service-related messages.
+## 13. Cookies and Analytics
+We may use analytics tools to understand how users interact with NEET BAND. This helps us improve content, website speed, user experience, and marketing.
+Analytics may collect information such as device type, browser, pages visited, session duration, and general location.
+You may disable cookies through your browser settings, but some features may not work properly.
+## 14. Third-Party Links
+NEET BAND may contain links to third-party websites, payment pages, videos, tools, or services.
+We are not responsible for the privacy practices, content, or security of third-party websites. You should read their privacy policies before sharing any personal information.
+## 15. Data Transfer
+Your information may be processed or stored in India or in other countries where our service providers operate.
+By using NEET BAND, you understand that your information may be transferred, stored, or processed outside your state, region, or country, subject to applicable law.
+## 16. Account Deletion
+You may request deletion of your NEET BAND account by contacting us at:
+Email: Contact@neetband.com
+After receiving your request, we may delete or anonymize your personal information, unless we are required to retain certain information for legal, payment, tax, fraud-prevention, security, or dispute-resolution purposes.
+## 17. Changes to This Privacy Policy
+We may update this Privacy Policy from time to time.
+When we update it, we may revise the “Effective Date” at the top of this page. Continued use of NEET BAND after changes means you accept the updated Privacy Policy.
+For major changes, we may provide additional notice through the website, email, or account notification.
+## 18. Contact Us
+For privacy questions, account deletion requests, data correction requests, or complaints, contact us at:
+NEET BAND
+Address: Dr Biresh Guha Street, Kolkata-700017
+Phone: +91 9143240488
+Email: Contact@neetband.com
+Website: https://neetband.com/

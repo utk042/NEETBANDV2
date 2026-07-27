@@ -4,7 +4,19 @@ import { getLmsUserProfile } from '../services/api';
 const LmsAuthContext = createContext(null);
 
 export function LmsAuthProvider({ children }) {
-  const [lmsUser, setLmsUser] = useState({ isLoggedIn: false, name: '', email: '' });
+  const [lmsUser, setLmsUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem('neetband_lms_user');
+      const token = localStorage.getItem('lms_token');
+      if (storedUser && token) {
+        const parsed = JSON.parse(storedUser);
+        return { ...parsed, token, isLoggedIn: true };
+      }
+    } catch (e) {
+      console.warn('Failed to parse cached LMS user:', e);
+    }
+    return { isLoggedIn: false, name: '', email: '' };
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -13,11 +25,22 @@ export function LmsAuthProvider({ children }) {
       if (token) {
         try {
           const profile = await getLmsUserProfile();
-          setLmsUser({ ...profile, token, isLoggedIn: true });
+          const fullUser = { ...profile, token, isLoggedIn: true };
+          setLmsUser(fullUser);
+          localStorage.setItem('neetband_lms_user', JSON.stringify(fullUser));
         } catch (e) {
-          localStorage.removeItem('lms_token');
-          setLmsUser({ isLoggedIn: false, name: '', email: '' });
+          const isAuthError = e?.status === 401 || e?.status === 403 || e?.message?.includes('Not authorized') || e?.message?.includes('token');
+          if (isAuthError) {
+            localStorage.removeItem('lms_token');
+            localStorage.removeItem('neetband_lms_user');
+            setLmsUser({ isLoggedIn: false, name: '', email: '' });
+          } else {
+            console.warn('LMS profile fetch error (preserving cached session):', e);
+          }
         }
+      } else {
+        localStorage.removeItem('neetband_lms_user');
+        setLmsUser({ isLoggedIn: false, name: '', email: '' });
       }
       setIsLoading(false);
     };
@@ -26,11 +49,15 @@ export function LmsAuthProvider({ children }) {
   }, []);
 
   const login = (sessionUser) => {
-    setLmsUser(sessionUser);
+    const token = sessionUser.token || localStorage.getItem('lms_token');
+    const updated = { ...sessionUser, token, isLoggedIn: true };
+    setLmsUser(updated);
+    localStorage.setItem('neetband_lms_user', JSON.stringify(updated));
   };
 
   const logout = () => {
     localStorage.removeItem('lms_token');
+    localStorage.removeItem('neetband_lms_user');
     setLmsUser({ isLoggedIn: false, name: '', email: '' });
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { uploadFile, createSong } from '../../services/api';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
+import { cleanSongTitle } from '../../utils/songTitleUtils';
 import {
   IconUpload,
   IconX,
@@ -18,11 +19,19 @@ import {
   IconArrowRight,
 } from '@tabler/icons-react';
 
-const AUDIO_EXTS = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'];
+const AUDIO_EXTS = [
+  'mp3', 'mpeg', 'mpga', 'wav', 'flac', 'aac', 'ogg', 'm4a',
+  'opus', 'wma', 'm4p', 'mp2', 'aiff', 'aif', 'caf', 'webm',
+  '3gp', 'amr', 'mid', 'midi'
+];
 
 function isAudioFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  return AUDIO_EXTS.includes(ext) || file.type.startsWith('audio/');
+  if (!file || !file.name) return false;
+  const ext = file.name.trim().split('.').pop().toLowerCase();
+  return (
+    AUDIO_EXTS.includes(ext) ||
+    (file.type && (file.type.startsWith('audio/') || file.type === 'application/octet-stream' || file.type === 'video/webm' || file.type === 'video/3gpp'))
+  );
 }
 
 function formatBytes(bytes) {
@@ -106,7 +115,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
         />
       </div>
       <div>
-        <label className={labelClass}>Chapter Name</label>
+        <label className={labelClass}>Chapter</label>
         <SearchableSelect
           className={inputClass}
           value={song.chapter}
@@ -119,11 +128,10 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
       <div>
         <label className={labelClass}>Chapter Number</label>
         <input
-          type="number"
+          type="text"
           className={inputClass}
-          placeholder="Auto..."
+          placeholder="e.g. 1"
           value={song.chapterNumber}
-          onChange={(e) => onChange({ chapterNumber: e.target.value === '' ? '' : Number(e.target.value) })}
         />
       </div>
       <div>
@@ -347,7 +355,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         file,
         settings: {
           ...defaultSongSettings(adConfig),
-          title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+          title: cleanSongTitle(file.name),
         },
         status: STATUS.PENDING,
         uploadProgress: 0,
@@ -423,7 +431,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
               ...item,
               settings: {
                 ...sharedSettings,
-                title: item.settings.title || item.file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+                title: item.settings.title || cleanSongTitle(item.file.name),
               },
             }
           : item
@@ -523,11 +531,26 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
             <div className="flex flex-col items-center gap-3 text-primary">
               <IconUpload size={48} strokeWidth={1.5} className="animate-bounce" />
               <span className="font-bold text-xl">Drop audio files here</span>
-              <span className="text-sm opacity-75">MP3, WAV, FLAC, AAC, OGG, M4A supported</span>
+              <span className="text-sm opacity-75">MP3, MPEG, WAV, FLAC, AAC, OGG, M4A, WEBM, WMA supported</span>
             </div>
           </div>
         </div>
       )}
+
+      {/* Single persistent hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            addFiles(e.target.files);
+          }
+          e.target.value = '';
+        }}
+      />
 
       <div className="bg-surface w-full max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[92vh] min-h-0 animate-in zoom-in-95 duration-200">
         {/* Header */}
@@ -575,16 +598,8 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
               <div className="text-center">
                 <p className="font-bold text-on-surface text-base">Drop audio files here</p>
                 <p className="text-on-surface-variant text-sm mt-1">or <span className="text-primary font-semibold underline underline-offset-2">click to browse</span></p>
-                <p className="text-on-surface-variant/60 text-xs mt-2">MP3, WAV, FLAC, AAC, OGG, M4A • Multiple files at once</p>
+                <p className="text-on-surface-variant/60 text-xs mt-2">MP3, MPEG, WAV, FLAC, AAC, OGG, M4A, WEBM, WMA, OPUS • Multiple files at once</p>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a"
-                className="hidden"
-                onChange={(e) => addFiles(e.target.files)}
-              />
             </div>
           ) : (
             <div className="flex flex-col gap-4 p-5">
@@ -600,14 +615,6 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                     <IconUpload size={16} />
                     Add more files
                   </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a"
-                    className="hidden"
-                    onChange={(e) => addFiles(e.target.files)}
-                  />
                   <span className="text-xs text-on-surface-variant/60">or drag & drop anywhere</span>
                 </div>
               )}
