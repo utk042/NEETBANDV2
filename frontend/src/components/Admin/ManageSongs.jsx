@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconStack2 } from '@tabler/icons-react';
+import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconStack2, IconLoader2 } from '@tabler/icons-react';
 import logoImg from '../../assets/logo.png';
 import BatchUploadModal from './BatchUploadModal';
 import { cleanSongTitle } from '../../utils/songTitleUtils';
