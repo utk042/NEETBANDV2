@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IconChevronDown, IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
-  IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture, IconMusic
+  IconHeart, IconVolume, IconVolumeOff, IconRepeat, IconRepeatOnce, IconArrowsShuffle, IconMicrophone2, IconPictureInPicture, IconMusic,
+  IconAlertTriangle, IconRotate
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 
@@ -14,7 +16,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     togglePlay, handleNext: onNext, handlePrev: onPrev, handleSeek: onSeek,
     favoritedTrackIds, toggleFavorite: onToggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
-    requestPip,
+    requestPip, playbackError, retryPlayback
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -426,6 +428,27 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               </div>
             </div>
 
+            {/* Playback Error Overlay on Thumbnail */}
+            {playbackError && (
+              <div 
+                onClick={(e) => { e.stopPropagation(); retryPlayback?.(); }}
+                className="absolute inset-0 z-20 bg-black/65 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all hover:bg-black/75 group/err"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-3 group-hover/err:scale-110 transition-transform">
+                  <IconAlertTriangle size={24} />
+                </div>
+                <span className="text-sm font-bold text-white mb-1">Playback Error</span>
+                <span className="text-xs text-white/75 max-w-xs mb-4 leading-relaxed">Failed to load audio stream. Please check your connection.</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); retryPlayback?.(); }}
+                  className="px-4 py-1.5 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold text-xs rounded-full shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <IconRotate size={14} />
+                  Tap to Retry
+                </button>
+              </div>
+            )}
+
             <div className={`absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none transition-opacity duration-500 ${(showLyrics && lyrics.length > 0) ? 'opacity-0' : 'opacity-100'}`}></div>
           </div>
         </div>
@@ -437,12 +460,14 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               <h2 className="text-3xl font-extrabold text-on-surface truncate mb-1">{displayTrack.title}</h2>
               <p className="text-lg text-primary/80 truncate">{displayTrack.subject || 'Biology'} • {displayTrack.grade || 'Class 12'}</p>
             </div>
-            <button 
-              onClick={() => onToggleFavorite?.(displayTrack.id || displayTrack._id)}
-              className={`p-3 rounded-full transition-colors flex-shrink-0 ${favoritedTrackIds?.includes(displayTrack.id || displayTrack._id) ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
-            >
-              <IconHeart size={32} className={favoritedTrackIds?.includes(displayTrack.id || displayTrack._id) ? 'fill-current' : ''} />
-            </button>
+            <HeartButton
+              isFavorited={favoritedTrackIds?.includes(displayTrack.id || displayTrack._id)}
+              onToggle={() => onToggleFavorite?.(displayTrack.id || displayTrack._id)}
+              size={32}
+              className="p-3 shrink-0"
+              activeColorClass="text-primary"
+              inactiveColorClass="text-on-surface hover:text-primary"
+            />
           </div>
 
           {/* Wavy Progress Bar */}
@@ -501,11 +526,12 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                 <IconPlayerSkipBackFilled size={36} />
               </button>
               <button 
-                onClick={togglePlay}
+                onClick={playbackError ? retryPlayback : togglePlay}
                 className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
+                aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
+                title={playbackError ? 'Retry Playback' : isPlaying ? 'Pause' : 'Play'}
               >
-                {isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
+                {playbackError ? <IconRotate size={40} /> : isPlaying ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
               </button>
               <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Next Track">
                 <IconPlayerSkipForwardFilled size={36} />

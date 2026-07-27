@@ -1,11 +1,13 @@
 import React from 'react';
-import { IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipBackFilled, IconPlayerSkipForwardFilled, IconHeart } from '@tabler/icons-react';
+import { IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipBackFilled, IconPlayerSkipForwardFilled, IconHeart, IconAlertTriangle, IconRotate } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 
 export default function MobilePlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, isPlaying, currentTime, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite
+    currentTrack, isPlaying, currentTime, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
+    playbackError, retryPlayback
   } = usePlayer();
 
   const displayTrack = currentTrack || {
@@ -65,24 +67,32 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
-            <span className="font-label-sm text-[10px] text-on-surface-variant opacity-70 truncate">{displayTrack.chapter}</span>
+            <span className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : 'text-on-surface-variant opacity-70'}`}>
+              {playbackError ? (
+                <span className="flex items-center gap-1">
+                  <IconAlertTriangle size={12} className="shrink-0" />
+                  Playback error • Tap to retry
+                </span>
+              ) : displayTrack.chapter}
+            </span>
           </div>
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Favorite button — hidden on extra-narrow mobile screens (<375px) to prevent title text clipping */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); toggleFavorite?.(displayTrack.id || displayTrack._id); }}
-            className={`w-11 h-11 hidden min-[375px]:flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full ${isFav ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
-            aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
-          >
-            <IconHeart size={24} className={`block ${isFav ? 'fill-current' : ''}`} />
-          </button>
+          <HeartButton
+            isFavorited={isFav}
+            onToggle={() => toggleFavorite?.(displayTrack.id || displayTrack._id)}
+            size={24}
+            className="w-11 h-11 hidden min-[375px]:flex"
+            activeColorClass="text-primary"
+            inactiveColorClass="text-on-surface hover:text-primary"
+          />
           
           <button 
-            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+            onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
               <IconPlayerPauseFilled size={24} className="text-on-surface" aria-hidden="true" />

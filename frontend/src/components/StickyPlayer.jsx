@@ -3,9 +3,10 @@ import {
   IconVolume, IconVolumeOff, IconVolume2,
   IconPlayerSkipBackFilled, IconPlayerPlayFilled, IconPlayerPauseFilled, IconPlayerSkipForwardFilled,
   IconHeart, IconArrowsShuffle, IconRepeat, IconRepeatOnce, IconPictureInPicture,
-  IconRotate, IconRotate2
+  IconRotate, IconRotate2, IconAlertTriangle
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 
@@ -15,7 +16,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
     togglePlay, handleNext, handlePrev, handleSeek,
     favoritedTrackIds, toggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
-    requestPip,
+    requestPip, playbackError, retryPlayback
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -274,11 +275,24 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           </div>
         </div>
 
-        {/* Center — Live Lyrics (1/3) */}
+        {/* Center — Live Lyrics or Error Alert (1/3) */}
         <div className="w-1/3 flex justify-center text-center min-w-0">
-          <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem]">
-            {activeLyric}
-          </p>
+          {playbackError ? (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-red-500 truncate">
+              <IconAlertTriangle size={15} className="shrink-0" />
+              <span className="truncate">Playback error.</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); retryPlayback?.(); }}
+                className="underline hover:text-red-600 font-semibold shrink-0 cursor-pointer ml-1"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem]">
+              {activeLyric}
+            </p>
+          )}
         </div>
 
         {/* Right — Controls (1/3) */}
@@ -305,11 +319,12 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           </button>
 
           <button
-            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+            onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="bg-primary text-on-primary rounded-full w-9 h-9 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : isPlaying ? 'Pause' : 'Play'}
+            title={playbackError ? 'Retry Playback' : isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
+            {playbackError ? <IconRotate size={18} /> : isPlaying ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
           </button>
 
           <button
@@ -333,13 +348,11 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
             <RepeatIcon size={18} />
           </button>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleFavorite?.(displayTrack.id || displayTrack._id); }}
-            className={`p-1.5 rounded-full transition-colors focus-visible:outline-none ${isFav ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
-            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <IconHeart size={18} className={isFav ? 'fill-current' : ''} />
-          </button>
+          <HeartButton
+            isFavorited={isFav}
+            onToggle={() => toggleFavorite?.(displayTrack.id || displayTrack._id)}
+            size={18}
+          />
 
           {/* Volume control */}
           <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>

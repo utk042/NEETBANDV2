@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import AffiliateLogin from '../components/Affiliate/AffiliateLogin';
 import AffiliateDashboard from '../components/Affiliate/AffiliateDashboard';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -75,6 +75,8 @@ export default function AffiliateRoutes() {
           navigate={navigate} 
         />
       } />
+      <Route path="/login" element={<Navigate to="/affiliate-login" replace />} />
+      <Route path="/affiliate/login" element={<Navigate to="/affiliate-login" replace />} />
       <Route path="/affiliate" element={
         <ProtectedRoute isLoggedIn={affiliateUser.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Affiliate" loginRoute="/affiliate-login">
           <AffiliateDashboard 

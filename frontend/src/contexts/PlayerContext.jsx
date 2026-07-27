@@ -24,6 +24,9 @@ export function PlayerProvider({ children, user }) {
     try { return JSON.parse(localStorage.getItem('neetband_recently_played') || '[]'); } catch { return []; }
   });
 
+  // Track & playback state
+  const [playbackError, setPlaybackError] = useState(null);
+
   // Ad state
   const [adAudioUrls, setAdAudioUrls] = useState([]);
   const [isPlayingAd, setIsPlayingAd] = useState(false);
@@ -75,7 +78,6 @@ export function PlayerProvider({ children, user }) {
           cover: s.thumbnailUrl || logoImg,
           durationSeconds: durationSecs,
           duration: formattedDuration,
-          premium: s.isPremium,
           songType: s.songType || 'Study',
         };
       });
@@ -135,12 +137,24 @@ export function PlayerProvider({ children, user }) {
       }, delay);
     } else {
       setIsPlaying(false);
-      confirm("Audio Playback Error", "Failed to load audio stream after multiple retries. Please check your internet connection.", {
-        showCancel: false,
-        confirmText: 'OK'
+      setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
+    }
+  }, [currentTrack, isPlaying]);
+
+  const retryPlayback = useCallback(() => {
+    setPlaybackError(null);
+    audioRetryCountRef.current = 0;
+    if (audioRef.current && currentTrack?.audioUrl) {
+      audioRef.current.load();
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error('Manual retry play failed:', err);
+        setIsPlaying(false);
+        setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
       });
     }
-  }, [currentTrack, isPlaying, confirm]);
+  }, [currentTrack]);
 
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
@@ -304,6 +318,8 @@ export function PlayerProvider({ children, user }) {
     // at adConfig.audioRollPositions) are the sole ad-interruption mechanism.
     // Always play the track directly here.
     setCurrentTrack(track);
+    setPlaybackError(null);
+    audioRetryCountRef.current = 0;
     setIsPlayingAd(false);
     setIsPlaying(true);
     lastDropOffSegment.current = -1;
@@ -326,23 +342,6 @@ export function PlayerProvider({ children, user }) {
     }
   }, [currentAdIndex, adAudioUrls.length]);
 
-  // Handle song ended
-  const handleEnded = useCallback(() => {
-    if (!currentTrack) return;
-    const id = currentTrack._id || currentTrack.id;
-    if (id) recordSongComplete(id);
-    if (repeatMode === 'one') {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
-      if (id) recordSongRepeat(id);
-      return;
-    }
-    handleNext();
-  // handleNext must be in deps: without it, handleEnded captures a stale closure
-  // that holds old queue/globalTracks/currentTrack values — causing wrong-track navigation
-  // when a song ends naturally.
-  }, [currentTrack, repeatMode, handleNext]);
-
   const handleNext = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
     if (list.length === 0) return;
@@ -360,6 +359,23 @@ export function PlayerProvider({ children, user }) {
     if (!next) return;
     playWithAds(next);
   }, [queue, globalTracks, currentTrack, isShuffled, repeatMode, playWithAds]);
+
+  // Handle song ended
+  const handleEnded = useCallback(() => {
+    if (!currentTrack) return;
+    const id = currentTrack._id || currentTrack.id;
+    if (id) recordSongComplete(id);
+    if (repeatMode === 'one') {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      if (id) recordSongRepeat(id);
+      return;
+    }
+    handleNext();
+  // handleNext must be in deps: without it, handleEnded captures a stale closure
+  // that holds old queue/globalTracks/currentTrack values — causing wrong-track navigation
+  // when a song ends naturally.
+  }, [currentTrack, repeatMode, handleNext]);
 
   const handlePrev = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
@@ -479,6 +495,7 @@ export function PlayerProvider({ children, user }) {
   // When track changes, reset and play
   useEffect(() => {
     audioRetryCountRef.current = 0;
+    setPlaybackError(null);
     if (!currentTrack?.audioUrl || !audioRef.current) return;
     audioRef.current.src = currentTrack.audioUrl;
     audioRef.current.load();
@@ -521,7 +538,8 @@ export function PlayerProvider({ children, user }) {
     togglePlay, handleTrackSelect, handleNext, handlePrev, handleSeek,
     handleShare, requestPip,
     audioRef, // expose for components that need direct access
-    showConfigPopup, setShowConfigPopup, adConfig // expose popup state
+    showConfigPopup, setShowConfigPopup, adConfig, // expose popup state
+    playbackError, setPlaybackError, retryPlayback
   };
 
   // Update Media Session API

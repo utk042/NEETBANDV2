@@ -162,20 +162,25 @@ export const requestWithdrawal = async (req, res) => {
   try {
     const { amount, paymentMode, paymentDetails } = req.body;
 
-    if (!amount || amount <= 0 || !paymentMode || !paymentDetails) {
-      return res.status(400).json({ message: 'Please provide valid amount, payment mode, and details' });
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0 || !Number.isFinite(numAmount)) {
+      return res.status(400).json({ message: 'Invalid withdrawal amount' });
+    }
+
+    if (!paymentMode || !paymentDetails || typeof paymentDetails !== 'string' || paymentDetails.trim() === '') {
+      return res.status(400).json({ message: 'Please provide valid payment mode and details' });
     }
 
     if (!['Bank Transfer', 'UPI'].includes(paymentMode)) {
       return res.status(400).json({ message: 'Invalid payment mode. Only Bank Transfer and UPI are supported.' });
     }
 
+    // Calculate total available balance and deductions
     const affiliate = await Affiliate.findById(req.user._id);
     if (!affiliate) {
       return res.status(404).json({ message: 'Affiliate not found' });
     }
 
-    // Recalculate withdrawable balance securely
     let availableCommissions = 0;
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -200,17 +205,39 @@ export const requestWithdrawal = async (req, res) => {
       }
     });
 
-    const withdrawableBalance = availableCommissions - totalDeductions;
+    const currentWithdrawableBalance = availableCommissions - totalDeductions;
 
-    if (amount > withdrawableBalance) {
-      return res.status(400).json({ message: 'Requested amount exceeds withdrawable balance' });
+    if (numAmount > currentWithdrawableBalance) {
+      return res.status(400).json({ message: `Requested amount exceeds withdrawable balance (${currentWithdrawableBalance})` });
     }
 
+    // Atomic update to lock balance reservation
+    const lockedAffiliate = await Affiliate.findOneAndUpdate(
+      { 
+        _id: affiliate._id,
+        $expr: {
+          $gte: [
+            { $subtract: [currentWithdrawableBalance, "$pendingWithdrawalTotal"] },
+            numAmount
+          ]
+        }
+      },
+      { $inc: { pendingWithdrawalTotal: numAmount } },
+      { returnDocument: 'after' }
+    );
+
+    if (!lockedAffiliate) {
+      return res.status(400).json({ message: 'Withdrawal failed due to concurrent balance lock or insufficient funds' });
+    }
+
+    // Create withdrawal request
     const withdrawalRequest = await WithdrawalRequest.create({
       affiliateId: affiliate._id,
-      amount,
+      amount: numAmount,
       paymentMode,
-      paymentDetails
+      paymentDetails: paymentDetails.trim(),
+      status: 'pending',
+      requestedAt: new Date()
     });
 
     res.status(201).json(withdrawalRequest);

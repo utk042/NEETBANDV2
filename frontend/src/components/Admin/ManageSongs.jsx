@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload } from '@tabler/icons-react';
+import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconStack2 } from '@tabler/icons-react';
 import logoImg from '../../assets/logo.png';
+import BatchUploadModal from './BatchUploadModal';
 
 const getFullUrl = (url) => {
   if (!url) return '';
@@ -159,7 +160,7 @@ export default function ManageSongs() {
     popupHtml: ''
   });
   const [formData, setFormData] = useState({
-    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+    title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
     watermarkUrl: '', watermarkPositions: [20, 50, 90], audioRollsEnabled: true,
     popupsEnabled: true, popupPositions: [10, 40, 75], popupHtml: ''
   });
@@ -302,12 +303,13 @@ export default function ManageSongs() {
     }
   }, [formData.audioUrl]);
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
     setAudioUrlValid(null);
     setTestingAudioUrl(false);
     setFormData({
-      title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+      title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
       watermarkUrl: adConfig.watermarkUrl || '',
       watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
       audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
@@ -334,7 +336,6 @@ export default function ManageSongs() {
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
       songType: song.songType || 'Study',
-      isPremium: song.isPremium !== false,
       watermarkUrl: song.watermarkUrl || adConfig.watermarkUrl || '',
       watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90]),
       audioRollsEnabled: song.audioRollsEnabled !== undefined ? song.audioRollsEnabled : (adConfig.audioRollsEnabled ?? true),
@@ -435,7 +436,7 @@ export default function ManageSongs() {
         toast.success("Song added successfully");
       }
       setFormData({
-        title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study', isPremium: false,
+        title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
         watermarkUrl: adConfig.watermarkUrl || '', watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
         audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
         popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
@@ -461,12 +462,20 @@ export default function ManageSongs() {
       <section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-on-surface">Manage Songs</h2>
-          <button 
-            onClick={handleOpenAddModal}
-            className="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
-          >
-            <IconPlus size={20} /> Add Song
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsBatchModalOpen(true)}
+              className="bg-surface-container border border-outline-variant/40 text-on-surface px-4 py-2 rounded-xl flex items-center gap-2 font-medium hover:bg-surface-variant transition-colors text-sm"
+            >
+              <IconStack2 size={18} /> Batch Upload
+            </button>
+            <button 
+              onClick={handleOpenAddModal}
+              className="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2 font-medium text-sm"
+            >
+              <IconPlus size={18} /> Add Song
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -941,6 +950,19 @@ export default function ManageSongs() {
           </div>
         </div>
       )}
+
+      {/* Batch Upload Modal */}
+      <BatchUploadModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        onDone={() => {
+          setIsBatchModalOpen(false);
+          fetchSongs();
+        }}
+        adConfig={adConfig}
+        courses={courses}
+        songs={songs}
+      />
     </div>
   );
 }

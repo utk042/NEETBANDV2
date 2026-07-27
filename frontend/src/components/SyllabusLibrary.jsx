@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
@@ -8,6 +10,7 @@ import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
 
 
 export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite, onSeek }) {
+  const navigate = useNavigate();
   const { isShuffled, setIsShuffled, repeatMode, cycleRepeat } = usePlayer();
   const { user } = useUserAuth();
   const { alert: customAlert, toast } = useDialog();
@@ -462,7 +465,9 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                           toast.error('Download not available for this track.');
                         }
                       } else {
-                        customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.');
+                        customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.').then(() => {
+                          navigate('/checkout');
+                        });
                       }
                     }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Download track"><IconDownload size={20} className="block" /></button>
                     <button onClick={(e) => { 
@@ -474,13 +479,14 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                         toast.success('Link copied to clipboard!');
                       }
                     }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
-                      className={`hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl flex items-center justify-center ${favoritedTrackIds?.includes(track.id) ? 'text-primary' : ''}`} 
-                      aria-label={favoritedTrackIds?.includes(track.id) ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      <IconHeart size={20} className={`block ${favoritedTrackIds?.includes(track.id) ? 'fill-current' : ''}`} />
-                    </button>
+                    <HeartButton
+                      isFavorited={favoritedTrackIds?.includes(track.id)}
+                      onToggle={() => onToggleFavorite?.(track.id)}
+                      size={20}
+                      className="p-1 md:p-1.5 rounded-xl"
+                      activeColorClass="text-primary"
+                      inactiveColorClass="hover:text-primary"
+                    />
                   </div>
                 </div>
               );

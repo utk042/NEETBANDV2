@@ -1,10 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconVolume, IconPlayerPlayFilled, IconPlayerPauseFilled, IconHeart, IconDownload, IconShare } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
 
 export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite, currentTrack, isPlaying, onTrackSelect }) {
+  const navigate = useNavigate();
   const { user } = useUserAuth();
   const { alert: customAlert, toast } = useDialog();
   const favoriteTracks = tracks.filter(t => favoritedTrackIds?.includes(t.id));
@@ -108,7 +111,9 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                             toast.error('Download not available for this track.');
                           }
                         } else {
-                          customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.');
+                          customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.').then(() => {
+                            navigate('/checkout');
+                          });
                         }
                       }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Download track"><IconDownload size={20} className="block" /></button>
                       <button onClick={(e) => { 
@@ -120,13 +125,15 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                           toast.success('Link copied to clipboard!');
                         }
                       }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Share track"><IconShare size={20} className="block" /></button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
-                        className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl flex items-center justify-center text-primary" 
-                        aria-label="Remove from favorites"
-                      >
-                        <IconHeart size={20} className="block fill-current" />
-                      </button>
+                      <HeartButton
+                        isFavorited={true}
+                        onToggle={() => onToggleFavorite?.(track.id)}
+                        size={20}
+                        className="p-1 md:p-1.5 rounded-xl"
+                        activeColorClass="text-primary"
+                        inactiveColorClass="hover:text-primary"
+                        ariaLabel="Remove from favorites"
+                      />
                     </div>
                   </div>
                 );

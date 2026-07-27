@@ -17,7 +17,7 @@ const songSchema = new mongoose.Schema({
     type: String, // e.g., 'Kinematics'
   },
   chapterNumber: {
-    type: Number, // e.g., 1 (useful for 1st chapter free logic)
+    type: Number, // e.g., 1 (chapter ordering)
   },
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -38,10 +38,9 @@ const songSchema = new mongoose.Schema({
     type: Number, // In seconds
     min: [0, 'Duration cannot be negative'],
   },
-  isPremium: {
-    type: Boolean,
-    default: false, // If true, non-premium users will hear ads or can't download
-  },
+  // NOTE: Study songs are NOT categorised as Free/Premium.
+  // All Study songs behave the same — playback behaviour (ads, watermarks, restrictions)
+  // is determined solely by the user's subscription tier: Guest, Basic, or Premium.
   songType: {
     type: String,
     enum: {

@@ -64,9 +64,16 @@ export const verifyPayment = async (req, res) => {
       .update(body.toString())
       .digest('hex');
 
-    if (expectedSignature === razorpay_signature || razorpay_signature === 'mock_signature') {
-      // Update User Membership
+    const isMockAllowed = process.env.ALLOW_MOCK_PAYMENTS === 'true' || process.env.NODE_ENV === 'test';
+    const isValidSignature = expectedSignature === razorpay_signature || (isMockAllowed && razorpay_signature === 'mock_signature');
+
+    if (isValidSignature) {
+      // Fetch user atomically to prevent race condition attribution
       const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
       user.isPremium = true;
       user.membershipPlan = plan;
       
@@ -79,35 +86,47 @@ export const verifyPayment = async (req, res) => {
       if (discountCode && discountCode !== 'HALFPRICE') {
         const affiliate = await Affiliate.findOne({ promoCode: discountCode.toUpperCase(), isActive: true });
         if (affiliate) {
-          if (!user.affiliatePartner) {
-            user.affiliatePartner = affiliate._id;
-            affiliate.affiliatedUsers.push({ userId: user._id, plan });
-            
-            // Auto-calculate commission
-            let amountPaid = plan === 'scale_plan' ? 999 : 299;
-            if (affiliate.discountEnabled) {
-              const discountVal = affiliate.discountValue || 10;
-              amountPaid = amountPaid * (1 - discountVal / 100);
-            }
+          // Block self-referral (affiliate using their own email/ID or promo code)
+          const isSelfReferral = affiliate.email.toLowerCase() === user.email.toLowerCase() || 
+                                 affiliate._id.toString() === user._id.toString();
 
-            let commissionAmount = 0;
-            if (affiliate.commissionType === 'percentage') {
-              commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
-            } else {
-              // Fixed amount
-              commissionAmount = affiliate.commissionValue || 0;
-            }
+          if (!isSelfReferral && !user.affiliatePartner) {
+            // Atomically tag user to prevent parallel race conditions
+            const updatedUser = await User.findOneAndUpdate(
+              { _id: user._id, affiliatePartner: { $exists: false } },
+              { $set: { affiliatePartner: affiliate._id } },
+              { new: true }
+            );
 
-            if (commissionAmount > 0) {
-              affiliate.walletTransactions.push({
-                type: 'commission',
-                amount: Math.round(commissionAmount), // Round to nearest rupee
-                sourceUserId: user._id,
-                notes: `Commission for referring user (Plan: ${plan})`
-              });
-            }
+            if (updatedUser) {
+              affiliate.affiliatedUsers.push({ userId: user._id, plan, joinedAt: new Date() });
+              
+              // Auto-calculate commission based on net price paid
+              let amountPaid = plan === 'scale_plan' ? 999 : 299;
+              if (affiliate.discountEnabled) {
+                const discountVal = affiliate.discountValue || 10;
+                amountPaid = amountPaid * (1 - discountVal / 100);
+              }
 
-            await affiliate.save();
+              let commissionAmount = 0;
+              if (affiliate.commissionType === 'percentage') {
+                commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
+              } else {
+                commissionAmount = affiliate.commissionValue || 0;
+              }
+
+              if (commissionAmount > 0) {
+                affiliate.walletTransactions.push({
+                  type: 'commission',
+                  amount: Math.round(commissionAmount),
+                  sourceUserId: user._id,
+                  date: new Date(),
+                  notes: `Commission for referring user ${user.name || user.email} (Plan: ${plan})`
+                });
+              }
+
+              await affiliate.save();
+            }
           }
         }
       }
@@ -116,7 +135,7 @@ export const verifyPayment = async (req, res) => {
 
       res.json({ message: 'Payment verified successfully', user });
     } else {
-      res.status(400).json({ message: 'Invalid signature' });
+      res.status(400).json({ message: 'Invalid payment signature' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });

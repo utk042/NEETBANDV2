@@ -11,6 +11,7 @@ import { getUserProfile, uploadFile, updateUserProfile } from '../services/api';
 import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
 import Button from './ui/Button';
+import HeartButton from './Common/HeartButton';
 
 
 
@@ -539,14 +540,14 @@ export default function Dashboard({
                         </div>
 
                         {/* Favorite button */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
-                          className={`shrink-0 p-2 rounded-full transition-colors cursor-pointer ${
-                            isLiked ? 'text-red-500' : 'text-on-surface-variant/30 hover:text-on-surface hover:bg-surface-container'
-                          }`}
-                        >
-                          <IconHeart size={18} fill={isLiked ? 'currentColor' : 'none'} strokeWidth={1.5} />
-                        </button>
+                        <HeartButton
+                          isFavorited={isLiked}
+                          onToggle={() => onToggleFavorite?.(track.id)}
+                          size={18}
+                          className="shrink-0 p-2"
+                          activeColorClass="text-red-500"
+                          inactiveColorClass="text-on-surface-variant/30 hover:text-on-surface hover:bg-surface-container"
+                        />
                       </div>
                     );
                   })}
@@ -636,14 +637,14 @@ export default function Dashboard({
                         </div>
 
                         {/* Favorite button */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(track.id); }}
-                          className={`shrink-0 p-2 rounded-full transition-colors cursor-pointer ${
-                            isLiked ? 'text-red-500' : 'text-on-surface-variant/30 hover:text-on-surface hover:bg-surface-container'
-                          }`}
-                        >
-                          <IconHeart size={18} fill={isLiked ? 'currentColor' : 'none'} strokeWidth={1.5} />
-                        </button>
+                        <HeartButton
+                          isFavorited={isLiked}
+                          onToggle={() => onToggleFavorite?.(track.id)}
+                          size={18}
+                          className="shrink-0 p-2"
+                          activeColorClass="text-red-500"
+                          inactiveColorClass="text-on-surface-variant/30 hover:text-on-surface hover:bg-surface-container"
+                        />
                       </div>
                     );
                   })}

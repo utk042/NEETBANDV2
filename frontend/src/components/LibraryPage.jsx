@@ -5,6 +5,7 @@ import {
   IconArrowLeft, IconRefresh, IconDna, IconAtom, IconFlask, IconCrown, IconChevronDown
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
+import HeartButton from './Common/HeartButton';
 import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
 
 const EQ_STYLES = `
@@ -132,15 +133,15 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
 
 
       {/* Favorite */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onFavorite && onFavorite(); }}
-        aria-label={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
-        className={`shrink-0 p-1.5 rounded-lg transition-colors cursor-pointer ${
-          isFavorited ? 'text-red-500' : 'text-on-surface-variant/40 hover:text-on-surface-variant'
-        }`}
-      >
-        <IconHeart size={15} fill={isFavorited ? 'currentColor' : 'none'} />
-      </button>
+      <HeartButton
+        isFavorited={isFavorited}
+        onToggle={() => onFavorite && onFavorite()}
+        size={15}
+        className="shrink-0 p-1.5 rounded-lg cursor-pointer"
+        activeColorClass="text-red-500"
+        inactiveColorClass="text-on-surface-variant/40 hover:text-on-surface-variant"
+        ariaLabel={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+      />
 
       {/* Duration */}
       <span className="shrink-0 text-xs text-on-surface-variant font-mono w-10 text-right">
