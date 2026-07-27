@@ -280,7 +280,7 @@ export default function ManageSongs() {
           const autoTitle = cleanSongTitle(file.name);
           setFormData(prev => ({
             ...prev,
-            title: prev.title?.trim() ? prev.title : autoTitle
+            title: (!prev.title?.trim() || /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(prev.title)) ? autoTitle : cleanSongTitle(prev.title)
           }));
         }
       }
@@ -581,21 +581,36 @@ export default function ManageSongs() {
                   <div className="flex flex-col md:col-span-2">
                     <div className="flex items-center justify-between mb-1">
                       <label className={labelClass}>Song Title</label>
-                      {formData.audioUrl && (
+                      {(formData.audioUrl || formData.title) && (
                         <button
                           type="button"
                           onClick={() => {
-                            const clean = cleanSongTitle(formData.audioUrl);
+                            const src = (formData.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(formData.title))
+                              ? formData.title
+                              : (formData.audioUrl || formData.title);
+                            const clean = cleanSongTitle(src);
                             if (clean) setFormData(prev => ({ ...prev, title: clean }));
                           }}
                           className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                          title="Extract song title from audio filename without extension or underscores"
+                          title="Extract clean song title without extension or underscores"
                         >
                           Auto-fill from filename
                         </button>
                       )}
                     </div>
-                    <input type="text" required placeholder="e.g. The Cell Cycle Rap" className={inputClass} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. The Cell Cycle Rap" 
+                      className={inputClass} 
+                      value={formData.title} 
+                      onChange={e => setFormData({...formData, title: e.target.value})} 
+                      onBlur={() => {
+                        if (formData.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(formData.title)) {
+                          setFormData(prev => ({ ...prev, title: cleanSongTitle(prev.title) }));
+                        }
+                      }}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className={labelClass}>Class / Grade <span className="opacity-60 lowercase font-normal">(optional)</span></label>

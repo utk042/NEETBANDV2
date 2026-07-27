@@ -90,6 +90,11 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
           placeholder="Song title..."
           value={song.title}
           onChange={(e) => onChange({ title: e.target.value })}
+          onBlur={() => {
+            if (song.title && /\.(mp3|wav|m4a|flac|aac|ogg|opus|wma|webm|3gp|mp4)$/i.test(song.title)) {
+              onChange({ title: cleanSongTitle(song.title) });
+            }
+          }}
         />
       </div>
       <div>
@@ -256,7 +261,7 @@ function SongRow({ item, index, onChange, onRemove, courses, adConfig, existingC
         {/* Name & meta */}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-on-surface text-sm truncate">
-            {item.settings.title || item.file.name}
+            {item.settings.title || cleanSongTitle(item.file.name)}
           </div>
           <div className="text-xs text-on-surface-variant/70 flex items-center gap-2 mt-0.5">
             <span>{formatBytes(item.file.size)}</span>
