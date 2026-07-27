@@ -79,6 +79,7 @@ const STATUS = {
 // ─── Per-song settings panel ────────────────────────────────────────────────
 function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters, hideTitle = false }) {
   const [lyricsProgress, setLyricsProgress] = useState(null);
+  const [thumbnailProgress, setThumbnailProgress] = useState(null);
 
   const inputClass =
     'w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm';
@@ -105,6 +106,35 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
       alert('Failed to upload lyrics file: ' + err.message);
     } finally {
       setLyricsProgress(null);
+    }
+  };
+
+  const handleThumbnailUpload = async (eOrFile) => {
+    let file;
+    if (eOrFile && eOrFile.target && eOrFile.target.files) {
+      file = eOrFile.target.files[0];
+    } else {
+      file = eOrFile;
+    }
+    if (!file) return;
+
+    if (file.type && !file.type.startsWith('image/')) {
+      alert('Please select a valid image file for the thumbnail.');
+      return;
+    }
+
+    setThumbnailProgress(0);
+    try {
+      const res = await uploadFile(file, 'songs/thumbnails', (progress) => {
+        setThumbnailProgress(progress);
+      });
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const fullUrl = res.url.startsWith('http') ? res.url : `${backendUrl}${res.url.startsWith('/') ? '' : '/'}${res.url}`;
+      onChange({ thumbnailUrl: fullUrl });
+    } catch (err) {
+      alert('Failed to upload thumbnail image: ' + err.message);
+    } finally {
+      setThumbnailProgress(null);
     }
   };
 
@@ -212,40 +242,77 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
       </div>
 
       {!hideTitle && (
-        <div className="sm:col-span-2">
-          <label className={labelClass}>
-            Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span>
-          </label>
-          <DragDropWrapper onFileDrop={(file) => handleLyricsUpload(file)}>
-            <div className="relative">
-              <input
-                type="url"
-                placeholder="https://..."
-                className={`${inputClass} pr-28`}
-                value={song.lyricsUrl || ''}
-                onChange={(e) => onChange({ lyricsUrl: e.target.value })}
-              />
-              {lyricsProgress !== null ? (
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                  <span>{lyricsProgress}%</span>
-                  <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${lyricsProgress}%` }} />
+        <>
+          <div>
+            <label className={labelClass}>
+              Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span>
+            </label>
+            <DragDropWrapper onFileDrop={(file) => handleThumbnailUpload(file)}>
+              <div className="relative">
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  className={`${inputClass} pr-28`}
+                  value={song.thumbnailUrl || ''}
+                  onChange={(e) => onChange({ thumbnailUrl: e.target.value })}
+                />
+                {thumbnailProgress !== null ? (
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                    <span>{thumbnailProgress}%</span>
+                    <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${thumbnailProgress}%` }} />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                  <IconUpload size={12} stroke={2.5} /> Upload
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".ttml,.txt,.lrc"
-                    onChange={(e) => handleLyricsUpload(e)}
-                  />
-                </label>
-              )}
-            </div>
-          </DragDropWrapper>
-        </div>
+                ) : (
+                  <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                    <IconUpload size={12} stroke={2.5} /> Upload
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleThumbnailUpload(e)}
+                    />
+                  </label>
+                )}
+              </div>
+            </DragDropWrapper>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Lyrics (.ttml) URL <span className="opacity-60 lowercase font-normal">(optional)</span>
+            </label>
+            <DragDropWrapper onFileDrop={(file) => handleLyricsUpload(file)}>
+              <div className="relative">
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  className={`${inputClass} pr-28`}
+                  value={song.lyricsUrl || ''}
+                  onChange={(e) => onChange({ lyricsUrl: e.target.value })}
+                />
+                {lyricsProgress !== null ? (
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                    <span>{lyricsProgress}%</span>
+                    <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${lyricsProgress}%` }} />
+                    </div>
+                  </div>
+                ) : (
+                  <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                    <IconUpload size={12} stroke={2.5} /> Upload
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".ttml,.txt,.lrc"
+                      onChange={(e) => handleLyricsUpload(e)}
+                    />
+                  </label>
+                )}
+              </div>
+            </DragDropWrapper>
+          </div>
+        </>
       )}
 
       <div className={`sm:col-span-2 flex items-center gap-6 pt-1 transition-opacity ${song.songType === 'Normal' ? 'opacity-40 pointer-events-none' : ''}`}>
