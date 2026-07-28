@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { IconLoader2, IconAlertCircle } from '@tabler/icons-react';
-import mammoth from 'mammoth/mammoth.browser';
+import * as mammoth from 'mammoth';
 
-// Setup pdf.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Robust local worker resolution for Vite
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
-export default function DocumentViewer({ fileUrl, fileType, title }) {
+export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
   const [numPages, setNumPages] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,7 +29,7 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
 
   useEffect(() => {
     let isMounted = true;
-    if (fileType === 'doc' && fileUrl) {
+    if (fileType === 'doc' && fileUrl && !getGdriveEmbedUrl(fileUrl)) {
       setDocLoading(true);
       fetch(fileUrl)
         .then(res => res.arrayBuffer())
@@ -42,11 +45,12 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
           if (isMounted) {
             setDocError(err);
             setDocLoading(false);
+            if (onError) onError(true);
           }
         });
     }
     return () => { isMounted = false; };
-  }, [fileUrl, fileType]);
+  }, [fileUrl, fileType, onError]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
@@ -57,10 +61,50 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
     console.error("PDF Load Error:", error);
     setError(error);
     setLoading(false);
+    if (onError) onError(true);
   };
 
   if (!fileUrl) return null;
 
+  // Helper to get Google Drive embed URL
+  const getGdriveEmbedUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.includes('drive.google.com/file/d/') || url.includes('docs.google.com/')) {
+      try {
+        const u = new URL(url);
+        if (u.pathname.includes('/view')) {
+          u.pathname = u.pathname.replace(/\/view.*$/, '/preview');
+        } else if (u.pathname.includes('/edit')) {
+          u.pathname = u.pathname.replace(/\/edit.*$/, '/preview');
+        } else if (!u.pathname.endsWith('/preview')) {
+          u.pathname = u.pathname.replace(/\/$/, '') + '/preview';
+        }
+        u.search = '';
+        return u.toString();
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // 1. ALWAYS check for Google Drive links first, regardless of fileType,
+  // because Drive URLs do not serve raw bytes for PDF/DOC preview easily via CORS.
+  const gdriveEmbedUrl = getGdriveEmbedUrl(fileUrl);
+  if (gdriveEmbedUrl) {
+    return (
+      <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 h-[600px] md:h-[80vh]">
+        <iframe
+          src={gdriveEmbedUrl}
+          title={title || "Google Drive Document"}
+          className="w-full h-full border-0"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
+
+  // 2. Handle standard PDFs
   if (fileType === 'pdf') {
     return (
       <div 
@@ -103,6 +147,7 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
     );
   }
 
+  // 3. Handle standard DOC/DOCX files
   if (fileType === 'doc') {
     return (
       <div className="w-full">
@@ -128,14 +173,33 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
     );
   }
 
-  // Fallback for unknown link types
+  // 3.5 Handle Images
+  const isImage = fileType === 'jpg' || fileType === 'jpeg' || fileType === 'png' || fileType === 'gif' || fileType === 'webp' || fileType === 'image';
+  if (isImage) {
+    return (
+      <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 p-4 flex justify-center h-auto min-h-[300px]">
+        <img 
+          src={fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}` : fileUrl} 
+          alt={title || 'Attached Image'} 
+          className="max-w-full rounded-lg max-h-[70vh] object-contain" 
+        />
+      </div>
+    );
+  }
+
+  // 4. Fallback for unknown link types
   return (
-    <div className="w-full bg-white rounded-xl overflow-hidden shadow-lg border border-outline/10 p-10 flex flex-col items-center justify-center text-center">
+    <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
       <IconAlertCircle className="text-primary mb-4" size={40} />
       <h3 className="text-lg font-bold text-on-surface mb-2">External Link Attached</h3>
-      <p className="text-sm text-on-surface-variant mb-6 max-w-md">This file type cannot be previewed natively. You can open it in a new tab.</p>
-      <a href={fileUrl} target="_blank" rel="noreferrer" className="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:brightness-110 active:scale-95 transition-all">
-        Open Link in New Tab
+      <p className="text-sm text-on-surface-variant max-w-md mb-6">This document is hosted externally or cannot be previewed natively.</p>
+      <a 
+        href={fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}` : fileUrl} 
+        target="_blank" 
+        rel="noreferrer" 
+        className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm hover:brightness-105 active:scale-95 transition-all"
+      >
+        Open Document
       </a>
     </div>
   );

@@ -26,6 +26,7 @@ import AudioAdPlayer from './CoursePlayer/AudioAdPlayer';
 
 export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const [downloadingNotes, setDownloadingNotes] = useState(false);
+  const [documentError, setDocumentError] = useState(false);
   const navigate = useNavigate();
   const { courseId, itemType, subjectIdx: subjectIdxParam, chapterIdx: chapterIdxParam, itemIdx: itemIdxParam } = useParams();
 
@@ -166,6 +167,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     }
 
     let isMounted = true;
+    setDocumentError(false);
     const loadDetails = async () => {
       setDetailsLoading(true);
       try {
@@ -678,17 +680,40 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
                 {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && (
                   <div className="space-y-6">
-                    <div className="flex justify-end w-full">
+                    {(!documentError && (activeDetails?.content || item?.fileUrl)) && (
+                    <div className="flex justify-end w-full mb-4">
                       <button
                         onClick={() => {
-                          if (item?.fileUrl && item.fileType === 'pdf') {
-                            const link = document.createElement('a');
-                            link.href = item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl;
-                            link.target = '_blank';
-                            link.download = `${item.title || 'Notes'}.pdf`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                          if (item?.fileUrl && !activeDetails?.content) {
+                            const url = item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl;
+                            
+                            const isExternal = url.startsWith('http') && !url.includes(window.location.hostname) && !(import.meta.env.VITE_API_URL && url.includes(import.meta.env.VITE_API_URL));
+                            
+                            if (isExternal) {
+                              window.open(url, '_blank');
+                            } else {
+                              setDownloadingNotes(true);
+                              fetch(url)
+                                .then(res => {
+                                  if (!res.ok) throw new Error('Network error');
+                                  return res.blob();
+                                })
+                                .then(blob => {
+                                  const blobUrl = window.URL.createObjectURL(blob);
+                                  const link = document.createElement('a');
+                                  link.href = blobUrl;
+                                  link.download = item.title || 'Notes_Document';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  window.URL.revokeObjectURL(blobUrl);
+                                  setDownloadingNotes(false);
+                                })
+                                .catch(() => {
+                                  window.open(url, '_blank');
+                                  setDownloadingNotes(false);
+                                });
+                            }
                           } else {
                             setDownloadingNotes(true);
                             const element = document.getElementById('downloadable-notes-content');
@@ -697,25 +722,26 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                               return;
                             }
                             const opt = {
-                              margin: [0.5, 0.5, 0.5, 0.5],
+                              margin: 15,
                               filename: `${item.title || 'Notes'}.pdf`,
-                              image: { type: 'jpeg', quality: 0.98 },
+                              image: { type: 'png' },
                               html2canvas: { 
                                 scale: 2,
                                 useCORS: true,
-                                windowWidth: 900,
+                                windowWidth: 794,
+                                backgroundColor: '#ffffff',
+                                ignoreElements: (el) => el.hasAttribute('data-html2canvas-ignore'),
                                 onclone: (clonedDoc) => {
-                                  // Force light mode for PDF generation
                                   clonedDoc.documentElement.classList.remove('dark');
                                   const el = clonedDoc.getElementById('downloadable-notes-content');
                                   if (el) {
-                                    el.style.backgroundColor = '#ffffff';
-                                    el.style.color = '#1a1a1a';
-                                    el.style.padding = '20px';
+                                    el.style.backgroundColor = 'transparent';
+                                    el.style.color = '#000000';
+                                    el.style.padding = '0';
                                   }
                                 }
                               },
-                              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+                              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                               pagebreak: { mode: ['css', 'legacy'], avoid: ['p', 'li', 'h1', 'h2', 'h3', 'img'] }
                             };
                             html2pdf().set(opt).from(element).save().then(() => setDownloadingNotes(false)).catch(() => setDownloadingNotes(false));
@@ -723,22 +749,24 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                         }}
                         disabled={downloadingNotes}
                         className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-xl transition-colors disabled:opacity-50"
-                        title="Download PDF"
-                        aria-label="Download PDF"
+                        title="Download Notes"
+                        aria-label="Download Notes"
                       >
                         {downloadingNotes ? <IconLoader2 size={20} className="animate-spin" /> : <IconDownload size={20} />}
                       </button>
                     </div>
+                    )}
                     <div id="downloadable-notes-content" className="bg-surface rounded-xl">
                     {activeDetails?.content && (
                       <MathMarkdownContent content={activeDetails.content} />
                     )}
                     {item?.fileUrl && (
-                      <div className="w-full mt-8">
+                      <div className="w-full mt-8" data-html2canvas-ignore="true">
                         <DocumentViewer 
                           fileUrl={item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl} 
                           fileType={item.fileType} 
                           title={item.title} 
+                          onError={() => setDocumentError(true)}
                         />
                       </div>
                     )}
