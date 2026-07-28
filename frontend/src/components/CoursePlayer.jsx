@@ -697,20 +697,36 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                               return;
                             }
                             const opt = {
-                              margin: 1,
+                              margin: [0.5, 0.5, 0.5, 0.5],
                               filename: `${item.title || 'Notes'}.pdf`,
                               image: { type: 'jpeg', quality: 0.98 },
-                              html2canvas: { scale: 2 },
-                              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                              html2canvas: { 
+                                scale: 2,
+                                useCORS: true,
+                                windowWidth: 900,
+                                onclone: (clonedDoc) => {
+                                  // Force light mode for PDF generation
+                                  clonedDoc.documentElement.classList.remove('dark');
+                                  const el = clonedDoc.getElementById('downloadable-notes-content');
+                                  if (el) {
+                                    el.style.backgroundColor = '#ffffff';
+                                    el.style.color = '#1a1a1a';
+                                    el.style.padding = '20px';
+                                  }
+                                }
+                              },
+                              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+                              pagebreak: { mode: ['css', 'legacy'], avoid: ['p', 'li', 'h1', 'h2', 'h3', 'img'] }
                             };
                             html2pdf().set(opt).from(element).save().then(() => setDownloadingNotes(false)).catch(() => setDownloadingNotes(false));
                           }
                         }}
                         disabled={downloadingNotes}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-xl transition-colors disabled:opacity-50"
+                        title="Download PDF"
+                        aria-label="Download PDF"
                       >
-                        {downloadingNotes ? <IconLoader2 size={16} className="animate-spin" /> : <IconDownload size={16} />}
-                        {downloadingNotes ? 'Generating PDF...' : 'Download PDF'}
+                        {downloadingNotes ? <IconLoader2 size={20} className="animate-spin" /> : <IconDownload size={20} />}
                       </button>
                     </div>
                     <div id="downloadable-notes-content" className="bg-surface rounded-xl">
