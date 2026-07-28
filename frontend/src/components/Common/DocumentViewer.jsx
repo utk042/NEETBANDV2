@@ -29,7 +29,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
 
   useEffect(() => {
     let isMounted = true;
-    if (fileType === 'doc' && fileUrl && !getGdriveEmbedUrl(fileUrl)) {
+    if (fileType === 'doc' && fileUrl) {
       setDocLoading(true);
       fetch(fileUrl)
         .then(res => res.arrayBuffer())
@@ -65,44 +65,6 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
   };
 
   if (!fileUrl) return null;
-
-  // Helper to get Google Drive embed URL
-  const getGdriveEmbedUrl = (url) => {
-    if (!url || typeof url !== 'string') return null;
-    if (url.includes('drive.google.com/file/d/') || url.includes('docs.google.com/')) {
-      try {
-        const u = new URL(url);
-        if (u.pathname.includes('/view')) {
-          u.pathname = u.pathname.replace(/\/view.*$/, '/preview');
-        } else if (u.pathname.includes('/edit')) {
-          u.pathname = u.pathname.replace(/\/edit.*$/, '/preview');
-        } else if (!u.pathname.endsWith('/preview')) {
-          u.pathname = u.pathname.replace(/\/$/, '') + '/preview';
-        }
-        u.search = '';
-        return u.toString();
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  };
-
-  // 1. ALWAYS check for Google Drive links first, regardless of fileType,
-  // because Drive URLs do not serve raw bytes for PDF/DOC preview easily via CORS.
-  const gdriveEmbedUrl = getGdriveEmbedUrl(fileUrl);
-  if (gdriveEmbedUrl) {
-    return (
-      <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 h-[600px] md:h-[80vh]">
-        <iframe
-          src={gdriveEmbedUrl}
-          title={title || "Google Drive Document"}
-          className="w-full h-full border-0"
-          allowFullScreen
-        ></iframe>
-      </div>
-    );
-  }
 
   // 2. Handle standard PDFs
   if (fileType === 'pdf') {
