@@ -10,8 +10,10 @@ import {
   IconPlayerPlayFilled,
   IconCheck,
   IconLoader2,
-  IconBook2
+  IconBook2,
+  IconDownload
 } from '@tabler/icons-react';
+import html2pdf from 'html2pdf.js';
 import { getLessonContent, getLessonQuiz, getLessonQa, getCourseById, getCourseProgress, markItemComplete } from '../services/api';
 import DocumentViewer from './Common/DocumentViewer';
 
@@ -23,6 +25,7 @@ import MathMarkdownContent from './CoursePlayer/MathMarkdownContent';
 import AudioAdPlayer from './CoursePlayer/AudioAdPlayer';
 
 export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
+  const [downloadingNotes, setDownloadingNotes] = useState(false);
   const navigate = useNavigate();
   const { courseId, itemType, subjectIdx: subjectIdxParam, chapterIdx: chapterIdxParam, itemIdx: itemIdxParam } = useParams();
 
@@ -104,77 +107,40 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   }, [user, course, selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, completedItems, courseId]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [headerHeight, setHeaderHeight] = useState(() => {
-    if (typeof document !== 'undefined') {
-      const h = document.querySelector('header[data-gsap="header"]');
-      if (h) return h.getBoundingClientRect().height || h.offsetHeight || 88;
-    }
-    return 88;
-  });
+  const [headerHeight, setHeaderHeight] = useState(88);
 
   useEffect(() => {
     const isOverview = selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null;
 
-    const measureHeader = () => {
-      if (!isOverview) {
-        setHeaderHeight(0);
-        return;
-      }
-
-      const h = document.querySelector('header[data-gsap="header"]');
-      if (h) {
-        const rect = h.getBoundingClientRect();
-        const height = rect.height || h.offsetHeight;
-        if (height > 0) {
-          setHeaderHeight(height);
-        } else {
-          setHeaderHeight(88);
-        }
-      } else {
-        setHeaderHeight(88);
-      }
-    };
-
-    measureHeader();
-
-    // Staggered timers to capture async news banner loading, image/font loading, GSAP transitions
-    const timers = [20, 100, 250, 500, 1000].map(delay => setTimeout(measureHeader, delay));
-
-    let ro = null;
-    const h = document.querySelector('header[data-gsap="header"]');
-    if (h && window.ResizeObserver) {
-      ro = new ResizeObserver(measureHeader);
-      ro.observe(h);
+    if (!isOverview) {
+      setHeaderHeight(0);
+      return;
     }
 
-    // Observe DOM mutations in case header node mounts/unmounts or content changes
-    const mo = new MutationObserver((mutations) => {
-      let shouldUpdate = false;
-      for (const m of mutations) {
-        if (m.type === 'childList' || m.type === 'attributes') {
-          shouldUpdate = true;
-          break;
-        }
-      }
-      if (shouldUpdate) {
-        measureHeader();
-        const newH = document.querySelector('header[data-gsap="header"]');
-        if (newH && newH !== h && window.ResizeObserver) {
-          if (ro) ro.disconnect();
-          ro = new ResizeObserver(measureHeader);
-          ro.observe(newH);
-        }
-      }
-    });
+    const h = document.querySelector('header[data-gsap="header"]');
+    if (!h) {
+      setHeaderHeight(88);
+      return;
+    }
 
-    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-    window.addEventListener('resize', measureHeader);
+    const updateHeight = () => {
+      const rect = h.getBoundingClientRect();
+      setHeaderHeight(rect.height > 0 ? rect.height : 88);
+    };
+
+    updateHeight();
+
+    let ro = null;
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(updateHeight);
+      ro.observe(h);
+    }
+    
+    window.addEventListener('resize', updateHeight);
 
     return () => {
-      timers.forEach(clearTimeout);
       if (ro) ro.disconnect();
-      mo.disconnect();
-      window.removeEventListener('resize', measureHeader);
+      window.removeEventListener('resize', updateHeight);
     };
   }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, courseId]);
 
@@ -199,11 +165,12 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
       return;
     }
 
+    let isMounted = true;
     const loadDetails = async () => {
       setDetailsLoading(true);
       try {
         let resData = null;
-        if (activeItem.type === 'notes') {
+        if (['notes', 'lesson', 'reading'].includes(activeItem.type)) {
           const res = await getLessonContent(activeItem._id);
           resData = { content: res.content };
         } else if (activeItem.type === 'quiz') {
@@ -217,40 +184,22 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           const res = await getLessonQa(activeItem._id);
           resData = { qas: res.qas };
         }
-        setActiveDetails(resData);
+        if (isMounted) setActiveDetails(resData);
       } catch (err) {
         console.error("Failed to load item details:", err);
-        setActiveDetails(null);
+        if (isMounted) setActiveDetails(null);
       } finally {
-        setDetailsLoading(false);
+        if (isMounted) setDetailsLoading(false);
       }
     };
 
     loadDetails();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, activeItem?._id, activeItem?.type, user, course]);
 
-  // Auto-render LaTeX math in main content area whenever content updates
-  useEffect(() => {
-    const mainEl = document.querySelector('main[data-gsap="player-main"]');
-    if (mainEl && window.renderMathInElement) {
-      const timer = setTimeout(() => {
-        try {
-          window.renderMathInElement(mainEl, {
-            delimiters: [
-              { left: '$$', right: '$$', display: true },
-              { left: '$', right: '$', display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true },
-            ],
-            throwOnError: false,
-          });
-        } catch (err) {
-          console.error("KaTeX rendering failed:", err);
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [activeDetails, selectedSubjectIdx, selectedChapterIdx, selectedItemIdx]);
+
 
   const handleBack = () => navigate('/course');
   const bottomClass = currentTrack ? 'bottom-[152px] md:bottom-24' : 'bottom-20 md:bottom-24';
@@ -499,7 +448,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                             <div className="flex-1 min-w-0">
                               <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate text-sm">{chapter.title}</h4>
                               <p className="text-[11px] text-on-surface-variant mt-0.5 font-medium">
-                                {subject.title} • {getChapterItems(chapter).length} Items
+                                {getChapterItems(chapter).length} Items
                               </p>
                             </div>
                           </button>
@@ -729,6 +678,42 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
                 {(item?.type === 'notes' || item?.type === 'lesson' || item?.type === 'reading') && (
                   <div className="space-y-6">
+                    <div className="flex justify-end w-full">
+                      <button
+                        onClick={() => {
+                          if (item?.fileUrl && item.fileType === 'pdf') {
+                            const link = document.createElement('a');
+                            link.href = item.fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.fileUrl}` : item.fileUrl;
+                            link.target = '_blank';
+                            link.download = `${item.title || 'Notes'}.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          } else {
+                            setDownloadingNotes(true);
+                            const element = document.getElementById('downloadable-notes-content');
+                            if (!element) {
+                              setDownloadingNotes(false);
+                              return;
+                            }
+                            const opt = {
+                              margin: 1,
+                              filename: `${item.title || 'Notes'}.pdf`,
+                              image: { type: 'jpeg', quality: 0.98 },
+                              html2canvas: { scale: 2 },
+                              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                            };
+                            html2pdf().set(opt).from(element).save().then(() => setDownloadingNotes(false)).catch(() => setDownloadingNotes(false));
+                          }
+                        }}
+                        disabled={downloadingNotes}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
+                      >
+                        {downloadingNotes ? <IconLoader2 size={16} className="animate-spin" /> : <IconDownload size={16} />}
+                        {downloadingNotes ? 'Generating PDF...' : 'Download PDF'}
+                      </button>
+                    </div>
+                    <div id="downloadable-notes-content" className="bg-surface rounded-xl">
                     {activeDetails?.content && (
                       <MathMarkdownContent content={activeDetails.content} />
                     )}
@@ -741,6 +726,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                         />
                       </div>
                     )}
+                    </div>
                   </div>
                 )}
 

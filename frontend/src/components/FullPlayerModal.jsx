@@ -13,12 +13,12 @@ import { formatTime } from '../utils/urlUtils';
 
 export default function FullPlayerModal({ isOpen, onClose }) {
   const {
-    currentTrack, isPlaying, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
+    currentTrack, isPlaying, isAnyAudioActive, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
     togglePlay, handleNext: onNext, handlePrev: onPrev, handleSeek: onSeek,
     favoritedTrackIds, toggleFavorite: onToggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
     requestPip, playbackError, retryPlayback,
-    isAudioRollActive, activeRollType
+    isAudioRollActive, activeRollType, isPlayingAd
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -343,8 +343,8 @@ export default function FullPlayerModal({ isOpen, onClose }) {
           </button>
         </div>
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-0 w-[60%] text-center">
-          <span className={`text-xs font-bold uppercase tracking-widest truncate w-full ${isAudioRollActive ? 'text-amber-400 font-extrabold animate-pulse' : 'text-on-surface-variant'}`}>
-            {isAudioRollActive ? (activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing') : 'Now Playing'}
+          <span className={`text-xs font-bold uppercase tracking-widest truncate w-full ${(isPlayingAd || isAudioRollActive) ? 'text-amber-400 font-extrabold animate-pulse' : 'text-on-surface-variant'}`}>
+            {(isPlayingAd || isAudioRollActive) ? (isPlayingAd ? 'Ad Playing' : activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing') : 'Now Playing'}
           </span>
           <span className="text-sm font-semibold text-primary truncate w-full">{displayTrack.chapter || "NeetBand"}</span>
         </div>
@@ -496,7 +496,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                         ? 'bg-primary shadow-[0_0_6px_rgba(201,162,39,0.4)]'
                         : 'bg-surface-container-highest/70 group-hover:bg-surface-container-highest'
                     } ${
-                      isPlaying
+                      isAnyAudioActive
                         ? 'wave-bar-active'
                         : 'wave-bar-paused'
                     }`}
@@ -533,10 +533,10 @@ export default function FullPlayerModal({ isOpen, onClose }) {
               <button 
                 onClick={playbackError ? retryPlayback : togglePlay}
                 className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
-                aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
-                title={playbackError ? 'Retry Playback' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
+                aria-label={playbackError ? 'Retry' : isAnyAudioActive ? 'Pause' : 'Play'}
+                title={playbackError ? 'Retry Playback' : isAnyAudioActive ? 'Pause' : 'Play'}
               >
-                {playbackError ? <IconRotate size={40} /> : (isPlaying || isAudioRollActive) ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
+                {playbackError ? <IconRotate size={40} /> : isAnyAudioActive ? <IconPlayerPauseFilled size={40} /> : <IconPlayerPlayFilled size={40} />}
               </button>
               <button onClick={onNext} className="text-on-surface hover:text-primary transition-colors p-2" aria-label="Next Track">
                 <IconPlayerSkipForwardFilled size={36} />

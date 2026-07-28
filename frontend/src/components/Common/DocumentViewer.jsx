@@ -25,21 +25,27 @@ export default function DocumentViewer({ fileUrl, fileType, title }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     if (fileType === 'doc' && fileUrl) {
       setDocLoading(true);
       fetch(fileUrl)
         .then(res => res.arrayBuffer())
         .then(buffer => mammoth.convertToHtml({ arrayBuffer: buffer }))
         .then(result => {
-          setDocHtml(result.value);
-          setDocLoading(false);
+          if (isMounted) {
+            setDocHtml(result.value);
+            setDocLoading(false);
+          }
         })
         .catch(err => {
           console.error("DOCX Load Error", err);
-          setDocError(err);
-          setDocLoading(false);
+          if (isMounted) {
+            setDocError(err);
+            setDocLoading(false);
+          }
         });
     }
+    return () => { isMounted = false; };
   }, [fileUrl, fileType]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {

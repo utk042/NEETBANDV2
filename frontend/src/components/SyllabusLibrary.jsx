@@ -85,6 +85,22 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
     });
   }, [tracks, selectedClass, selectedSubject, selectedChapter, searchQuery]);
 
+  const totalDurationSeconds = React.useMemo(() => {
+    return tracks.reduce((acc, track) => {
+      let secs = track.durationSeconds || 0;
+      if (!secs && track.duration) {
+        const parts = track.duration.split(':');
+        if (parts.length === 2) {
+          secs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        } else if (parts.length === 3) {
+          secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
+        }
+      }
+      return acc + (secs || 0);
+    }, 0);
+  }, [tracks]);
+  const totalMinutes = Math.ceil(totalDurationSeconds / 60);
+
   return (
     <>
       <style>{`
@@ -250,10 +266,10 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   {/* Desktop Only Badges */}
                   <div className="hidden lg:flex items-center gap-3">
                     <span className="px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm border border-white/10 text-[10px] md:text-xs font-bold tracking-widest text-on-secondary dark:text-on-primary uppercase shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
-                      {tracks.length} TRACKS
+                      {tracks.length} {tracks.length === 1 ? 'TRACK' : 'TRACKS'}
                     </span>
                     <span className="text-[11px] md:text-xs font-semibold tracking-wider text-on-secondary/60 dark:text-on-primary/60 uppercase">
-                      24 MIN.
+                      {totalMinutes} MIN.
                     </span>
                   </div>
                   

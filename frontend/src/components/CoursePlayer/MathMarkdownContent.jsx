@@ -1,46 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkBreaks from 'remark-breaks';
 
 export default React.memo(function MathMarkdownContent({ content, className = '' }) {
   const containerRef = React.useRef(null);
-
-  useEffect(() => {
-    let interval = null;
-    let attempts = 0;
-
-    const tryRender = () => {
-      attempts++;
-      if (containerRef.current && window.renderMathInElement) {
-        try {
-          window.renderMathInElement(containerRef.current, {
-            delimiters: [
-              { left: '$$', right: '$$', display: true },
-              { left: '$', right: '$', display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true },
-            ],
-            throwOnError: false,
-          });
-        } catch (err) {
-          console.error("KaTeX auto-render failed:", err);
-        }
-        if (interval) clearInterval(interval);
-      } else if (attempts > 20) {
-        if (interval) clearInterval(interval);
-      }
-    };
-
-    tryRender();
-    if (!window.renderMathInElement) {
-      interval = setInterval(tryRender, 200);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [content]);
 
   const processedContent = React.useMemo(() => {
     if (!content) return '';
@@ -52,24 +19,14 @@ export default React.memo(function MathMarkdownContent({ content, className = ''
     // Convert remaining unicode bullets at start of text lines to markdown bullets
     let formatted = text.replace(/^[ \t]*[•▪◦⚫][ \t]*/gm, '- ');
 
-    // Preserve single newlines as line breaks
-    return formatted
-      .split('\n')
-      .map(line => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
-          return line;
-        }
-        return line + '  ';
-      })
-      .join('\n');
+    return formatted;
   }, [content]);
 
   return (
     <div ref={containerRef} className={`prose max-w-none text-on-surface text-base leading-relaxed space-y-2 markdown-body ${className}`}>
       <ReactMarkdown 
-        remarkPlugins={[remarkGfm]} 
-        rehypePlugins={[rehypeRaw]}
+        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]} 
+        rehypePlugins={[rehypeRaw, rehypeKatex]}
         components={{
           h1: ({node, ...props}) => <h1 className="text-xl font-black text-on-surface mt-4 mb-2 border-b border-outline/10 pb-1" {...props} />,
           h2: ({node, ...props}) => <h2 className="text-lg font-bold text-on-surface mt-3 mb-2" {...props} />,

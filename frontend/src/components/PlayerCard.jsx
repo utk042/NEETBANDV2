@@ -4,7 +4,7 @@ import logoImg from '../assets/logo.png';
 import { usePlayer } from '../contexts/PlayerContext';
 
 export default function PlayerCard() {
-  const { currentTrack, isPlaying, togglePlay, handleNext, handlePrev } = usePlayer();
+  const { currentTrack, isAnyAudioActive, togglePlay, handleNext, handlePrev } = usePlayer();
 
   // Fallback when no track is selected
   const displayTrack = currentTrack || {
@@ -37,7 +37,7 @@ export default function PlayerCard() {
       `}</style>
       <div className="glass-panel p-6 rounded-2xl w-[340px] shadow-[var(--shadow-floating-card)] relative transform hover:-translate-y-2 transition-all duration-500 border border-[var(--border-floating-card)] glow-hover bg-surface">
         <div className="absolute -top-4 -right-4 bg-primary text-on-primary p-3 rounded-full shadow-[0_0_20px_rgba(201,162,39,0.3)] flex items-center justify-center">
-          <IconActivity size={24} className={isPlaying ? "animate-pulse" : ""} aria-hidden="true" />
+          <IconActivity size={24} className={isAnyAudioActive ? "animate-pulse" : ""} aria-hidden="true" />
         </div>
         
         <div className="w-full h-48 bg-surface-container-highest rounded-xl mb-6 overflow-hidden relative shadow-inner border border-[var(--border-floating-card)]">
@@ -68,7 +68,7 @@ export default function PlayerCard() {
               <div
                 key={i}
                 className={`flex-1 bg-primary rounded-full ${
-                  isPlaying ? 'card-wave-active' : 'card-wave-paused'
+                  isAnyAudioActive ? 'card-wave-active' : 'card-wave-paused'
                 }`}
                 style={{
                   height: `${height}%`,
@@ -93,9 +93,9 @@ export default function PlayerCard() {
             onClick={() => currentTrack && togglePlay()}
             disabled={!currentTrack}
             className={`bg-primary text-on-primary rounded-full w-16 h-16 flex items-center justify-center transition-transform shadow-[0_0_20px_rgba(201,162,39,0.4)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!currentTrack ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={isAnyAudioActive ? 'Pause' : 'Play'}
           >
-            {isPlaying ? (
+            {isAnyAudioActive ? (
               <IconPlayerPauseFilled size={32} className="text-on-primary" aria-hidden="true" />
             ) : (
               <IconPlayerPlayFilled size={32} className="text-on-primary translate-x-[2px]" aria-hidden="true" />

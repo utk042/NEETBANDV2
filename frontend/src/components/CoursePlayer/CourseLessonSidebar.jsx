@@ -41,26 +41,7 @@ export default React.memo(function CourseLessonSidebar({
     `}>
       <div className="p-4 border-b border-outline/10">
         <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Chapters</p>
-        <p className="text-xs text-on-surface-variant/60 mt-0.5">{course?.subjects?.length || 0} subjects · {totalItemsCount} items</p>
-      </div>
-      {/* Subject Tabs */}
-      <div className="flex px-2 py-2 overflow-x-auto hide-scrollbar gap-2 border-b border-outline/10 bg-surface-container-low shrink-0">
-        {(course?.subjects || []).map((sub, sIdx) => {
-          const isSelected = sIdx === sidebarSubjectIdx;
-          return (
-            <button
-              key={sub._id || sIdx}
-              onClick={() => setSidebarSubjectIdx(sIdx)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
-                isSelected 
-                  ? 'bg-surface-variant text-on-surface' 
-                  : 'text-on-surface-variant hover:bg-surface-container-highest'
-              }`}
-            >
-              {sub.title}
-            </button>
-          );
-        })}
+        <p className="text-xs text-on-surface-variant/60 mt-0.5">{totalItemsCount} items</p>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-28 divide-y divide-outline/5">

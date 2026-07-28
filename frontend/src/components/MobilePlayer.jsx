@@ -6,8 +6,8 @@ import { usePlayer } from '../contexts/PlayerContext';
 
 export default function MobilePlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, globalTracks, isPlaying, currentTime, duration, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
-    playbackError, retryPlayback, isAudioRollActive, activeRollType
+    currentTrack, globalTracks, isAnyAudioActive, currentTime, duration, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
+    playbackError, retryPlayback, isAudioRollActive, activeRollType, isPlayingAd
   } = usePlayer();
 
   const displayTrack = currentTrack || (globalTracks && globalTracks.length > 0 ? globalTracks[0] : {
@@ -69,14 +69,14 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
-            <span className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : isAudioRollActive ? 'text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}>
+            <span className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : (isPlayingAd || isAudioRollActive) ? 'text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}>
               {playbackError ? (
                 <span className="flex items-center gap-1">
                   <IconAlertTriangle size={12} className="shrink-0" />
                   Playback error • Tap to retry
                 </span>
-              ) : isAudioRollActive ? (
-                activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'
+              ) : (isPlayingAd || isAudioRollActive) ? (
+                isPlayingAd ? 'Ad Playing • Song Starting Soon' : activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'
               ) : displayTrack.chapter}
             </span>
           </div>
@@ -96,9 +96,9 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           <button 
             onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full"
-            aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : isAnyAudioActive ? 'Pause' : 'Play'}
           >
-            {(isPlaying || isAudioRollActive) ? (
+            {isAnyAudioActive ? (
               <IconPlayerPauseFilled size={24} className="text-on-surface" aria-hidden="true" />
             ) : (
               <IconPlayerPlayFilled size={24} className="text-on-surface" aria-hidden="true" />

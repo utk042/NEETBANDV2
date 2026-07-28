@@ -1392,7 +1392,15 @@ function SubjectCard({ subject, index, onUpdate, onDelete, onMoveUp, onMoveDown,
 
 export default function CourseDesigner({ course, onClose, onSaved }) {
   const { toast } = useDialog();
-  const [subjects, setSubjects] = useState(course.subjects || []);
+  const [subjects, setSubjects] = useState(() => {
+    if (course.subjects && course.subjects.length > 0) {
+      if (course.subjects.length === 1) return course.subjects;
+      // Flatten all chapters into the first subject for robust backward compatibility
+      const allChapters = course.subjects.reduce((acc, sub) => acc.concat(sub.chapters || []), []);
+      return [{ ...course.subjects[0], chapters: allChapters }];
+    }
+    return [{ _id: `temp_${Date.now()}`, title: course.subject || 'Default Subject', chapters: [] }];
+  });
   const [meta, setMeta] = useState({
     title: course.title,
     class: course.class,
@@ -1407,7 +1415,7 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   const [saved, setSaved] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'settings'
-  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(null);
+  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(0);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(null);
   const SubjectIcon = getSubjectIcon(meta.subject);
 
@@ -1757,75 +1765,12 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
           </div>
 
           {/* ── Curriculum Tab ── */}
-          {activeTab === 'curriculum' && selectedSubjectIndex === null && (
+          {activeTab === 'curriculum' && selectedSubjectIndex !== null && selectedChapterIndex === null && (
             <div className="p-6 md:p-8 max-w-3xl">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-on-surface">Curriculum Builder</h2>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  Add subjects and arrange your course outline.
-                </p>
-              </div>
-
-              {/* Lesson list */}
-              <div className="space-y-3 mb-6">
-                {subjects.length === 0 && (
-                  <div className="text-center py-16 border border-dashed border-outline-variant/30 rounded-2xl">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
-                      <IconPlayerPlay size={26} stroke={1.5} className="text-primary" />
-                    </div>
-                    <h3 className="font-bold text-on-surface mb-1">No content yet</h3>
-                    <p className="text-sm text-on-surface-variant mb-5">Add your first subject to start building the curriculum.</p>
-                    <button
-                      onClick={addSubject}
-                      className="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:brightness-110 active:scale-[0.98] transition-all"
-                    >
-                      Add First Subject
-                    </button>
-                  </div>
-                )}
-
-                {subjects.map((subject, i) => (
-                  <SubjectCard
-                    key={subject._id || i}
-                    subject={subject}
-                    index={i}
-                    isFirst={i === 0}
-                    isLast={i === subjects.length - 1}
-                    onUpdate={patch => updateSubject(i, patch)}
-                    onDelete={() => deleteSubject(i)}
-                    onMoveUp={() => moveSubject(i, -1)}
-                    onMoveDown={() => moveSubject(i, 1)}
-                    onManageChapters={() => setSelectedSubjectIndex(i)}
-                  />
-                ))}
-              </div>
-
-              {/* Add buttons */}
-              {subjects.length > 0 && (
-                <button
-                  onClick={addSubject}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/20 text-primary bg-primary/10 text-xs font-bold transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-                >
-                  <IconPlus size={13} stroke={2.5} />
-                  Add Subject
-                </button>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'curriculum' && selectedSubjectIndex !== null && selectedChapterIndex === null && (
-            <div className="p-6 md:p-8 max-w-3xl">
-              <div className="mb-6">
-                <button 
-                  onClick={() => { setSelectedSubjectIndex(null); setSelectedChapterIndex(null); }}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors mb-4"
-                >
-                  <IconArrowLeft size={16} stroke={2} />
-                  Back to Subjects
-                </button>
-                <h2 className="text-xl font-bold text-on-surface">{subjects[selectedSubjectIndex]?.title || `Subject ${selectedSubjectIndex + 1}`}</h2>
-                <p className="text-sm text-on-surface-variant mt-1">
-                  Manage chapters for this subject.
+                  Add chapters and arrange your course outline.
                 </p>
               </div>
 
@@ -1921,10 +1866,6 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
                   Back to Chapters
                 </button>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                    {subjects[selectedSubjectIndex]?.title || `Subject ${selectedSubjectIndex + 1}`}
-                  </span>
-                  <IconChevronDown size={12} className="-rotate-90 text-on-surface-variant" />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     {(subjects[selectedSubjectIndex]?.chapters || [])[selectedChapterIndex]?.title || `Chapter ${selectedChapterIndex + 1}`}
                   </span>

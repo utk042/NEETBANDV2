@@ -91,7 +91,7 @@ export default function UserRoutes() {
 
   // Player state from context
   const {
-    currentTrack, isPlaying, currentTime, queue, setQueue, isMuted, setIsMuted,
+    currentTrack, isPlaying, isAnyAudioActive, currentTime, queue, setQueue, isMuted, setIsMuted,
     favoritedTrackIds, recentlyPlayedTrackIds,
     togglePlay: contextTogglePlay, handleTrackSelect: contextHandleTrackSelect,
     handleNext, handlePrev, handleSeek,
@@ -178,8 +178,8 @@ export default function UserRoutes() {
         }>
           <Routes>
             <Route path="/" element={<>
-              <Hero currentTrack={currentTrack} isPlaying={isPlaying} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
-              <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
+              <Hero currentTrack={currentTrack} isPlaying={isAnyAudioActive} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
+              <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
               <CourseCarousel lmsCourses={lmsCourses} />
               <Features />
               <StatsSection appReady={!isLoading} />
@@ -189,7 +189,7 @@ export default function UserRoutes() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Dashboard" loginRoute="/login">
-                <Dashboard navigate={navigate} onLogout={logout} tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} onUpgradeClick={() => setIsPremiumModalOpen(true)} />
+                <Dashboard navigate={navigate} onLogout={logout} tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} user={user} setUser={login} recentlyPlayedTrackIds={recentlyPlayedTrackIds} onUpgradeClick={() => setIsPremiumModalOpen(true)} />
               </ProtectedRoute>
             } />
             
@@ -211,9 +211,9 @@ export default function UserRoutes() {
               </ProtectedRoute>
             } />
             
-            <Route path="/favourites" element={<div className="pt-36 md:pt-44 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} /></div>} />
+            <Route path="/favourites" element={<div className="pt-36 md:pt-44 pb-32"><Favourites tracks={globalTracks} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} /></div>} />
 
-            <Route path="/course" element={<LibraryPage tracks={globalTracks} lmsCourses={lmsCourses} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} onCourseSelect={async (course) => {
+            <Route path="/course" element={<LibraryPage tracks={globalTracks} lmsCourses={lmsCourses} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} onCourseSelect={async (course) => {
                 try {
                   const freshCourses = await getCourses();
                   setLmsCourses(freshCourses);
@@ -236,7 +236,7 @@ export default function UserRoutes() {
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-36 md:pt-44 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
-            <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isPlaying} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
+            <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
             <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />

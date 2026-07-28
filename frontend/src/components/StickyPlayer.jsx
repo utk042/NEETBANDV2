@@ -13,12 +13,12 @@ import { formatTime } from '../utils/urlUtils';
 
 export default function StickyPlayer({ onOpenFullPlayer }) {
   const {
-    currentTrack, globalTracks, isPlaying, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
+    currentTrack, globalTracks, isPlaying, isAnyAudioActive, currentTime, duration, isMuted, setIsMuted, volume, setVolume,
     togglePlay, handleNext, handlePrev, handleSeek,
     favoritedTrackIds, toggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
     requestPip, playbackError, retryPlayback,
-    isAudioRollActive, activeRollType
+    isAudioRollActive, activeRollType, isPlayingAd
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -286,10 +286,10 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
                 Retry
               </button>
             </div>
-          ) : isAudioRollActive ? (
+          ) : (isPlayingAd || isAudioRollActive) ? (
             <div className="flex items-center gap-2 text-xs font-extrabold text-amber-400 animate-pulse tracking-wide uppercase truncate">
               <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-ping"></span>
-              {activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'}
+              {isPlayingAd ? 'Ad Playing • Song Starting Soon' : activeRollType === 'guestAd' ? 'Guest Roll Playing' : 'Ad Playing • Song Paused'}
             </div>
           ) : (
             <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem]">
@@ -324,10 +324,10 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           <button
             onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
             className="bg-primary text-on-primary rounded-full w-9 h-9 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-            aria-label={playbackError ? 'Retry' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
-            title={playbackError ? 'Retry Playback' : (isPlaying || isAudioRollActive) ? 'Pause' : 'Play'}
+            aria-label={playbackError ? 'Retry' : isAnyAudioActive ? 'Pause' : 'Play'}
+            title={playbackError ? 'Retry Playback' : isAnyAudioActive ? 'Pause' : 'Play'}
           >
-            {playbackError ? <IconRotate size={18} /> : (isPlaying || isAudioRollActive) ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
+            {playbackError ? <IconRotate size={18} /> : isAnyAudioActive ? <IconPlayerPauseFilled size={18} /> : <IconPlayerPlayFilled size={18} className="translate-x-[1px]" />}
           </button>
 
           <button
