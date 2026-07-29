@@ -77,7 +77,7 @@ app.use('/upload', uploadRoutes);
 app.use('/newsletter', newsletterRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
-app.use('/api/categories', categoryRoutes);
+app.use('/categories', categoryRoutes);
 
 
 // Ad URLs endpoint
