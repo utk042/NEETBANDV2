@@ -94,7 +94,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
   }, [tracks, selectedClass, selectedSubject, selectedChapter, searchQuery]);
 
   const totalDurationSeconds = React.useMemo(() => {
-    return tracks.reduce((acc, track) => {
+    return filteredTracks.reduce((acc, track) => {
       let secs = track.durationSeconds || 0;
       if (!secs && track.duration) {
         const parts = track.duration.split(':');
@@ -106,7 +106,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
       }
       return acc + (secs || 0);
     }, 0);
-  }, [tracks]);
+  }, [filteredTracks]);
   const totalMinutes = Math.ceil(totalDurationSeconds / 60);
 
   return (
@@ -261,7 +261,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   
                   <div className="flex flex-col min-w-0 justify-center">
                     <span className="text-lg md:text-2xl font-headline-lg font-bold leading-tight tracking-tight truncate text-on-secondary dark:text-on-primary">
-                      {tracks.findIndex(t => t.id === displayTrack.id) >= 0 ? `0${tracks.findIndex(t => t.id === displayTrack.id) + 1} ` : ''}{displayTrack.title}
+                      {displayTrack.title}
                     </span>
                     <span className="text-xs md:text-base font-medium text-on-secondary/80 dark:text-on-primary/80 truncate mt-0.5">
                       {displayTrack.chapter}
@@ -274,7 +274,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                   {/* Desktop Only Badges */}
                   <div className="hidden lg:flex items-center gap-3">
                     <span className="px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm border border-white/10 text-[10px] md:text-xs font-bold tracking-widest text-on-secondary dark:text-on-primary uppercase shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
-                      {tracks.length} {tracks.length === 1 ? 'TRACK' : 'TRACKS'}
+                      {filteredTracks.length} {filteredTracks.length === 1 ? 'TRACK' : 'TRACKS'}
                     </span>
                     <span className="text-[11px] md:text-xs font-semibold tracking-wider text-on-secondary/60 dark:text-on-primary/60 uppercase">
                       {totalMinutes} MIN.
