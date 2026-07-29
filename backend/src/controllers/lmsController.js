@@ -186,16 +186,28 @@ export const getLessonContent = async (req, res) => {
   try {
     const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
+      let foundSubject = null;
+      let foundChapter = null;
       let foundItem = null;
-      course.subjects.forEach(s => {
-        s.chapters.forEach(c => {
-          const item = c.items.id(req.params.itemId);
-          if (item) foundItem = item;
+
+      course.subjects?.forEach(s => {
+        s.chapters?.forEach(c => {
+          const item = c.items?.id ? c.items.id(req.params.itemId) : c.items?.find(i => String(i._id) === String(req.params.itemId));
+          if (item) {
+            foundSubject = s;
+            foundChapter = c;
+            foundItem = item;
+          }
         });
       });
-      if (foundItem?.isPremium) {
-        if (!req.user || !req.user.isPremium) {
-          return res.status(403).json({ message: 'Premium content. Upgrade required.' });
+
+      const isPremiumContent = !!(course.isPremium || foundSubject?.isPremium || foundChapter?.isPremium || foundItem?.isPremium);
+      if (isPremiumContent) {
+        if (!req.user) {
+          return res.status(401).json({ message: 'Login required for premium content.', isPremium: true });
+        }
+        if (!req.user.isPremium && req.user.role !== 'admin' && req.user.role !== 'owner') {
+          return res.status(403).json({ message: 'Premium content. Upgrade required.', isPremium: true });
         }
       }
     }
@@ -225,16 +237,28 @@ export const getLessonQuiz = async (req, res) => {
   try {
     const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
+      let foundSubject = null;
+      let foundChapter = null;
       let foundItem = null;
-      course.subjects.forEach(s => {
-        s.chapters.forEach(c => {
-          const item = c.items.id(req.params.itemId);
-          if (item) foundItem = item;
+
+      course.subjects?.forEach(s => {
+        s.chapters?.forEach(c => {
+          const item = c.items?.id ? c.items.id(req.params.itemId) : c.items?.find(i => String(i._id) === String(req.params.itemId));
+          if (item) {
+            foundSubject = s;
+            foundChapter = c;
+            foundItem = item;
+          }
         });
       });
-      if (foundItem?.isPremium) {
-        if (!req.user || !req.user.isPremium) {
-          return res.status(403).json({ message: 'Premium content. Upgrade required.' });
+
+      const isPremiumContent = !!(course.isPremium || foundSubject?.isPremium || foundChapter?.isPremium || foundItem?.isPremium);
+      if (isPremiumContent) {
+        if (!req.user) {
+          return res.status(401).json({ message: 'Login required for premium content.', isPremium: true });
+        }
+        if (!req.user.isPremium && req.user.role !== 'admin' && req.user.role !== 'owner') {
+          return res.status(403).json({ message: 'Premium content. Upgrade required.', isPremium: true });
         }
       }
     }
@@ -272,16 +296,28 @@ export const getLessonQa = async (req, res) => {
   try {
     const course = await Course.findOne({ "subjects.chapters.items._id": req.params.itemId });
     if (course) {
+      let foundSubject = null;
+      let foundChapter = null;
       let foundItem = null;
-      course.subjects.forEach(s => {
-        s.chapters.forEach(c => {
-          const item = c.items.id(req.params.itemId);
-          if (item) foundItem = item;
+
+      course.subjects?.forEach(s => {
+        s.chapters?.forEach(c => {
+          const item = c.items?.id ? c.items.id(req.params.itemId) : c.items?.find(i => String(i._id) === String(req.params.itemId));
+          if (item) {
+            foundSubject = s;
+            foundChapter = c;
+            foundItem = item;
+          }
         });
       });
-      if (foundItem?.isPremium) {
-        if (!req.user || !req.user.isPremium) {
-          return res.status(403).json({ message: 'Premium content. Upgrade required.' });
+
+      const isPremiumContent = !!(course.isPremium || foundSubject?.isPremium || foundChapter?.isPremium || foundItem?.isPremium);
+      if (isPremiumContent) {
+        if (!req.user) {
+          return res.status(401).json({ message: 'Login required for premium content.', isPremium: true });
+        }
+        if (!req.user.isPremium && req.user.role !== 'admin' && req.user.role !== 'owner') {
+          return res.status(403).json({ message: 'Premium content. Upgrade required.', isPremium: true });
         }
       }
     }

@@ -106,4 +106,23 @@ router.post('/parse', upload.single('file'), async (req, res) => {
   }
 });
 
+router.delete('/', async (req, res) => {
+  try {
+    const { url } = req.body || {};
+    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) {
+      return res.status(400).json({ error: 'Invalid file URL' });
+    }
+    const relativePath = path.normalize(url.replace(/^\/uploads\//, '')).replace(/^(\.\.[\/\\])+/, '');
+    const absolutePath = path.join(__dirname, '../../uploads', relativePath);
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+      return res.json({ success: true, message: 'File deleted successfully' });
+    }
+    return res.status(404).json({ error: 'File not found' });
+  } catch (err) {
+    console.error('Error deleting upload:', err);
+    return res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
 export default router;

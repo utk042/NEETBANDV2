@@ -3,6 +3,7 @@ import { getSongs, recordSongPlay, recordSongComplete, recordSongDropOff, record
 import { useDialog } from './DialogContext';
 import logoImg from '../assets/logo.png';
 import { resolveAudioUrl, formatTime } from '../utils/urlUtils';
+import { IconAlertTriangle } from '@tabler/icons-react';
 
 const PlayerContext = createContext(null);
 
@@ -36,7 +37,9 @@ export function PlayerProvider({ children, user }) {
   }, []);
   const [isShuffled, setIsShuffled] = useState(false);
   const [repeatMode, setRepeatMode] = useState('none'); // 'none' | 'one' | 'all'
-  const [favoritedTrackIds, setFavoritedTrackIds] = useState([]);
+  const [favoritedTrackIds, setFavoritedTrackIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('neetband_favorites') || '[]'); } catch { return []; }
+  });
   const [recentlyPlayedTrackIds, setRecentlyPlayedTrackIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('neetband_recently_played') || '[]'); } catch { return []; }
   });
@@ -59,13 +62,15 @@ export function PlayerProvider({ children, user }) {
   const [playedWatermarks, setPlayedWatermarks] = useState([]);
   const playedWatermarksRef = useRef([]);
 
-  const { confirm } = useDialog();
+  const { confirm, toast } = useDialog();
 
   const audioRef = useRef(null); // main audio element (in DOM via PlayerProvider render)
   const lastLoadedTrackIdRef = useRef(null);
   const audioRetryCountRef = useRef(0);
   const retryTimeoutRef = useRef(null);
   const activePlayRequestIdRef = useRef(0);
+  const midRollPlayRequestIdRef = useRef(0);
+  const activeAdSessionIdRef = useRef(0);
   const pendingSeekTimeRef = useRef(null);
   const currentAdIndexRef = useRef(0);
   const resumeAfterAdRef = useRef(true);
@@ -88,6 +93,14 @@ export function PlayerProvider({ children, user }) {
 
   // Drop-off tracking
   const lastDropOffSegment = useRef(-1);
+
+  // Mount tracking
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Global Ad Config state
   const [adConfig, setAdConfig] = useState(null);
@@ -234,8 +247,13 @@ export function PlayerProvider({ children, user }) {
           throw err;
         }
       }).catch(err => {
-        if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError' || err.message === 'Play request superseded')) {
-          console.warn('Audio play request interrupted or user interaction needed:', err.message || err);
+        if (err && err.name === 'NotAllowedError') {
+          console.warn('Browser blocked autoplay. User interaction required:', err.message || err);
+          setIsPlaying(false);
+          setIsBuffering(false);
+          setPlaybackError('Autoplay blocked by browser. Tap Play to start.');
+        } else if (err && (err.name === 'AbortError' || err.message === 'Play request superseded')) {
+          console.warn('Audio play request interrupted:', err.message || err);
         } else {
           console.error('Audio play error:', err);
         }
@@ -280,11 +298,35 @@ export function PlayerProvider({ children, user }) {
     }
   }, []);
 
+  const [systemNotice, setSystemNotice] = useState(null);
+
+  const fetchWithRetry = useCallback(async (fetcherFn, resourceName, retries = 4, backoff = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      if (!isMountedRef.current) throw new Error('Unmounted');
+      try {
+        const data = await fetcherFn();
+        if (!isMountedRef.current) throw new Error('Unmounted');
+        setSystemNotice(null);
+        return data;
+      } catch (err) {
+        if (!isMountedRef.current || err.message === 'Unmounted') throw err;
+        if (i < retries - 1) {
+          setSystemNotice(`Network error fetching ${resourceName} (Attempt ${i + 1}/${retries}). Retrying in ${backoff / 1000}s...`);
+          await new Promise(res => setTimeout(res, backoff));
+          backoff *= 2;
+        } else {
+          setSystemNotice(`Failed to fetch ${resourceName}. Some features may be unavailable or operating in degraded mode.`);
+          throw err;
+        }
+      }
+    }
+  }, []);
+
   // Fetch songs on mount
   useEffect(() => {
-    getSongs().then(data => {
+    fetchWithRetry(() => getSongs(), 'songs').then(data => {
       const mapped = data.map(s => {
-        const durationSecs = Number(s.duration) || 200;
+        const durationSecs = (s.duration != null && !isNaN(Number(s.duration))) ? Number(s.duration) : 200;
         const formattedDuration = formatTime(durationSecs);
         const resolvedAudio = resolveAudioUrl(s.audioUrl);
         const resolvedWatermark = s.watermarkUrl ? resolveAudioUrl(s.watermarkUrl) : '';
@@ -302,7 +344,7 @@ export function PlayerProvider({ children, user }) {
         };
       });
       setGlobalTracks(mapped);
-      if (mapped.length > 0 && !currentTrack) {
+      if (mapped.length > 0 && !lastLoadedTrackIdRef.current) {
         const firstTrack = mapped[0];
         setCurrentTrack(firstTrack);
         if (audioRef.current && firstTrack.audioUrl) {
@@ -312,23 +354,37 @@ export function PlayerProvider({ children, user }) {
         }
       }
     }).catch(console.error);
-  }, []);
+  }, [fetchWithRetry]);
 
   // Fetch ad URLs
   useEffect(() => {
-    fetch(`${API_URL}/ads`)
-      .then(r => r.json())
-      .then(data => setAdAudioUrls(data.ads || []))
-      .catch(() => setAdAudioUrls([]));
-  }, []);
+    let isMounted = true;
+    fetchWithRetry(async () => {
+      const r = await fetch(`${API_URL}/ads`);
+      if (!r.ok) throw new Error('Fetch failed');
+      return r.json();
+    }, 'ads').then(data => {
+      if (isMounted) setAdAudioUrls(data.ads || []);
+    }).catch((err) => {
+      if (isMounted && err.message !== 'Unmounted') setAdAudioUrls([]);
+    });
+    return () => { isMounted = false; };
+  }, [fetchWithRetry]);
 
   // Fetch global Ad Config
   useEffect(() => {
-    fetch(`${API_URL}/api/ad-config`)
-      .then(r => r.json())
-      .then(data => setAdConfig(data))
-      .catch(() => setAdConfig(null));
-  }, []);
+    let isMounted = true;
+    fetchWithRetry(async () => {
+      const r = await fetch(`${API_URL}/api/ad-config`);
+      if (!r.ok) throw new Error('Fetch failed');
+      return r.json();
+    }, 'ad config').then(data => {
+      if (isMounted) setAdConfig(data);
+    }).catch((err) => {
+      if (isMounted && err.message !== 'Unmounted') setAdConfig(null);
+    });
+    return () => { isMounted = false; };
+  }, [fetchWithRetry]);
 
   // Sync volume & mute to all audio elements
   useEffect(() => {
@@ -436,6 +492,10 @@ export function PlayerProvider({ children, user }) {
   // Track time updates & drop-off tracking
   const handleTimeUpdate = useCallback(() => {
     if (!audioRef.current || !currentTrack) return;
+    
+    // Stop processing track time updates if any ad roll or pre-roll is actively playing
+    if (isPlayingAdRef.current || isAudioRollActiveRef.current) return;
+
     const rawTime = audioRef.current.currentTime;
     const t = (isNaN(rawTime) || !isFinite(rawTime) || rawTime < 0) ? 0 : rawTime;
     setCurrentTime(t);
@@ -465,11 +525,12 @@ export function PlayerProvider({ children, user }) {
     const trackId = currentTrack._id || currentTrack.id;
     const isFirstSongOfChapter = currentTrack.chapter
       ? (globalTracks.find(t => t.chapter === currentTrack.chapter)?.id === trackId || globalTracks.find(t => t.chapter === currentTrack.chapter)?._id === trackId)
-      : true;
+      : (globalTracks[0]?.id === trackId || globalTracks[0]?._id === trackId);
 
-    if (!isNormalSong && !user?.isLoggedIn && isFirstSongOfChapter && pct >= 0.2) {
+    if (!isNormalSong && !user?.isLoggedIn && (!isFirstSongOfChapter || pct >= 0.2)) {
       if (!playedGuestAdRef.current) {
         updatePlayedGuestAd(true);
+        stopWatermark();
         audioRef.current.pause();
         setIsPlaying(false);
 
@@ -502,12 +563,13 @@ export function PlayerProvider({ children, user }) {
     }
 
     // Watermark logic for free users
-    if (!isNormalSong && !user?.isPremium && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
+    if (!isNormalSong && !user?.isPremium && !isAudioRollActiveRef.current && currentTrack.watermarkUrl && currentTrack.watermarkPositions && currentTrack.watermarkPositions.length > 0) {
       const pct100 = pct * 100;
       const currentWatermarks = playedWatermarksRef.current;
-      const unplayedWatermarks = currentTrack.watermarkPositions.filter(p => pct100 >= p && !currentWatermarks.includes(p));
+      const unplayedWatermarks = currentTrack.watermarkPositions.filter(p => pct100 >= p && !currentWatermarks.includes(p)).sort((a, b) => a - b);
       if (unplayedWatermarks.length > 0) {
-        updatePlayedWatermarks(prev => Array.from(new Set([...prev, ...unplayedWatermarks])));
+        const nextPosition = unplayedWatermarks[0];
+        updatePlayedWatermarks(prev => Array.from(new Set([...prev, nextPosition])));
         if (watermarkAudioRef.current) {
           isDuckedRef.current = true;
           const baseVol = isMutedRef.current ? 0 : volumeRef.current;
@@ -531,26 +593,35 @@ export function PlayerProvider({ children, user }) {
     // Unified Audio Roll & Popup Ad Logic (Guests & Non-Premium)
     if (!isNormalSong && !user?.isPremium && !isAudioRollActiveRef.current) {
       const pct100 = pct * 100;
-      const audioRollsActive = currentTrack.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
-      const popupsActive = currentTrack.popupsEnabled ?? adConfig?.popupsEnabled ?? true;
+      const globalAudioRollsEnabled = adConfig?.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true;
+      const audioRollsActive = globalAudioRollsEnabled && (currentTrack.audioRollsEnabled ?? true);
+      const globalPopupsEnabled = adConfig?.popupsEnabled !== undefined ? adConfig.popupsEnabled : true;
+      const popupsEnabled = globalPopupsEnabled && (currentTrack.popupsEnabled ?? true);
 
-      const audioPositions = (currentTrack.audioRollPositions && currentTrack.audioRollPositions.length > 0)
+      const rawPositions = Array.isArray(currentTrack.audioRollPositions) && currentTrack.audioRollPositions.length > 0
         ? currentTrack.audioRollPositions
         : adConfig?.audioRollPositions;
+      const audioPositions = (rawPositions || []).filter(p => p > 0);
       const audioUrl = currentTrack.audioRollUrl || adConfig?.audioRollUrl;
       const currentRolls = playedAudioRollsRef.current;
 
-      if (audioRollsActive && audioPositions && audioPositions.length > 0 && audioUrl) {
-        const unplayedPositions = audioPositions.filter(p => pct100 >= p && !currentRolls.includes(p));
+      if (audioRollsActive && audioPositions.length > 0 && audioUrl && !isDuckedRef.current) {
+        const unplayedPositions = audioPositions.filter(p => pct100 >= p && !currentRolls.includes(p)).sort((a, b) => a - b);
         if (unplayedPositions.length > 0) {
-          updatePlayedAudioRolls(prev => Array.from(new Set([...prev, ...unplayedPositions])));
+          const nextPosition = unplayedPositions[0];
+          updatePlayedAudioRolls(prev => Array.from(new Set([...prev, nextPosition])));
 
-          // Pause main audio, play audio roll ad
-          resumeAfterAdRef.current = true;
-          audioRef.current.pause();
+          // Strict Mutual Exclusion: Pause & stop all other audio elements to prevent echo/double sound
+          stopAllAdAudio();
+          stopWatermark();
+          if (audioRef.current) {
+            audioRef.current.pause();
+          }
           setIsPlaying(false);
+          resumeAfterAdRef.current = true;
           setAudioRollActive(true);
           setActiveRollType('midroll');
+          midRollPlayRequestIdRef.current = activePlayRequestIdRef.current;
           
           if (midRollAudioRef.current) {
             const finalUrl = resolveAudioUrl(audioUrl);
@@ -576,21 +647,22 @@ export function PlayerProvider({ children, user }) {
       }
 
       // Popup Check
-      const popupPositions = (currentTrack.popupPositions && currentTrack.popupPositions.length > 0)
+      const popupPositions = Array.isArray(currentTrack.popupPositions) && currentTrack.popupPositions.length > 0
         ? currentTrack.popupPositions
         : adConfig?.popupPositions;
-      const popupHtml = currentTrack.popupHtml || adConfig?.popupHtml;
+      const popupHtml = currentTrack.popupHtml !== undefined ? currentTrack.popupHtml : adConfig?.popupHtml;
       const currentPopups = playedPopupsRef.current;
 
-      if (popupsActive && popupPositions && popupPositions.length > 0 && popupHtml) {
-        const unplayedPopups = popupPositions.filter(p => pct100 >= p && !currentPopups.includes(p));
+      if (popupsEnabled && popupPositions && popupPositions.length > 0 && popupHtml) {
+        const unplayedPopups = popupPositions.filter(p => pct100 >= p && !currentPopups.includes(p)).sort((a, b) => a - b);
         if (unplayedPopups.length > 0) {
-          updatePlayedPopups(prev => Array.from(new Set([...prev, ...unplayedPopups])));
+          const nextPosition = unplayedPopups[0];
+          updatePlayedPopups(prev => Array.from(new Set([...prev, nextPosition])));
           setShowConfigPopup(true);
         }
       }
     }
-  }, [currentTrack, user, adConfig, globalTracks, playedGuestAd, showGuestLoginPrompt, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, safePlay, stopWatermark, setAudioRollActive, updatePlayedGuestAd]);
+  }, [currentTrack, user, adConfig, globalTracks, playedGuestAd, showGuestLoginPrompt, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, safePlay, stopWatermark, stopAllAdAudio, setAudioRollActive, updatePlayedGuestAd]);
 
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
@@ -612,8 +684,10 @@ export function PlayerProvider({ children, user }) {
   }, [pendingSeekTime]);
 
   // Handle ad ended
-  const handleAdEnded = useCallback(() => {
+  const handleAdEnded = useCallback((sessionId) => {
+    if (sessionId !== undefined && sessionId !== activeAdSessionIdRef.current) return;
     if (!adQueueRef.current && !isPlayingAdRef.current) return;
+    const currentSession = activeAdSessionIdRef.current;
     const nextIdx = currentAdIndexRef.current + 1;
     if (nextIdx < adAudioUrls.length) {
       currentAdIndexRef.current = nextIdx;
@@ -622,7 +696,7 @@ export function PlayerProvider({ children, user }) {
         adAudioRef.current.src = resolveAudioUrl(adAudioUrls[nextIdx]);
         adAudioRef.current.load();
         safePlay(adAudioRef.current).catch(err => {
-          if (err?.name !== 'AbortError') handleAdEnded();
+          if (err?.name !== 'AbortError') handleAdEnded(currentSession);
         });
       }
     } else {
@@ -657,13 +731,18 @@ export function PlayerProvider({ children, user }) {
   // Play ad sequence or directly start the track
   const playWithAds = useCallback((track) => {
     if (!track) return;
+    if (!track.audioUrl) {
+      if (toast) toast.error("Audio URL is missing");
+      return;
+    }
+    activePlayRequestIdRef.current += 1;
     const isNormalSong = track.songType === 'Normal';
     const trackId = track._id || track.id;
 
     // Guest Limit check
     const isFirstSongOfChapter = track.chapter
       ? (globalTracks.find(t => t.chapter === track.chapter)?.id === trackId || globalTracks.find(t => t.chapter === track.chapter)?._id === trackId)
-      : true;
+      : (globalTracks[0]?.id === trackId || globalTracks[0]?._id === trackId);
     
     if (!isNormalSong && !user?.isLoggedIn && !isFirstSongOfChapter) {
       confirm("Login Required", "Please login to access more songs.", {
@@ -692,10 +771,13 @@ export function PlayerProvider({ children, user }) {
     updatePlayedGuestAd(false);
     setShowConfigPopup(false);
 
-    const audioRollsActive = track.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
+    const globalAudioRollsEnabled = adConfig?.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true;
+    const audioRollsActive = globalAudioRollsEnabled && (track.audioRollsEnabled ?? true);
 
     if (!isNormalSong && !user?.isPremium && adAudioUrls.length > 0 && track.audioUrl && audioRollsActive) {
       // Queue pre-roll ads
+      activeAdSessionIdRef.current += 1;
+      const currentSession = activeAdSessionIdRef.current;
       adQueueRef.current = track;
       currentAdIndexRef.current = 0;
       setCurrentAdIndex(0);
@@ -715,10 +797,10 @@ export function PlayerProvider({ children, user }) {
         adAudioRef.current.src = resolveAudioUrl(adAudioUrls[0]);
         adAudioRef.current.load();
         safePlay(adAudioRef.current).catch(err => {
-          if (err?.name !== 'AbortError') handleAdEnded();
+          if (err?.name !== 'AbortError') handleAdEnded(currentSession);
         });
       } else {
-        handleAdEnded();
+        handleAdEnded(currentSession);
       }
     } else {
       // Direct track playback
@@ -741,7 +823,12 @@ export function PlayerProvider({ children, user }) {
 
   const handleNext = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
-    if (list.length === 0) return;
+    if (list.length === 0) {
+      setIsPlaying(false);
+      setCurrentTrack(null);
+      setPlaybackError("No songs available to play.");
+      return;
+    }
     const currentId = currentTrack?._id || currentTrack?.id;
     let idx = list.findIndex(t => (t._id || t.id) === currentId);
     let nextIdx;
@@ -782,7 +869,12 @@ export function PlayerProvider({ children, user }) {
 
   const handlePrev = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
-    if (list.length === 0) return;
+    if (list.length === 0) {
+      setIsPlaying(false);
+      setCurrentTrack(null);
+      setPlaybackError("No songs available to play.");
+      return;
+    }
     // If >3s into track, restart it
     if (audioRef.current && audioRef.current.currentTime > 3) {
       audioRef.current.currentTime = 0;
@@ -815,6 +907,12 @@ export function PlayerProvider({ children, user }) {
 
     // If a pre-roll ad is playing, ignore the seek request
     if (isPlayingAdRef.current) {
+      return;
+    }
+
+    // If an audio roll is currently playing, queue the pending seek target
+    if (isAudioRollActiveRef.current) {
+      updatePendingSeekTime(clampedTime);
       return;
     }
 
@@ -869,12 +967,6 @@ export function PlayerProvider({ children, user }) {
       }
     }
 
-    // If an audio roll is currently playing, queue the pending seek target
-    if (isAudioRollActiveRef.current) {
-      updatePendingSeekTime(clampedTime);
-      return;
-    }
-
     stopWatermark();
 
     // 2. Audio Roll & Watermark enforcement for free / non-premium users
@@ -889,10 +981,27 @@ export function PlayerProvider({ children, user }) {
         }
       }
 
-      const audioRollsActive = currentTrack.audioRollsEnabled ?? adConfig?.audioRollsEnabled ?? true;
-      const audioPositions = (currentTrack.audioRollPositions && currentTrack.audioRollPositions.length > 0) 
+      // Mark skipped popups as played
+      const globalPopupsEnabled = adConfig?.popupsEnabled !== undefined ? adConfig.popupsEnabled : true;
+      const popupsActive = globalPopupsEnabled && (currentTrack.popupsEnabled ?? true);
+      if (popupsActive) {
+        const popupPositions = Array.isArray(currentTrack.popupPositions) && currentTrack.popupPositions.length > 0
+          ? currentTrack.popupPositions
+          : adConfig?.popupPositions;
+        if (popupPositions && popupPositions.length > 0) {
+          const skippedPopups = popupPositions.filter(p => targetPct100 >= p && !playedPopupsRef.current.includes(p));
+          if (skippedPopups.length > 0) {
+            updatePlayedPopups(prev => Array.from(new Set([...prev, ...skippedPopups])));
+          }
+        }
+      }
+
+      const globalAudioRollsEnabled = adConfig?.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true;
+      const audioRollsActive = globalAudioRollsEnabled && (currentTrack.audioRollsEnabled ?? true);
+      const rawPositions = Array.isArray(currentTrack.audioRollPositions) && currentTrack.audioRollPositions.length > 0
         ? currentTrack.audioRollPositions 
         : (adConfig?.audioRollPositions || []);
+      const audioPositions = rawPositions.filter(p => p > 0);
       const audioUrl = currentTrack.audioRollUrl || adConfig?.audioRollUrl;
       const currentRolls = playedAudioRollsRef.current;
 
@@ -912,6 +1021,7 @@ export function PlayerProvider({ children, user }) {
 
           setAudioRollActive(true);
           setActiveRollType('midroll');
+          midRollPlayRequestIdRef.current = activePlayRequestIdRef.current;
           if (midRollAudioRef.current) {
             const finalUrl = resolveAudioUrl(audioUrl);
             if (midRollAudioRef.current.src !== finalUrl) {
@@ -925,6 +1035,7 @@ export function PlayerProvider({ children, user }) {
               console.error('Audio roll playback error on seek:', e);
               setAudioRollActive(false);
               setActiveRollType(null);
+              updatePendingSeekTime(null);
               if (audioRef.current) {
                 audioRef.current.volume = isMutedRef.current ? 0 : volumeRef.current;
                 if (audioRef.current.readyState >= 1) {
@@ -985,13 +1096,11 @@ export function PlayerProvider({ children, user }) {
     const trackId = trackToPlay._id || trackToPlay.id;
     const isFirstSongOfChapter = trackToPlay.chapter
       ? (globalTracks.find(t => t.chapter === trackToPlay.chapter)?.id === trackId || globalTracks.find(t => t.chapter === trackToPlay.chapter)?._id === trackId)
-      : true;
+      : (globalTracks[0]?.id === trackId || globalTracks[0]?._id === trackId);
       
-    if (!isNormalSong && !user?.isLoggedIn && isFirstSongOfChapter && audioRef.current) {
-      if (audioRef.current.currentTime >= 0.2 * dur) {
-        showGuestLoginPrompt();
-        return; // Block playback
-      }
+    if (!isNormalSong && !user?.isLoggedIn && (!isFirstSongOfChapter || (audioRef.current && audioRef.current.currentTime >= 0.2 * dur))) {
+      showGuestLoginPrompt();
+      return; // Block playback
     }
 
     if (!currentTrack) {
@@ -1036,9 +1145,11 @@ export function PlayerProvider({ children, user }) {
   }, [currentTrack, togglePlay, playWithAds]);
 
   const toggleFavorite = useCallback((trackId) => {
-    setFavoritedTrackIds(prev =>
-      prev.includes(trackId) ? prev.filter(id => id !== trackId) : [...prev, trackId]
-    );
+    setFavoritedTrackIds(prev => {
+      const next = prev.includes(trackId) ? prev.filter(id => id !== trackId) : [...prev, trackId];
+      try { localStorage.setItem('neetband_favorites', JSON.stringify(next)); } catch {}
+      return next;
+    });
   }, []);
 
   const cycleRepeat = useCallback(() => {
@@ -1115,7 +1226,7 @@ export function PlayerProvider({ children, user }) {
 
   const currentTrackId = currentTrack?._id || currentTrack?.id;
 
-  // Update Media Session API: metadata & action handlers
+  // Update Media Session API: metadata
   useEffect(() => {
     if (!currentTrack || !('mediaSession' in navigator)) return;
     try {
@@ -1125,10 +1236,24 @@ export function PlayerProvider({ children, user }) {
         album: currentTrack.chapter || currentTrack.grade || '',
         artwork: currentTrack.cover ? [{ src: currentTrack.cover, sizes: '512x512', type: 'image/png' }] : [],
       });
+    } catch (e) {
+      console.warn('MediaSession metadata configuration warning:', e);
+    }
+  }, [currentTrack]);
 
+  // Update Media Session API: playback state
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    try {
       const isAnyActive = isPlaying || isPlayingAd || isAudioRollActive;
       navigator.mediaSession.playbackState = isAnyActive ? 'playing' : 'paused';
+    } catch (e) {}
+  }, [isPlaying, isPlayingAd, isAudioRollActive]);
 
+  // Update Media Session API: action handlers
+  useEffect(() => {
+    if (!currentTrack || !('mediaSession' in navigator)) return;
+    try {
       navigator.mediaSession.setActionHandler('play', () => {
         if (isAudioRollActiveRef.current) {
           const activeElement = activeRollTypeRef.current === 'midroll' ? midRollAudioRef.current : guestAdAudioRef.current;
@@ -1184,7 +1309,7 @@ export function PlayerProvider({ children, user }) {
         });
       }
     } catch (e) {
-      console.warn('MediaSession configuration warning:', e);
+      console.warn('MediaSession action handler configuration warning:', e);
     }
 
     return () => {
@@ -1202,7 +1327,7 @@ export function PlayerProvider({ children, user }) {
         } catch (e) {}
       }
     };
-  }, [currentTrack, handlePrev, handleNext, handleSeek, isPlaying, isPlayingAd, isAudioRollActive, safePlay, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, updatePlayedGuestAd]);
+  }, [currentTrack, handlePrev, handleNext, handleSeek, safePlay, updatePlayedWatermarks, updatePlayedAudioRolls, updatePlayedPopups, updatePlayedGuestAd]);
 
   // The Media Session position state is now updated in updateMediaSessionPosition
   // which is called intelligently on play/pause/seek, rather than thrashing 
@@ -1298,10 +1423,10 @@ export function PlayerProvider({ children, user }) {
       />
       <audio
         ref={adAudioRef}
-        onEnded={handleAdEnded}
+        onEnded={() => handleAdEnded(activeAdSessionIdRef.current)}
         onError={(e) => {
           if (e?.target?.error?.code === 1) return;
-          handleAdEnded();
+          handleAdEnded(activeAdSessionIdRef.current);
         }}
         onWaiting={handleAudioWaiting}
         onPlaying={handleAudioPlaying}
@@ -1324,7 +1449,7 @@ export function PlayerProvider({ children, user }) {
           }
         }}
         onEnded={() => {
-          const reqId = activePlayRequestIdRef.current;
+          const reqId = midRollPlayRequestIdRef.current;
           setAudioRollActive(false);
           setActiveRollType(null);
 
@@ -1350,7 +1475,7 @@ export function PlayerProvider({ children, user }) {
         onError={(e) => {
           if (e?.target?.error?.code === 1) return;
           console.warn('Mid-roll ad audio error, resuming track playback');
-          const reqId = activePlayRequestIdRef.current;
+          const reqId = midRollPlayRequestIdRef.current;
           setAudioRollActive(false);
           setActiveRollType(null);
 
@@ -1440,6 +1565,18 @@ export function PlayerProvider({ children, user }) {
               dangerouslySetInnerHTML={{ __html: currentTrack?.popupHtml || adConfig?.popupHtml }} 
             />
           </div>
+        </div>
+      )}
+
+      {systemNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-surface-container border border-red-500/30 text-on-surface px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur-md text-sm font-medium animate-in slide-in-from-top-4 max-w-[90vw] w-[320px]">
+          <div className="bg-red-500/10 text-red-500 p-1.5 rounded-full shrink-0">
+            <IconAlertTriangle className="w-5 h-5" />
+          </div>
+          <p className="flex-1 text-xs opacity-90">{systemNotice}</p>
+          <button onClick={() => setSystemNotice(null)} className="shrink-0 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-variant transition-colors">
+            ✕
+          </button>
         </div>
       )}
 

@@ -112,7 +112,7 @@ const tempId = () => `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)
 
 // ── Quiz editor ─────────────────────────────────────────────
 function QuizEditor({ questions = [], onChange, duration = 60, onDurationChange }) {
-  const { toast } = useDialog();
+  const { toast, alert } = useDialog();
   const [showRawPaste, setShowRawPaste] = useState(false);
   const [rawText, setRawText] = useState('');
 
@@ -431,10 +431,26 @@ function QuizEditor({ questions = [], onChange, duration = 60, onDurationChange 
 
             {q.type === 'fill_in_the_blanks' && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Correct Answer (Exact text match)</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Correct Answer (Exact text match)</p>
+                  <button
+                    type="button"
+                    onClick={() => alert("Multiple Acceptable Answers", (
+                      <div className="text-left space-y-3">
+                        <p>You can accept multiple possible answers by separating them with a forward slash (<strong>/</strong>).</p>
+                        <p><strong>Example:</strong> <code className="bg-surface-container px-1 py-0.5 rounded text-amber-400">Apple / Apples / green apple</code></p>
+                        <p>If the student types any of those exactly, it will be marked as correct. (Answers are not case-sensitive).</p>
+                      </div>
+                    ))}
+                    className="p-1 rounded bg-surface border border-outline-variant/20 hover:border-outline-variant/50 text-on-surface-variant hover:text-amber-400 transition-all flex items-center justify-center h-[22px] w-[22px]"
+                    title="How to add multiple answers?"
+                  >
+                    <IconHelpCircle size={12} />
+                  </button>
+                </div>
                 <input
                   type="text"
-                  placeholder="Type the exact correct answer here..."
+                  placeholder="Type correct answer (use / for multiple)..."
                   className="w-full px-3 py-2 rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 border-emerald-500/40 focus:ring-emerald-500/30 bg-background border transition-colors"
                   value={q.correctText || ''}
                   onChange={e => updateQ(qIdx, { correctText: e.target.value })}
@@ -1019,9 +1035,9 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
 
       {(item.type === 'notes' || !item.type) && (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Notes / Content</label>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 shrink-0">Notes / Content</label>
+            <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1 text-[11px] text-on-surface-variant cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -1116,7 +1132,7 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
                 <IconTrash size={16} />
               </button>
               <p className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase mb-3">Document Loaded as Notes</p>
-              <div className="flex gap-2 items-center mb-3 pr-8">
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center mb-3 pr-0 sm:pr-8">
                 <input
                   type="text"
                   placeholder="Document link..."
@@ -1240,7 +1256,7 @@ function ChapterContentEditor({ chapter, onUpdate }) {
 
   return (
     <div className="border border-outline-variant/20 rounded-2xl bg-surface-container-low p-4 md:p-6 animate-in fade-in slide-in-from-left-4 duration-300">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-lg font-black text-on-surface">Items</h3>
           <p className="text-xs text-on-surface-variant mt-1">Manage notes, quizzes, and Q&As for this chapter.</p>
@@ -1274,7 +1290,7 @@ function ChapterContentEditor({ chapter, onUpdate }) {
             return (
               <div 
                 key={item._id || idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-background border border-outline-variant/20 hover:border-primary/30 group transition-all"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-background border border-outline-variant/20 hover:border-primary/30 group transition-all"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
@@ -1285,7 +1301,7 @@ function ChapterContentEditor({ chapter, onUpdate }) {
                     <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mt-0.5">{item.type}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
                   <button
                     onClick={() => {
                       if (idx > 0) {
@@ -1655,26 +1671,25 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-modal-highest flex flex-col bg-surface animate-in fade-in duration-200">
       {/* ─── Top Bar ─── */}
-      <header className="shrink-0 flex items-center justify-between px-5 md:px-8 h-16 border-b border-outline-variant/20 bg-surface/95 backdrop-blur">
-        <div className="flex items-center gap-3">
+      <header className="shrink-0 flex items-center justify-between px-3 md:px-8 h-16 border-b border-outline-variant/20 bg-surface/95 backdrop-blur gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors group whitespace-nowrap"
+            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors group whitespace-nowrap shrink-0"
           >
             <IconArrowLeft size={18} stroke={2} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="hidden sm:inline">Back to Courses</span>
           </button>
-          <span className="text-on-surface-variant/30 hidden sm:inline">/</span>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md" style={{ background: meta.coverColor }} />
-            <span className="text-sm font-bold text-on-surface truncate max-w-[200px]">{meta.title}</span>
+          <span className="text-on-surface-variant/30 hidden sm:inline shrink-0">/</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-bold text-on-surface truncate">{meta.title}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Publish toggle */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-outline-variant/30 bg-surface-variant/20">
-            <span className={`text-xs font-bold ${meta.isPublished ? 'text-emerald-400' : 'text-on-surface-variant'}`}>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-outline-variant/30 bg-surface-variant/20">
+            <span className={`text-[10px] sm:text-xs font-bold ${meta.isPublished ? 'text-emerald-400' : 'text-on-surface-variant'}`}>
               {meta.isPublished ? 'Published' : 'Draft'}
             </span>
             <button
@@ -1689,14 +1704,15 @@ export default function CourseDesigner({ course, onClose, onSaved }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-md ${
+            className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl text-sm font-bold transition-all shadow-md ${
               saved
                 ? 'bg-emerald-500 text-white shadow-emerald-500/20'
                 : 'bg-primary text-on-primary hover:brightness-110 active:scale-[0.98] shadow-primary/20'
             } disabled:opacity-60`}
           >
             {saved ? <IconCheck size={16} stroke={2.5} /> : <IconCloudUpload size={16} stroke={2} />}
-            {saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}
+            <span className="hidden sm:inline">{saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}</span>
+            <span className="sm:hidden">{saving ? '...' : saved ? 'Done' : 'Save'}</span>
           </button>
         </div>
       </header>

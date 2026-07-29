@@ -56,11 +56,17 @@ export const getChapterItems = (chapter) => {
 };
 
 export const isItemLocked = (user, course, sIdx, cIdx, iIdx) => {
-  if (user?.isPremium) return false;
+  if (user?.isPremium || user?.role === 'admin' || user?.role === 'owner') return false;
+
+  if (sIdx === undefined || sIdx === null || cIdx === undefined || cIdx === null || iIdx === undefined || iIdx === null) {
+    return !!course?.isPremium;
+  }
+
   const subject = course?.subjects?.[sIdx];
   const chapter = subject?.chapters?.[cIdx];
   const item = getChapterItems(chapter)[iIdx];
-  return !!(item?.isPremium || course?.isPremium);
+
+  return !!(course?.isPremium || subject?.isPremium || chapter?.isPremium || item?.isPremium);
 };
 
 export const calculateTotalItems = (course) => {

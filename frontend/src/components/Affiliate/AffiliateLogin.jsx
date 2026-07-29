@@ -89,7 +89,7 @@ export default function AffiliateLogin({ onLoginSuccess, navigate }) {
       }, 1000);
 
     } catch (err) {
-      setFeedbackMsg({ type: 'error', text: err.message || 'An error occurred during authentication' });
+      setFeedbackMsg({ type: 'error', text: 'Invalid email or password. Please try again.' });
       setIsLoading(false);
     }
   };

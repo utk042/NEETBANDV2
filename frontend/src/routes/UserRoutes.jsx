@@ -224,14 +224,10 @@ export default function UserRoutes() {
               }} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onUpgradeClick={handleUpgradeClick} queue={queue} setQueue={setQueue} handleNext={handleNext} handlePrev={handlePrev} handleSeek={handleSeek} />} />
 
             <Route path="/course/:courseId" element={
-              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Course Player" loginRoute="/login">
-                <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
-              </ProtectedRoute>
+              <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
             } />
             <Route path="/course/:courseId/:itemType/:subjectIdx/:chapterIdx/:itemIdx" element={
-              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Course Player" loginRoute="/login">
-                <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
-              </ProtectedRoute>
+              <CoursePlayer currentTrack={currentTrack} user={user} onUpgradeClick={handleUpgradeClick} />
             } />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 

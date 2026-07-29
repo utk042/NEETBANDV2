@@ -69,7 +69,7 @@ export default function AffiliateDashboard({ user, onUserUpdate, navigate, theme
     if (isConfirmed) {
       localStorage.removeItem('neetband_affiliate_user');
       localStorage.removeItem('affiliate_token');
-      navigate('/');
+      navigate('/affiliate/login');
       window.location.reload(); // Quick way to clear state
     }
   };

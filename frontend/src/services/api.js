@@ -182,8 +182,15 @@ export const updateAffiliateProfile = async (userData) => {
 };
 
 // --- SONGS ---
-export const getSongs = async () => {
-  const res = await apiFetch(`${API_URL}/songs`, { headers: getHeaders() });
+export const getSongs = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  const res = await apiFetch(`${API_URL}/songs${queryString}`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
@@ -449,6 +456,19 @@ export const parseDocumentFile = async (file) => {
   return res.json(); // returns { text: '...' }
 };
 
+export const deleteUploadedFile = async (url) => {
+  try {
+    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) return;
+    await apiFetch(`${API_URL}/upload`, {
+      method: 'DELETE',
+      headers: getLmsHeaders(),
+      body: JSON.stringify({ url }),
+    });
+  } catch (err) {
+    console.warn('[Upload] Delete file error:', err);
+  }
+};
+
 // --- PAYMENTS ---
 export const createPaymentOrder = async (plan, discountCode, shippingDetails) => {
   const res = await apiFetch(`${API_URL}/payments/order`, {
@@ -693,9 +713,14 @@ export const updateNewsScrollSettings = async (settingsData) => {
 };
 
 // --- SONG ANALYTICS ---
+const makeIdempotencyKey = (id, event) => `${id}-${event}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
 export const recordSongPlay = async (id) => {
   try {
-    await fetch(`${API_URL}/songs/${id}/play`, { method: 'POST' });
+    await fetch(`${API_URL}/songs/${id}/play`, {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': makeIdempotencyKey(id, 'play') }
+    });
   } catch (err) {
     console.warn('[Analytics] recordSongPlay error:', err.message || err);
   }
@@ -703,7 +728,10 @@ export const recordSongPlay = async (id) => {
 
 export const recordSongComplete = async (id) => {
   try {
-    await fetch(`${API_URL}/songs/${id}/complete`, { method: 'POST' });
+    await fetch(`${API_URL}/songs/${id}/complete`, {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': makeIdempotencyKey(id, 'complete') }
+    });
   } catch (err) {
     console.warn('[Analytics] recordSongComplete error:', err.message || err);
   }
@@ -711,7 +739,10 @@ export const recordSongComplete = async (id) => {
 
 export const recordSongShare = async (id) => {
   try {
-    await fetch(`${API_URL}/songs/${id}/share`, { method: 'POST' });
+    await fetch(`${API_URL}/songs/${id}/share`, {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': makeIdempotencyKey(id, 'share') }
+    });
   } catch (err) {
     console.warn('[Analytics] recordSongShare error:', err.message || err);
   }
@@ -719,7 +750,10 @@ export const recordSongShare = async (id) => {
 
 export const recordSongRepeat = async (id) => {
   try {
-    await fetch(`${API_URL}/songs/${id}/repeat`, { method: 'POST' });
+    await fetch(`${API_URL}/songs/${id}/repeat`, {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': makeIdempotencyKey(id, 'repeat') }
+    });
   } catch (err) {
     console.warn('[Analytics] recordSongRepeat error:', err.message || err);
   }
@@ -729,7 +763,10 @@ export const recordSongDropOff = async (id, segment) => {
   try {
     await fetch(`${API_URL}/songs/${id}/dropoff`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': makeIdempotencyKey(id, `dropoff-${segment}`)
+      },
       body: JSON.stringify({ segment }),
     });
   } catch (err) {

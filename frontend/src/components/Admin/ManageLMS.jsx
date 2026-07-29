@@ -5,7 +5,7 @@ import {
   getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent 
 } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff, IconSearch } from '@tabler/icons-react';
 import CourseDesigner from './CourseDesigner';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
@@ -14,6 +14,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   const { confirm, toast } = useDialog();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({ title: '', class: '', subject: '', summary: '', order: 0 });
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
@@ -210,6 +211,16 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     if (!formData.class) return existingSubjects;
     return classToSubjects[formData.class] || existingSubjects;
   }, [formData.class, existingSubjects, classToSubjects]);
+
+  const filteredCourses = React.useMemo(() => {
+    if (!searchQuery) return courses;
+    const lowerQuery = searchQuery.toLowerCase();
+    return courses.filter(c => 
+      (c.title && c.title.toLowerCase().includes(lowerQuery)) ||
+      (c.subject && c.subject.toLowerCase().includes(lowerQuery)) ||
+      (c.class && c.class.toLowerCase().includes(lowerQuery))
+    );
+  }, [courses, searchQuery]);
 
   if (designingCourse) {
     return (
@@ -518,7 +529,7 @@ export default function ManageLMS({ subTab = 'courses', user }) {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-sm font-bold text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-lg hidden md:block">
-              {courses.length} Study Hub Items
+              {filteredCourses.length} Study Hub Items
             </div>
             <button 
               onClick={() => setIsAddCourseModalOpen(true)}
@@ -536,8 +547,19 @@ export default function ManageLMS({ subTab = 'courses', user }) {
             ))}
           </div>
         ) : (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {courses.map(ch => (
+          <>
+            <div className="mb-6 relative">
+              <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" size={18} />
+              <input
+                type="text"
+                placeholder="Search courses by title, subject, or class..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-surface-container border border-outline-variant/30 rounded-xl py-3 pl-11 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredCourses.map(ch => (
               <li key={ch._id} className="p-5 border border-outline-variant/30 rounded-2xl flex flex-col bg-surface-container-lowest hover:border-primary/40 transition-colors group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[100px] -z-0 transition-transform group-hover:scale-110"></div>
                 
@@ -576,11 +598,12 @@ export default function ManageLMS({ subTab = 'courses', user }) {
             {courses.length === 0 && (
               <div className="col-span-1 md:col-span-2 text-center py-12 border border-dashed border-outline-variant/40 rounded-2xl bg-surface-container-lowest">
                 <IconBook2 size={48} stroke={1} className="mx-auto text-on-surface-variant/50 mb-3" />
-                <h4 className="font-bold text-on-surface">No items yet</h4>
-                <p className="text-sm text-on-surface-variant mt-1">Create your first item above.</p>
+                <h4 className="font-bold text-on-surface">No items found</h4>
+                <p className="text-sm text-on-surface-variant mt-1">Try adjusting your search or create a new item above.</p>
               </div>
             )}
           </ul>
+          </>
         )}
       </section>
 

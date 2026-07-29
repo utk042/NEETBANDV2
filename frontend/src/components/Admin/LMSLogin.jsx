@@ -92,7 +92,11 @@ export default function LMSLogin({ onLoginSuccess, navigate }) {
       }, 1000);
 
     } catch (err) {
-      setFeedbackMsg({ type: 'error', text: err.message || 'An error occurred during authentication' });
+      let errorText = 'Invalid email or password. Please try again.';
+      if (err.message === 'Unauthorized. Admin access required.') {
+        errorText = err.message;
+      }
+      setFeedbackMsg({ type: 'error', text: errorText });
       setIsLoading(false);
     }
   };

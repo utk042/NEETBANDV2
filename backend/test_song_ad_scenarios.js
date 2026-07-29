@@ -145,6 +145,11 @@ async function runTestSuite() {
 
   // Override Song.find and AdConfig.findOne for deterministic offline testing
   Song.find = () => ({
+    sort: () => ({
+      populate: () => Promise.resolve([
+        { _id: 's1', title: 'Test Song 1', songType: 'Study', chapter: 'Physics 101' }
+      ])
+    }),
     populate: () => Promise.resolve([
       { _id: 's1', title: 'Test Song 1', songType: 'Study', chapter: 'Physics 101' }
     ])

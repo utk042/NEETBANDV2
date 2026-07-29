@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, getCourses } from '../../services/api';
+import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, deleteUploadedFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconStack2, IconLoader2 } from '@tabler/icons-react';
+import { 
+  IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, 
+  IconStack2, IconLoader2, IconSearch, IconX, IconSortAscending, IconSortDescending, 
+  IconFilter, IconChevronLeft, IconChevronRight, IconArrowsSort 
+} from '@tabler/icons-react';
 import logoImg from '../../assets/logo.png';
 import BatchUploadModal from './BatchUploadModal';
 import { cleanSongTitle } from '../../utils/songTitleUtils';
@@ -159,6 +163,8 @@ export default function ManageSongs() {
   const [songs, setSongs] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isComponentMounted = useRef(true);
   const [testingAudioUrl, setTestingAudioUrl] = useState(false);
   const [audioUrlValid, setAudioUrlValid] = useState(null);
   const [adConfig, setAdConfig] = useState({
@@ -176,6 +182,16 @@ export default function ManageSongs() {
   });
   const [editingSongId, setEditingSongId] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
+
+  // Search, Filter, Sort & Pagination States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClass, setFilterClass] = useState('All');
+  const [filterSubject, setFilterSubject] = useState('All');
+  const [filterType, setFilterType] = useState('All');
+  const [sortBy, setSortBy] = useState('title'); // 'title' | 'class' | 'subject' | 'playCount' | 'createdAt'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters, classSubjectToChapters } = useClassAndSubjectOptions();
 
@@ -200,31 +216,20 @@ export default function ManageSongs() {
   const handlePositionChange = (type, index, value) => {
     const num = parseInt(value, 10);
     if (isNaN(num)) return;
-    if (type === 'audio') {
-      const newPos = [...(formData.watermarkPositions || [])];
-      newPos[index] = num;
-      setFormData(prev => ({ ...prev, watermarkPositions: newPos }));
-    } else {
-      const newPos = [...(formData.popupPositions || [])];
-      newPos[index] = num;
-      setFormData(prev => ({ ...prev, popupPositions: newPos }));
-    }
+    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    const newPos = [...(formData[field] || [])];
+    newPos[index] = num;
+    setFormData(prev => ({ ...prev, [field]: newPos }));
   };
 
   const addPosition = (type) => {
-    if (type === 'audio') {
-      setFormData(prev => ({ ...prev, watermarkPositions: [...(prev.watermarkPositions || []), 50] }));
-    } else {
-      setFormData(prev => ({ ...prev, popupPositions: [...(prev.popupPositions || []), 50] }));
-    }
+    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    setFormData(prev => ({ ...prev, [field]: [...(prev[field] || []), 50] }));
   };
 
   const removePosition = (type, index) => {
-    if (type === 'audio') {
-      setFormData(prev => ({ ...prev, watermarkPositions: (prev.watermarkPositions || []).filter((_, i) => i !== index) }));
-    } else {
-      setFormData(prev => ({ ...prev, popupPositions: (prev.popupPositions || []).filter((_, i) => i !== index) }));
-    }
+    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    setFormData(prev => ({ ...prev, [field]: (prev[field] || []).filter((_, i) => i !== index) }));
   };
 
   const handleTestAudioUrl = async () => {
@@ -281,6 +286,20 @@ export default function ManageSongs() {
     }
   };
 
+  const newlyUploadedUrlsRef = useRef([]);
+
+  const cleanupUnsavedUploads = () => {
+    if (newlyUploadedUrlsRef.current.length > 0) {
+      newlyUploadedUrlsRef.current.forEach(url => deleteUploadedFile(url));
+      newlyUploadedUrlsRef.current = [];
+    }
+  };
+
+  const closeAddSongModal = () => {
+    cleanupUnsavedUploads();
+    setIsAddSongModalOpen(false);
+  };
+
   const handleFileUpload = async (eOrFile, field, folderType) => {
     const file = eOrFile?.target ? eOrFile.target.files?.[0] : eOrFile;
     if (!file) return;
@@ -292,6 +311,17 @@ export default function ManageSongs() {
       const res = await uploadFile(file, folderType, (progress) => {
         setUploadProgress(prev => ({ ...prev, [field]: progress }));
       });
+      if (res.url) {
+        const prevValue = formData[field];
+        if (prevValue && typeof prevValue === 'string' && prevValue.includes('/uploads/')) {
+          const oldRelative = prevValue.substring(prevValue.indexOf('/uploads/'));
+          if (newlyUploadedUrlsRef.current.includes(oldRelative)) {
+            deleteUploadedFile(oldRelative);
+            newlyUploadedUrlsRef.current = newlyUploadedUrlsRef.current.filter(u => u !== oldRelative);
+          }
+        }
+        newlyUploadedUrlsRef.current.push(res.url);
+      }
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const fullUrl = `${backendUrl}${res.url}`;
       setFormData(prev => ({ ...prev, [field]: fullUrl }));
@@ -303,7 +333,6 @@ export default function ManageSongs() {
           if (autoTitle) {
             setFormData(prev => ({
               ...prev,
-              // Only auto-set if: title is empty, or title still has an extension, or title looks like a hash
               title: (!prev.title?.trim() || /\.[a-zA-Z0-9]{2,4}$/.test(prev.title.trim())) ? autoTitle : prev.title
             }));
           }
@@ -344,8 +373,10 @@ export default function ManageSongs() {
     setUploadedFileName('');
     setFormData({
       title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
-      watermarkUrl: adConfig.watermarkUrl || '',
-      watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
+      watermarkUrl: '',
+      watermarkPositions: [],
+      audioRollUrl: adConfig.audioRollUrl || '',
+      audioRollPositions: adConfig.audioRollPositions || [20, 50, 90],
       audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
       popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
       popupPositions: adConfig.popupPositions || [10, 40, 75],
@@ -371,12 +402,15 @@ export default function ManageSongs() {
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
       songType: song.songType || 'Study',
-      watermarkUrl: song.watermarkUrl || adConfig.watermarkUrl || '',
-      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : (adConfig.watermarkPositions || [20, 50, 90]),
+      watermarkUrl: song.watermarkUrl || '',
+      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : [],
+      audioRollUrl: song.audioRollUrl || adConfig.audioRollUrl || '',
+      audioRollPositions: (song.audioRollPositions && song.audioRollPositions.length > 0) ? song.audioRollPositions : (adConfig.audioRollPositions || [20, 50, 90]),
       audioRollsEnabled: song.audioRollsEnabled !== undefined ? song.audioRollsEnabled : (adConfig.audioRollsEnabled ?? true),
       popupsEnabled: song.popupsEnabled !== undefined ? song.popupsEnabled : (adConfig.popupsEnabled ?? true),
       popupPositions: (song.popupPositions && song.popupPositions.length > 0) ? song.popupPositions : (adConfig.popupPositions || [10, 40, 75]),
-      popupHtml: song.popupHtml !== undefined ? song.popupHtml : (adConfig.popupHtml || '')
+      popupHtml: song.popupHtml !== undefined ? song.popupHtml : (adConfig.popupHtml || ''),
+      __v: song.__v
     });
     setEditingSongId(song._id);
     setIsAddSongModalOpen(true);
@@ -397,6 +431,7 @@ export default function ManageSongs() {
     fetchSongs();
     fetchCourses();
     fetchAdConfig();
+    return () => { isComponentMounted.current = false; };
   }, []);
 
   const fetchAdConfig = async () => {
@@ -410,24 +445,26 @@ export default function ManageSongs() {
           wUrl = `${backendUrl}${wUrl}`;
         }
         const config = {
-          watermarkUrl: wUrl,
-          watermarkPositions: data.audioRollPositions || [20, 50, 90],
+          audioRollUrl: wUrl,
+          audioRollPositions: data.audioRollPositions || [20, 50, 90],
           audioRollsEnabled: data.audioRollsEnabled !== undefined ? data.audioRollsEnabled : true,
           popupsEnabled: data.popupsEnabled !== undefined ? data.popupsEnabled : true,
           popupPositions: data.popupPositions || [10, 40, 75],
           popupHtml: data.popupHtml || ''
         };
-        setAdConfig(config);
-        if (!editingSongId && !isAddSongModalOpen) {
-          setFormData(prev => ({
-            ...prev,
-            watermarkUrl: prev.watermarkUrl || config.watermarkUrl,
-            watermarkPositions: prev.watermarkPositions?.length ? prev.watermarkPositions : config.watermarkPositions,
-            audioRollsEnabled: prev.audioRollsEnabled !== undefined ? prev.audioRollsEnabled : config.audioRollsEnabled,
-            popupsEnabled: prev.popupsEnabled !== undefined ? prev.popupsEnabled : config.popupsEnabled,
-            popupPositions: prev.popupPositions?.length ? prev.popupPositions : config.popupPositions,
-            popupHtml: prev.popupHtml !== undefined ? prev.popupHtml : config.popupHtml
-          }));
+        if (isComponentMounted.current) {
+          setAdConfig(config);
+          if (!editingSongId && !isAddSongModalOpen) {
+            setFormData(prev => ({
+              ...prev,
+              audioRollUrl: prev.audioRollUrl || config.audioRollUrl,
+              audioRollPositions: prev.audioRollPositions?.length ? prev.audioRollPositions : config.audioRollPositions,
+              audioRollsEnabled: prev.audioRollsEnabled !== undefined ? prev.audioRollsEnabled : config.audioRollsEnabled,
+              popupsEnabled: prev.popupsEnabled !== undefined ? prev.popupsEnabled : config.popupsEnabled,
+              popupPositions: prev.popupPositions?.length ? prev.popupPositions : config.popupPositions,
+              popupHtml: prev.popupHtml !== undefined ? prev.popupHtml : config.popupHtml
+            }));
+          }
         }
       }
     } catch (err) {
@@ -438,7 +475,9 @@ export default function ManageSongs() {
   const fetchCourses = async () => {
     try {
       const data = await getCourses();
-      setCourses(data);
+      if (isComponentMounted.current) {
+        setCourses(data);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -447,20 +486,22 @@ export default function ManageSongs() {
   const fetchSongs = async () => {
     try {
       const data = await getSongs();
-      setSongs(data);
+      if (isComponentMounted.current) setSongs(data);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isComponentMounted.current) setLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (Object.keys(uploadProgress).length > 0) {
       toast.info("Please wait for file upload to complete before saving.");
       return;
     }
+    setIsSubmitting(true);
     try {
       const payload = { ...formData };
       if (!payload.courseId) {
@@ -478,12 +519,21 @@ export default function ManageSongs() {
       }
 
       if (editingSongId) {
-        await updateSong(editingSongId, payload);
-        toast.success("Song updated successfully");
+        try {
+          await updateSong(editingSongId, payload);
+          toast.success("Song updated successfully");
+        } catch (updateErr) {
+          if (updateErr.message && (updateErr.message.includes('Conflict') || updateErr.message.includes('another user'))) {
+            throw new Error('Conflict: Document was updated by another user. Please refresh to get the latest data and try again.');
+          }
+          throw updateErr;
+        }
       } else {
+        delete payload.__v;
         await createSong(payload);
         toast.success("Song added successfully");
       }
+      newlyUploadedUrlsRef.current = [];
       setFormData({
         title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
         watermarkUrl: adConfig.watermarkUrl || '', watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
@@ -497,13 +547,96 @@ export default function ManageSongs() {
       fetchSongs();
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const filteredAndSortedSongs = useMemo(() => {
+    let result = [...songs];
+
+    // Search query filter (title, subject, class, chapter)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(song => 
+        (song.title && song.title.toLowerCase().includes(q)) ||
+        (song.subject && song.subject.toLowerCase().includes(q)) ||
+        (song.class && song.class.toLowerCase().includes(q)) ||
+        (song.chapter && song.chapter.toLowerCase().includes(q))
+      );
+    }
+
+    // Filter by Class
+    if (filterClass !== 'All') {
+      result = result.filter(song => song.class === filterClass);
+    }
+
+    // Filter by Subject
+    if (filterSubject !== 'All') {
+      result = result.filter(song => song.subject === filterSubject);
+    }
+
+    // Filter by Song Type
+    if (filterType !== 'All') {
+      result = result.filter(song => (song.songType || 'Study') === filterType);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let comp = 0;
+      if (sortBy === 'title') {
+        comp = (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' });
+      } else if (sortBy === 'class') {
+        comp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true, sensitivity: 'base' });
+      } else if (sortBy === 'subject') {
+        comp = (a.subject || '').localeCompare(b.subject || '', undefined, { sensitivity: 'base' });
+      } else if (sortBy === 'playCount') {
+        comp = (a.playCount || 0) - (b.playCount || 0);
+      } else if (sortBy === 'createdAt') {
+        comp = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      }
+      return sortOrder === 'asc' ? comp : -comp;
+    });
+
+    return result;
+  }, [songs, searchQuery, filterClass, filterSubject, filterType, sortBy, sortOrder]);
+
+  // Reset to page 1 on filter/sort/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterClass, filterSubject, filterType, sortBy, sortOrder, itemsPerPage]);
+
+  const effectivePerPage = itemsPerPage === 'All' ? filteredAndSortedSongs.length || 1 : itemsPerPage;
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedSongs.length / effectivePerPage));
+  
+  const displayedSongs = useMemo(() => {
+    if (itemsPerPage === 'All') return filteredAndSortedSongs;
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedSongs.slice(start, start + itemsPerPage);
+  }, [filteredAndSortedSongs, currentPage, itemsPerPage]);
+
+  const handleHeaderSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilterClass('All');
+    setFilterSubject('All');
+    setFilterType('All');
+    setSortBy('title');
+    setSortOrder('asc');
+  };
+
+  const isFilterActive = searchQuery || filterClass !== 'All' || filterSubject !== 'All' || filterType !== 'All';
+
   const inputClass = "w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-on-surface placeholder:text-on-surface-variant/40";
   const labelClass = "text-sm font-bold text-on-surface-variant mb-1.5 ml-1 uppercase tracking-wide text-[11px]";
-
-
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -511,7 +644,10 @@ export default function ManageSongs() {
       {/* Existing Songs Section */}
       <section>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-on-surface">Manage Songs</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-on-surface">Manage Songs</h2>
+            <p className="text-xs text-on-surface-variant mt-1">Search, edit, and organize study songs across courses, classes, and subjects.</p>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsBatchModalOpen(true)}
@@ -528,24 +664,221 @@ export default function ManageSongs() {
           </div>
         </div>
 
+        {/* Search, Filter & Arrange Toolbar */}
+        <div className="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border border-[var(--border-floating-card)] shadow-xs mb-6 flex flex-col gap-4">
+          
+          {/* Top Row: Search Input + Arrange By */}
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant/60">
+                <IconSearch size={19} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search study songs by title, subject, class, chapter..."
+                className="w-full pl-10 pr-10 py-2.5 bg-surface-container/60 hover:bg-surface-container border border-outline-variant/40 rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface"
+                  title="Clear Search"
+                >
+                  <IconX size={18} />
+                </button>
+              )}
+            </div>
+
+            {/* Arrange / Sort Controls */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 bg-surface-container/60 border border-outline-variant/40 px-3 py-2 rounded-xl text-xs font-semibold text-on-surface-variant">
+                <IconArrowsSort size={16} className="text-primary" />
+                <span>Arrange by:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  aria-label="Arrange by option"
+                  className="bg-transparent text-on-surface font-bold focus:outline-none cursor-pointer text-xs"
+                >
+                  <option value="title">Title (A-Z)</option>
+                  <option value="class">Class</option>
+                  <option value="subject">Subject</option>
+                  <option value="playCount">Most Played</option>
+                  <option value="createdAt">Date Added</option>
+                </select>
+              </div>
+
+              {/* Sort Direction Toggle */}
+              <button
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="bg-surface-container/60 hover:bg-surface-variant border border-outline-variant/40 px-3 py-2 rounded-xl text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-bold"
+                title={sortOrder === 'asc' ? 'Ascending Order' : 'Descending Order'}
+              >
+                {sortOrder === 'asc' ? (
+                  <>
+                    <IconSortAscending size={18} className="text-primary" />
+                    <span>Asc</span>
+                  </>
+                ) : (
+                  <>
+                    <IconSortDescending size={18} className="text-primary" />
+                    <span>Desc</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Row: Filters (Class, Subject, Type) & Song Counters */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-outline-variant/20">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1 mr-1">
+                <IconFilter size={14} /> Filter:
+              </span>
+
+              {/* Class Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
+                <span className="text-on-surface-variant font-medium">Class:</span>
+                <select
+                  value={filterClass}
+                  onChange={(e) => setFilterClass(e.target.value)}
+                  aria-label="Filter by Class"
+                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
+                >
+                  <option value="All">All Classes</option>
+                  {existingClasses.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
+                <span className="text-on-surface-variant font-medium">Subject:</span>
+                <select
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                  aria-label="Filter by Subject"
+                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
+                >
+                  <option value="All">All Subjects</option>
+                  {existingSubjects.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Song Type Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
+                <span className="text-on-surface-variant font-medium">Type:</span>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  aria-label="Filter by Type"
+                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
+                >
+                  <option value="All">All Types</option>
+                  <option value="Study">Study Songs</option>
+                  <option value="Normal">Normal Songs</option>
+                </select>
+              </div>
+
+              {/* Clear Filters */}
+              {isFilterActive && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs text-primary font-bold hover:underline px-2 py-1 flex items-center gap-1"
+                >
+                  <IconX size={14} /> Reset
+                </button>
+              )}
+            </div>
+
+            {/* Songs Counter & Per Page Dropdown */}
+            <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium">
+              <span>
+                Showing <strong className="text-on-surface">{filteredAndSortedSongs.length === 0 ? 0 : (currentPage - 1) * effectivePerPage + 1} - {itemsPerPage === 'All' ? filteredAndSortedSongs.length : Math.min(currentPage * itemsPerPage, filteredAndSortedSongs.length)}</strong> of <strong className="text-on-surface">{songs.length}</strong> songs
+              </span>
+              <div className="flex items-center gap-1">
+                <span>Per Page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(e.target.value === 'All' ? 'All' : Number(e.target.value))}
+                  aria-label="Items per page"
+                  className="bg-surface-container/60 border border-outline-variant/30 rounded-lg px-2 py-1 text-on-surface font-bold focus:outline-none text-xs"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={250}>250</option>
+                  <option value="All">All</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
           <div className="p-8 text-center text-on-surface-variant">Loading songs...</div>
         ) : (
           <div className="overflow-x-auto bg-surface-container-lowest rounded-2xl border border-[var(--border-floating-card)] shadow-sm">
             <table className="w-full min-w-[760px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-[var(--border-floating-card)]">
-                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Title</th>
-                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Class</th>
-                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Subject</th>
-                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Chapter</th>
-                  <th className="p-4 font-semibold text-on-surface-variant whitespace-nowrap">Type</th>
-                  <th className="p-4 font-semibold text-on-surface-variant text-center whitespace-nowrap">Plays</th>
-                  <th className="p-4 font-semibold text-on-surface-variant text-right whitespace-nowrap pr-6">Actions</th>
+                <tr className="border-b border-[var(--border-floating-card)] bg-surface-container/30 text-xs uppercase tracking-wider">
+                  <th 
+                    onClick={() => handleHeaderSort('title')}
+                    className="p-4 font-bold text-on-surface-variant whitespace-nowrap cursor-pointer hover:text-primary transition-colors select-none"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Title</span>
+                      {sortBy === 'title' && (
+                        <span className="text-primary font-extrabold">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleHeaderSort('class')}
+                    className="p-4 font-bold text-on-surface-variant whitespace-nowrap cursor-pointer hover:text-primary transition-colors select-none"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Class</span>
+                      {sortBy === 'class' && (
+                        <span className="text-primary font-extrabold">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleHeaderSort('subject')}
+                    className="p-4 font-bold text-on-surface-variant whitespace-nowrap cursor-pointer hover:text-primary transition-colors select-none"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Subject</span>
+                      {sortBy === 'subject' && (
+                        <span className="text-primary font-extrabold">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="p-4 font-bold text-on-surface-variant whitespace-nowrap">Chapter</th>
+                  <th className="p-4 font-bold text-on-surface-variant whitespace-nowrap">Type</th>
+                  <th 
+                    onClick={() => handleHeaderSort('playCount')}
+                    className="p-4 font-bold text-on-surface-variant text-center whitespace-nowrap cursor-pointer hover:text-primary transition-colors select-none"
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span>Plays</span>
+                      {sortBy === 'playCount' && (
+                        <span className="text-primary font-extrabold">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="p-4 font-bold text-on-surface-variant text-right whitespace-nowrap pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {songs.map(song => (
+                {displayedSongs.map(song => (
                   <tr key={song._id} className="border-b border-[var(--border-floating-card)] hover:bg-surface-container/50 transition-colors">
                     <td className="p-4 font-medium text-on-surface min-w-[200px] max-w-[300px]">
                       <div className="flex items-center gap-3">
@@ -589,13 +922,51 @@ export default function ManageSongs() {
                     </td>
                   </tr>
                 ))}
-                {songs.length === 0 && (
+                {filteredAndSortedSongs.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="p-8 text-center text-on-surface-variant">No songs found.</td>
+                    <td colSpan="7" className="p-8 text-center text-on-surface-variant">
+                      {isFilterActive ? 'No songs match your current search and filter criteria.' : 'No songs found.'}
+                    </td>
                   </tr>
                 )}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && itemsPerPage !== 'All' && (
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-[var(--border-floating-card)] bg-surface-container/20 gap-3">
+                <div className="text-xs text-on-surface-variant">
+                  Page <strong className="text-on-surface">{currentPage}</strong> of <strong className="text-on-surface">{totalPages}</strong>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-xl border border-outline-variant/30 text-on-surface hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs font-semibold flex items-center gap-1"
+                  >
+                    <IconChevronLeft size={16} /> Prev
+                  </button>
+                  <div className="flex items-center gap-1 max-w-[240px] overflow-x-auto">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === page ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface hover:bg-surface-variant'}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-xl border border-outline-variant/30 text-on-surface hover:bg-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs font-semibold flex items-center gap-1"
+                  >
+                    Next <IconChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -609,8 +980,9 @@ export default function ManageSongs() {
                 <h3 className="text-xl font-bold tracking-tight text-on-surface">{editingSongId ? 'Edit Song' : 'Add New Song'}</h3>
                 <p className="text-on-surface-variant text-xs mt-1">{editingSongId ? 'Update details of the song.' : 'Upload a new track to the LMS library.'}</p>
               </div>
+
               <button 
-                onClick={() => setIsAddSongModalOpen(false)}
+                onClick={closeAddSongModal}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -841,14 +1213,14 @@ export default function ManageSongs() {
                     </div>
                   )}
                   <div className={`flex flex-col gap-6 p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 mt-2 transition-opacity ${formData.songType === 'Normal' ? 'opacity-40 pointer-events-none select-none' : ''}`}>
-                    {/* AUDIO ROLL / WATERMARK SECTION */}
+                    {/* MID-ROLL AUDIO ADS SECTION */}
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
                         <div className="flex items-center gap-2">
                           <IconMusic size={20} className="text-primary" />
                           <div>
-                            <h4 className="font-bold text-on-surface text-base">Audio Ads & Watermark</h4>
-                            <p className="text-xs text-on-surface-variant">Pause song or play watermark at specified intervals.</p>
+                            <h4 className="font-bold text-on-surface text-base">Mid-Roll Audio Ads</h4>
+                            <p className="text-xs text-on-surface-variant">Pause song at specified intervals to play an ad.</p>
                           </div>
                         </div>
                         <label className="flex items-center cursor-pointer gap-2 bg-surface px-3 py-1.5 rounded-xl border border-outline-variant/30 shrink-0 select-none">
@@ -868,21 +1240,21 @@ export default function ManageSongs() {
                       {formData.audioRollsEnabled && (
                         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
                           <div className="flex flex-col">
-                            <label className={labelClass}>Watermark / Audio Ad URL <span className="opacity-60 lowercase font-normal">(optional override)</span></label>
-                            <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
+                            <label className={labelClass}>Audio Ad URL <span className="opacity-60 lowercase font-normal">(optional override)</span></label>
+                            <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'audioRollUrl', 'songs/ads')}>
                               <div className="relative">
-                                <input type="url" placeholder="https://... (leave empty to use global ad)" className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
-                                {uploadProgress.watermarkUrl !== undefined ? (
+                                <input type="url" placeholder="https://... (leave empty to use global ad)" className={`${inputClass} pr-28`} value={formData.audioRollUrl} onChange={e => setFormData({...formData, audioRollUrl: e.target.value})} />
+                                {uploadProgress.audioRollUrl !== undefined ? (
                                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                                    <span>{uploadProgress.watermarkUrl}%</span>
+                                    <span>{uploadProgress.audioRollUrl}%</span>
                                     <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.audioRollUrl}%` }} />
                                     </div>
                                   </div>
                                 ) : (
                                   <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
                                     <IconUpload size={12} stroke={2.5} /> Upload
-                                    <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'watermarkUrl', 'songs/watermarks'); e.target.value = ''; }} />
+                                    <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'audioRollUrl', 'songs/ads'); e.target.value = ''; }} />
                                   </label>
                                 )}
                               </div>
@@ -892,24 +1264,24 @@ export default function ManageSongs() {
                           <div className="flex flex-col gap-2">
                             <label className={labelClass}>Audio Ad Positions (% of song length)</label>
                             <div className="flex flex-wrap gap-2.5 items-center">
-                              {(formData.watermarkPositions || []).map((pos, i) => (
+                              {(formData.audioRollPositions || []).map((pos, i) => (
                                 <div key={i} className="flex items-center gap-1 bg-surface px-2.5 py-1.5 rounded-lg border border-outline-variant/30 shadow-xs">
                                   <input 
                                     type="number" 
                                     min="0" max="100" 
                                     value={pos} 
-                                    onChange={(e) => handlePositionChange('audio', i, e.target.value)}
+                                    onChange={(e) => handlePositionChange('audioRoll', i, e.target.value)}
                                     className="w-12 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center font-bold text-sm"
                                   />
                                   <span className="text-xs text-on-surface-variant font-bold">%</span>
-                                  <button type="button" aria-label="Remove position" onClick={() => removePosition('audio', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
+                                  <button type="button" aria-label="Remove position" onClick={() => removePosition('audioRoll', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
                                     ✕
                                   </button>
                                 </div>
                               ))}
                               <button 
                                 type="button"
-                                onClick={() => addPosition('audio')} 
+                                onClick={() => addPosition('audioRoll')} 
                                 className="flex items-center justify-center h-9 px-3 bg-surface hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-sm"
                                 title="Add Position"
                               >
@@ -918,12 +1290,83 @@ export default function ManageSongs() {
                             </div>
                             <WaveformSlider 
                               audioUrl={formData.audioUrl}
-                              positions={formData.watermarkPositions || []}
-                              onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
+                              positions={formData.audioRollPositions || []}
+                              onChange={(newPositions) => setFormData({ ...formData, audioRollPositions: newPositions })}
                             />
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* WATERMARKS SECTION */}
+                    <div className="flex flex-col gap-4 pt-4 border-t border-outline-variant/30">
+                      <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+                        <div className="flex items-center gap-2">
+                          <IconMusic size={20} className="text-primary" />
+                          <div>
+                            <h4 className="font-bold text-on-surface text-base">Watermarks</h4>
+                            <p className="text-xs text-on-surface-variant font-medium">Dip main audio volume and play watermark track over it.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col">
+                          <label className={labelClass}>Watermark Audio URL</label>
+                          <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
+                            <div className="relative">
+                              <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
+                              {uploadProgress.watermarkUrl !== undefined ? (
+                                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
+                                  <span>{uploadProgress.watermarkUrl}%</span>
+                                  <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
+                                  </div>
+                                </div>
+                              ) : (
+                                <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                  <IconUpload size={12} stroke={2.5} /> Upload
+                                  <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'watermarkUrl', 'songs/watermarks'); e.target.value = ''; }} />
+                                </label>
+                              )}
+                            </div>
+                          </DragDropWrapper>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <label className={labelClass}>Watermark Positions (% of song length)</label>
+                          <div className="flex flex-wrap gap-2.5 items-center">
+                            {(formData.watermarkPositions || []).map((pos, i) => (
+                              <div key={i} className="flex items-center gap-1 bg-surface px-2.5 py-1.5 rounded-lg border border-outline-variant/30 shadow-xs">
+                                <input 
+                                  type="number" 
+                                  min="0" max="100" 
+                                  value={pos} 
+                                  onChange={(e) => handlePositionChange('watermark', i, e.target.value)}
+                                  className="w-12 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center font-bold text-sm"
+                                />
+                                <span className="text-xs text-on-surface-variant font-bold">%</span>
+                                <button type="button" aria-label="Remove position" onClick={() => removePosition('watermark', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                            <button 
+                              type="button"
+                              onClick={() => addPosition('watermark')} 
+                              className="flex items-center justify-center h-9 px-3 bg-surface hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-sm"
+                              title="Add Position"
+                            >
+                              + Add Position
+                            </button>
+                          </div>
+                          <WaveformSlider 
+                            audioUrl={formData.audioUrl}
+                            positions={formData.watermarkPositions || []}
+                            onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* POPUP ADS SECTION */}
@@ -1035,7 +1478,7 @@ export default function ManageSongs() {
             
             <div className="flex-shrink-0 p-6 border-t border-outline-variant/30 bg-surface-container-lowest/50 rounded-b-2xl flex justify-end gap-3">
               <button 
-                onClick={() => setIsAddSongModalOpen(false)}
+                onClick={closeAddSongModal}
                 className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors"
               >
                 Cancel
@@ -1043,11 +1486,13 @@ export default function ManageSongs() {
               <button 
                 form="add-song-form"
                 type="submit" 
-                disabled={Object.keys(uploadProgress).length > 0}
+                disabled={Object.keys(uploadProgress).length > 0 || isSubmitting}
                 className="bg-primary text-on-primary px-8 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-md shadow-primary/20 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {Object.keys(uploadProgress).length > 0 ? (
                   <><IconLoader2 size={18} className="animate-spin" /> Uploading...</>
+                ) : isSubmitting ? (
+                  <><IconLoader2 size={18} className="animate-spin" /> Saving...</>
                 ) : editingSongId ? (
                   <><IconEdit size={18} stroke={2.5} /> Update Song</>
                 ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getContactMessages, markContactMessageRead, deleteContactMessage } from '../../services/api';
-import { IconMail, IconMailOpened, IconTrash, IconSearch, IconAlertCircle } from '@tabler/icons-react';
+import { IconMail, IconMailOpened, IconTrash, IconSearch, IconAlertCircle, IconEye, IconX } from '@tabler/icons-react';
 import { useDialog } from '../../contexts/DialogContext';
 
 export default function ManageContactMessages() {
@@ -9,7 +9,7 @@ export default function ManageContactMessages() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const [selectedMessage, setSelectedMessage] = useState(null);
   useEffect(() => {
     fetchMessages();
   }, []);
@@ -138,6 +138,16 @@ export default function ManageContactMessages() {
                     </td>
                     <td className="p-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedMessage(msg);
+                            if (!msg.isRead) handleMarkAsRead(msg._id);
+                          }}
+                          className="p-2 text-on-surface hover:bg-surface-variant/50 rounded-lg transition-colors"
+                          title="View Message"
+                        >
+                          <IconEye size={18} />
+                        </button>
                         {!msg.isRead && (
                           <button
                             onClick={() => handleMarkAsRead(msg._id)}
@@ -163,6 +173,62 @@ export default function ManageContactMessages() {
           </table>
         </div>
       </div>
+
+      {/* Message View Modal */}
+      {selectedMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface w-full max-w-2xl rounded-2xl border border-outline-variant/30 shadow-xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-outline-variant/30">
+              <h3 className="text-xl font-bold text-on-surface">Message Details</h3>
+              <button 
+                onClick={() => setSelectedMessage(null)}
+                className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-xl transition-colors"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-surface-variant/30 border border-outline-variant/20">
+                    <div className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-1">Sender Name</div>
+                    <div className="font-semibold text-on-surface">{selectedMessage.name}</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-surface-variant/30 border border-outline-variant/20">
+                    <div className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-1">Email Address</div>
+                    <div className="font-semibold text-on-surface">{selectedMessage.email}</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-surface-variant/30 border border-outline-variant/20">
+                  <div className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-1">Subject</div>
+                  <div className="font-semibold text-on-surface">{selectedMessage.subject}</div>
+                </div>
+
+                <div>
+                  <div className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-3">Message Content</div>
+                  <div className="p-5 rounded-xl bg-surface-variant/20 border border-outline-variant/30 text-on-surface whitespace-pre-wrap leading-relaxed text-sm">
+                    {selectedMessage.message}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-outline-variant/30 flex justify-end">
+              <button
+                onClick={() => setSelectedMessage(null)}
+                className="px-6 py-2.5 bg-surface-variant hover:bg-surface-variant/80 text-on-surface font-semibold rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

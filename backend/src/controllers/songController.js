@@ -44,14 +44,22 @@ function sanitizeSongPayload(payload = {}) {
   }
 
   if (Array.isArray(data.watermarkPositions)) {
-    data.watermarkPositions = data.watermarkPositions
+    const validPositions = data.watermarkPositions
       .map(p => Number(p))
       .filter(p => !isNaN(p) && p >= 0 && p <= 100);
+    data.watermarkPositions = [...new Set(validPositions)].sort((a, b) => a - b);
   }
   if (Array.isArray(data.popupPositions)) {
-    data.popupPositions = data.popupPositions
+    const validPositions = data.popupPositions
       .map(p => Number(p))
       .filter(p => !isNaN(p) && p >= 0 && p <= 100);
+    data.popupPositions = [...new Set(validPositions)].sort((a, b) => a - b);
+  }
+  if (Array.isArray(data.audioRollPositions)) {
+    const validPositions = data.audioRollPositions
+      .map(p => Number(p))
+      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
+    data.audioRollPositions = [...new Set(validPositions)].sort((a, b) => a - b);
   }
 
   return data;
@@ -83,19 +91,37 @@ export const createSong = async (req, res) => {
   }
 };
 
-// @desc    Get all songs (with filtering)
-// @route   GET /api/songs
-// @access  Public
 export const getSongs = async (req, res) => {
   try {
-    const { class: className, subject, courseId } = req.query;
+    const { class: className, subject, courseId, songType, search, sortBy, sortOrder } = req.query;
     let query = {};
     
     if (className) query.class = className;
     if (subject) query.subject = subject;
     if (courseId) query.courseId = courseId;
+    if (songType && songType !== 'All') query.songType = songType;
 
-    const songs = await Song.find(query).populate('courseId', 'title');
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      query.$or = [
+        { title: regex },
+        { subject: regex },
+        { class: regex },
+        { chapter: regex }
+      ];
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sortBy) {
+      const order = sortOrder === 'desc' ? -1 : 1;
+      if (sortBy === 'title') sortOption = { title: order };
+      else if (sortBy === 'class') sortOption = { class: order, title: 1 };
+      else if (sortBy === 'subject') sortOption = { subject: order, title: 1 };
+      else if (sortBy === 'playCount') sortOption = { playCount: order };
+      else if (sortBy === 'createdAt') sortOption = { createdAt: order };
+    }
+
+    const songs = await Song.find(query).sort(sortOption).populate('courseId', 'title');
     res.json(songs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -124,7 +150,7 @@ export const getSongById = async (req, res) => {
 export const updateSong = async (req, res) => {
   try {
     const sanitized = sanitizeSongPayload(req.body);
-    const { title, audioUrl, duration } = sanitized;
+    const { title, audioUrl, duration, __v } = sanitized;
 
     if (title !== undefined && !title) {
       return res.status(400).json({ message: 'Title is required' });
@@ -136,11 +162,27 @@ export const updateSong = async (req, res) => {
       return res.status(400).json({ message: 'Duration cannot be negative' });
     }
 
-    const song = await Song.findByIdAndUpdate(req.params.id, sanitized, { new: true, runValidators: true });
+    const query = { _id: req.params.id };
+    if (__v !== undefined) {
+      query.__v = __v;
+    }
+    delete sanitized.__v;
+
+    const update = { $set: sanitized };
+    if (__v !== undefined) {
+      update.$inc = { __v: 1 };
+    }
+
+    const song = await Song.findOneAndUpdate(query, update, { new: true, runValidators: true });
+    
     if (song) {
       res.json(song);
     } else {
-      res.status(404).json({ message: 'Song not found' });
+      const existing = await Song.findById(req.params.id);
+      if (existing) {
+        return res.status(409).json({ message: 'Conflict: Document was updated by another user. Please reload and try again.' });
+      }
+      return res.status(404).json({ message: 'Song not found' });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -179,12 +221,38 @@ export const getAds = async (req, res) => {
   res.json({ ads: [] });
 };
 
+const processedIdempotencyKeys = new Map();
+const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+const checkIdempotency = (req) => {
+  const key = req.headers['x-idempotency-key'] || req.body?.idempotencyKey;
+  if (!key) return false;
+  const now = Date.now();
+  if (processedIdempotencyKeys.has(key)) {
+    const timestamp = processedIdempotencyKeys.get(key);
+    if (now - timestamp < IDEMPOTENCY_TTL_MS) {
+      return true; // Duplicate request
+    }
+  }
+  processedIdempotencyKeys.set(key, now);
+  if (processedIdempotencyKeys.size > 5000) {
+    for (const [k, ts] of processedIdempotencyKeys.entries()) {
+      if (now - ts > IDEMPOTENCY_TTL_MS) processedIdempotencyKeys.delete(k);
+    }
+  }
+  return false;
+};
+
 // @desc    Record a play event for a song
 // @route   POST /songs/:id/play
 // @access  Public
 export const recordPlay = async (req, res) => {
   try {
-    await Song.findByIdAndUpdate(req.params.id, { $inc: { playCount: 1 } });
+    if (checkIdempotency(req)) {
+      return res.json({ success: true, duplicate: true });
+    }
+    const song = await Song.findByIdAndUpdate(req.params.id, { $inc: { playCount: 1 } });
+    if (!song) return res.status(404).json({ message: 'Song not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -196,7 +264,11 @@ export const recordPlay = async (req, res) => {
 // @access  Public
 export const recordCompletion = async (req, res) => {
   try {
-    await Song.findByIdAndUpdate(req.params.id, { $inc: { completionCount: 1 } });
+    if (checkIdempotency(req)) {
+      return res.json({ success: true, duplicate: true });
+    }
+    const song = await Song.findByIdAndUpdate(req.params.id, { $inc: { completionCount: 1 } });
+    if (!song) return res.status(404).json({ message: 'Song not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -208,7 +280,11 @@ export const recordCompletion = async (req, res) => {
 // @access  Public
 export const recordShare = async (req, res) => {
   try {
-    await Song.findByIdAndUpdate(req.params.id, { $inc: { shareCount: 1 } });
+    if (checkIdempotency(req)) {
+      return res.json({ success: true, duplicate: true });
+    }
+    const song = await Song.findByIdAndUpdate(req.params.id, { $inc: { shareCount: 1 } });
+    if (!song) return res.status(404).json({ message: 'Song not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -220,7 +296,11 @@ export const recordShare = async (req, res) => {
 // @access  Public
 export const recordRepeat = async (req, res) => {
   try {
-    await Song.findByIdAndUpdate(req.params.id, { $inc: { repeatCount: 1 } });
+    if (checkIdempotency(req)) {
+      return res.json({ success: true, duplicate: true });
+    }
+    const song = await Song.findByIdAndUpdate(req.params.id, { $inc: { repeatCount: 1 } });
+    if (!song) return res.status(404).json({ message: 'Song not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -233,13 +313,17 @@ export const recordRepeat = async (req, res) => {
 // @access  Public
 export const recordDropOff = async (req, res) => {
   try {
+    if (checkIdempotency(req)) {
+      return res.json({ success: true, duplicate: true });
+    }
     const segment = parseInt(req.body.segment, 10);
     if (isNaN(segment) || segment < 0 || segment > 9) {
       return res.status(400).json({ message: 'segment must be 0-9' });
     }
     const update = {};
     update[`dropOffDistribution.${segment}`] = 1;
-    await Song.findByIdAndUpdate(req.params.id, { $inc: update });
+    const song = await Song.findByIdAndUpdate(req.params.id, { $inc: update });
+    if (!song) return res.status(404).json({ message: 'Song not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -98,7 +98,8 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
     if (isConfirmed) {
       localStorage.removeItem('neetband_lms_user');
       localStorage.removeItem('lms_token');
-      navigate('/');
+      navigate('/lms/login');
+      window.location.reload();
     }
   };
 

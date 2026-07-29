@@ -9,6 +9,7 @@ import { PlayerProvider } from './contexts/PlayerContext';
 
 import UserRoutes from './routes/UserRoutes';
 import CustomCursor from './components/CustomCursor';
+import PWAInstallPrompt from './components/PwaInstallPrompt';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 const LmsRoutes = lazyWithRetry(() => import('./routes/LmsRoutes'));
 const AffiliateRoutes = lazyWithRetry(() => import('./routes/AffiliateRoutes'));
@@ -52,6 +53,7 @@ export default function App() {
       <UserAuthProvider>
         <DialogProvider>
           <AppContent />
+          <PWAInstallPrompt />
         </DialogProvider>
       </UserAuthProvider>
     </Router>

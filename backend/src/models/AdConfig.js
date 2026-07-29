@@ -32,6 +32,14 @@ const adConfigSchema = new mongoose.Schema({
     // The frontend prefixes API_URL when the value starts with '/' (relative path).
     default: '/uploads/post_roll_ad.mp3',
   },
+  adBannerText: {
+    type: String,
+    default: 'Study without interruptions. Upgrade to Premium for an ad-free experience.',
+  },
+  adTextColor: {
+    type: String,
+    default: '',
+  },
 }, { timestamps: true });
 
 const AdConfig = mongoose.model('AdConfig', adConfigSchema);

@@ -208,6 +208,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   const coverColor = course?.coverColor || '#ecc246';
   const SubjectIcon = getSubjectIcon(course?.subject);
   const totalItemsCount = calculateTotalItems(course);
+  const isCourseLocked = !!(course?.isPremium && !user?.isPremium && user?.role !== 'admin' && user?.role !== 'owner');
 
   const getPreviousItem = () => {
     if (selectedSubjectIdx === null || selectedChapterIdx === null || selectedItemIdx === null || !course?.subjects) return null;
@@ -364,6 +365,30 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                   <p className="text-sm text-on-surface-variant mt-2 max-w-xl">{course.summary}</p>
                 )}
               </div>
+
+              {isCourseLocked && (
+                <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <IconCrown size={28} className="text-amber-400 fill-current" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-on-surface">Premium Course</h3>
+                      <p className="text-xs sm:text-sm text-on-surface-variant max-w-xl mt-1 leading-relaxed">
+                        {!user || !user.isLoggedIn
+                          ? "This course is reserved for Premium Members. Please log in with a premium account to access full course material."
+                          : "This course is reserved for Premium Members. Upgrade your account to unlock all chapters and resources."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onUpgradeClick}
+                    className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs sm:text-sm hover:brightness-105 active:scale-95 transition-all shadow-[0_4px_20px_rgba(201,162,39,0.3)] shrink-0 self-stretch sm:self-auto text-center"
+                  >
+                    {!user || !user.isLoggedIn ? "Log In to Access" : "Upgrade to Unlock"}
+                  </button>
+                </div>
+              )}
 
               {course?.subjects?.length > 0 && user && (
                 <div className="mb-8">
@@ -654,13 +679,15 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 </div>
                 <h3 className="text-lg font-bold text-on-surface">Premium Lesson Item</h3>
                 <p className="text-xs text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed">
-                  This study resource is reserved for Premium Scholars. Unlock all 2,000+ courses, audio anthems, notes, and interactive practice tests.
+                  {!user || !user.isLoggedIn
+                    ? "This study resource is reserved for Premium Members. Please log in to unlock all courses, notes, and practice tests."
+                    : "This study resource is reserved for Premium Members. Unlock all 2,000+ courses, audio anthems, notes, and interactive practice tests."}
                 </p>
                 <button
                   onClick={onUpgradeClick}
                   className="px-6 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:brightness-105 active:scale-95 transition-all shadow-[0_4px_20px_rgba(201,162,39,0.3)]"
                 >
-                  Upgrade to Unlock
+                  {!user || !user.isLoggedIn ? "Log In to Unlock" : "Upgrade to Unlock"}
                 </button>
               </div>
             ) : detailsLoading ? (

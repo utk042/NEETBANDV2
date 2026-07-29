@@ -54,10 +54,12 @@ const songSchema = new mongoose.Schema({
   shareCount: { type: Number, default: 0 },
   repeatCount: { type: Number, default: 0 },
   watermarkUrl: { type: String }, // External link to mp3 for ad/watermark
-  watermarkPositions: { type: [Number], default: [20, 50, 90] }, // Percentages where watermark plays
+  watermarkPositions: { type: [Number] }, // Percentages where watermark plays (undefined = inherit global, [] = none)
+  audioRollUrl: { type: String }, // Per-song audio roll url override
+  audioRollPositions: { type: [Number] }, // Per-song audio roll positions override
   audioRollsEnabled: { type: Boolean, default: true },
   popupsEnabled: { type: Boolean, default: true },
-  popupPositions: { type: [Number], default: [10, 40, 75] },
+  popupPositions: { type: [Number] },
   popupHtml: { type: String, default: '' },
   // 10 buckets representing each 10% segment of the song (drop-off distribution)
   dropOffDistribution: { type: [Number], default: () => [0,0,0,0,0,0,0,0,0,0] },

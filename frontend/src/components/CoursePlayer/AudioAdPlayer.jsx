@@ -7,7 +7,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
   const {
     currentTrack, isAnyAudioActive, currentTime, duration,
     togglePlay, handleTrackSelect, handleSeek,
-    playbackError, retryPlayback, isAudioRollActive, activeRollType, isPlayingAd
+    playbackError, retryPlayback, isAudioRollActive, activeRollType, isPlayingAd, adConfig
   } = usePlayer();
 
   const originalAudio = resolveAudioUrl(item.audioUrl || item.videoUrl);
@@ -92,8 +92,11 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
           )}
 
           {isThisTrackCurrent && (isPlayingAd || isAudioRollActive) && (
-            <div className="text-xs font-bold text-amber-400 animate-pulse tracking-wide uppercase">
-              {isPlayingAd ? 'Ad Playing • Song Starting Soon' : activeRollType === 'guestAd' ? 'Guest Ad Playing' : 'Mid-roll Ad Playing • Main Audio Paused'}
+            <div 
+              className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse tracking-wide"
+              style={adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
+            >
+              {adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.'}
             </div>
           )}
 
