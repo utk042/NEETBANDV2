@@ -43,9 +43,10 @@ export default function CourseCarousel({ lmsCourses = [] }) {
     });
   }, [courses, selectedClass, selectedSubject]);
 
-  const availableSubjects = selectedClass !== 'All' && classToSubjects[selectedClass]
-    ? classToSubjects[selectedClass]
-    : existingSubjects;
+  const availableSubjects = React.useMemo(() => {
+    if (selectedClass === 'All') return existingSubjects;
+    return classToSubjects[selectedClass] || existingSubjects;
+  }, [selectedClass, existingSubjects, classToSubjects]);
 
   const shouldInfiniteScroll = filteredCourses.length > 4;
 

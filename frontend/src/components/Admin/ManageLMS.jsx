@@ -206,9 +206,10 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     }
   };
 
-  const availableSubjects = formData.class && classToSubjects[formData.class]
-    ? classToSubjects[formData.class]
-    : existingSubjects;
+  const availableSubjects = React.useMemo(() => {
+    if (!formData.class) return existingSubjects;
+    return classToSubjects[formData.class] || existingSubjects;
+  }, [formData.class, existingSubjects, classToSubjects]);
 
   if (designingCourse) {
     return (

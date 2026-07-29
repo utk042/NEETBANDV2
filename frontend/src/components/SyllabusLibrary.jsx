@@ -63,15 +63,23 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
     [...Array(90)].map(() => (Math.random() * 0.5).toFixed(2))
   );
 
-  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
+  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters, classSubjectToChapters } = useClassAndSubjectOptions();
 
-  const availableSubjects = selectedClass !== 'All' && classToSubjects[selectedClass]
-    ? classToSubjects[selectedClass]
-    : existingSubjects;
+  const availableSubjects = React.useMemo(() => {
+    if (selectedClass === 'All') return existingSubjects;
+    return classToSubjects[selectedClass] || existingSubjects;
+  }, [selectedClass, existingSubjects, classToSubjects]);
 
-  const availableChapters = selectedSubject !== 'All' && subjectToChapters[selectedSubject]
-    ? subjectToChapters[selectedSubject]
-    : existingChapters;
+  const availableChapters = React.useMemo(() => {
+    if (selectedClass !== 'All' && selectedSubject !== 'All') {
+      const key = `${selectedClass}|${selectedSubject}`;
+      return classSubjectToChapters[key] || existingChapters;
+    }
+    if (selectedSubject !== 'All') {
+      return subjectToChapters[selectedSubject] || existingChapters;
+    }
+    return existingChapters;
+  }, [selectedClass, selectedSubject, existingChapters, subjectToChapters, classSubjectToChapters]);
 
   const filteredTracks = React.useMemo(() => {
     return tracks.filter(track => {

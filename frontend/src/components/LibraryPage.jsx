@@ -208,9 +208,10 @@ export default function LibraryPage({
 
   const subjectConfig = SUBJECTS.find((s) => s.id === selectedSubject);
 
-  const availableCatalogSubjects = selectedGrade !== null && classToSubjects[selectedGrade]
-    ? classToSubjects[selectedGrade]
-    : existingSubjects;
+  const availableCatalogSubjects = React.useMemo(() => {
+    if (selectedGrade === null) return existingSubjects;
+    return classToSubjects[selectedGrade] || existingSubjects;
+  }, [selectedGrade, existingSubjects, classToSubjects]);
 
   /* ════════════════════════════════════════
      CATALOG VIEW

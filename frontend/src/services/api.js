@@ -217,6 +217,13 @@ export const deleteSong = async (id) => {
   return res.json();
 };
 
+// --- CATEGORIES ---
+export const getCategories = async () => {
+  const res = await apiFetch(`${API_URL}/categories`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
 // --- LMS ---
 export const getCourses = async () => {
   const res = await apiFetch(`${API_URL}/lms/courses`, { headers: getHeaders() });

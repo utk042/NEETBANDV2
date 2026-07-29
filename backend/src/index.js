@@ -17,6 +17,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
 import adConfigRoutes from './routes/adConfigRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import { getAds } from './controllers/songController.js';
 
 dotenv.config();
@@ -76,6 +77,7 @@ app.use('/upload', uploadRoutes);
 app.use('/newsletter', newsletterRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
+app.use('/api/categories', categoryRoutes);
 
 
 // Ad URLs endpoint

@@ -177,15 +177,23 @@ export default function ManageSongs() {
   const [editingSongId, setEditingSongId] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
 
-  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters } = useClassAndSubjectOptions();
+  const { classes: existingClasses, subjects: existingSubjects, chapters: existingChapters, classToSubjects, subjectToChapters, classSubjectToChapters } = useClassAndSubjectOptions();
 
-  const availableSubjects = formData.class && classToSubjects[formData.class]
-    ? classToSubjects[formData.class]
-    : existingSubjects;
+  const availableSubjects = useMemo(() => {
+    if (!formData.class) return existingSubjects;
+    return classToSubjects[formData.class] || existingSubjects;
+  }, [formData.class, existingSubjects, classToSubjects]);
 
-  const availableChapters = formData.subject && subjectToChapters[formData.subject]
-    ? subjectToChapters[formData.subject]
-    : existingChapters;
+  const availableChapters = useMemo(() => {
+    if (formData.class && formData.subject) {
+      const key = `${formData.class}|${formData.subject}`;
+      return classSubjectToChapters[key] || existingChapters;
+    }
+    if (formData.subject) {
+      return subjectToChapters[formData.subject] || existingChapters;
+    }
+    return existingChapters;
+  }, [formData.class, formData.subject, existingChapters, subjectToChapters, classSubjectToChapters]);
 
   const [uploadProgress, setUploadProgress] = useState({});
 
