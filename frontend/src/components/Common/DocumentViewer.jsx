@@ -71,7 +71,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
     return (
       <div 
         ref={containerRef}
-        className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 select-none flex flex-col items-center pdf-container relative"
+        className="w-full bg-surface rounded-xl overflow-hidden shadow-sm border border-outline/10 select-none flex flex-col items-center pdf-container relative"
         style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
       >
         <Document
@@ -139,7 +139,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
   const isImage = fileType === 'jpg' || fileType === 'jpeg' || fileType === 'png' || fileType === 'gif' || fileType === 'webp' || fileType === 'image';
   if (isImage) {
     return (
-      <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 p-4 flex justify-center h-auto min-h-[300px]">
+      <div className="w-full bg-surface rounded-xl overflow-hidden shadow-sm border border-outline/10 p-4 flex justify-center h-auto min-h-[300px]">
         <img 
           src={fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}` : fileUrl} 
           alt={title || 'Attached Image'} 
@@ -151,18 +151,11 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
 
   // 4. Fallback for unknown link types
   return (
-    <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-outline/10 p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
-      <IconAlertCircle className="text-primary mb-4" size={40} />
-      <h3 className="text-lg font-bold text-on-surface mb-2">External Link Attached</h3>
-      <p className="text-sm text-on-surface-variant max-w-md mb-6">This document is hosted externally or cannot be previewed natively.</p>
-      <a 
-        href={fileUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}` : fileUrl} 
-        target="_blank" 
-        rel="noreferrer" 
-        className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm hover:brightness-105 active:scale-95 transition-all"
-      >
-        Open Document
-      </a>
+    <div className="w-full bg-surface rounded-xl overflow-hidden shadow-sm border border-outline/10 p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
+      <IconAlertCircle className="text-error mb-3" size={32} />
+      <p className="text-sm text-on-surface-variant">
+        Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+      </p>
     </div>
   );
 }

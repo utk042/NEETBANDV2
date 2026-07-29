@@ -871,7 +871,7 @@ function ChapterCard({ chapter, index, chapters, onUpdate, onDelete, onMoveUp, o
 }
 
 function ItemContentEditor({ item, onUpdate, items = [] }) {
-  const { toast } = useDialog();
+  const { toast, alert } = useDialog();
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [autoConvertHtml, setAutoConvertHtml] = useState(true);
   const [isParsingFile, setIsParsingFile] = useState(false);
@@ -1059,6 +1059,22 @@ function ItemContentEditor({ item, onUpdate, items = [] }) {
                   </>
                 )}
               </button>
+              
+              <button
+                type="button"
+                onClick={() => alert("Notes & Content Tools", (
+                  <div className="text-left space-y-3">
+                    <p><strong>Auto-Format Paste:</strong> Automatically formats your pasted content (e.g. from Word or HTML) into clean Markdown.</p>
+                    <p><strong>Clean PDF Wraps:</strong> Fixes broken sentences and unwanted line breaks that often occur when copying text from a PDF.</p>
+                    <p><strong>Upload Document:</strong> Upload a file instead of pasting. <br/><br/><span className="text-emerald-400 font-bold">Note:</span> For students to download notes in a better format, it is highly recommended to upload a PDF instead of just pasting text.</p>
+                  </div>
+                ))}
+                className="p-1 rounded bg-surface border border-outline-variant/20 hover:border-outline-variant/50 text-on-surface-variant hover:text-emerald-400 transition-all flex items-center justify-center h-[26px] w-[26px]"
+                title="What do these do?"
+              >
+                <IconHelpCircle size={14} />
+              </button>
+
               <input
                 id={`doc-upload-${item._id}`}
                 type="file"
