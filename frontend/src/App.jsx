@@ -9,7 +9,7 @@ import { PlayerProvider } from './contexts/PlayerContext';
 
 import UserRoutes from './routes/UserRoutes';
 import CustomCursor from './components/CustomCursor';
-import PWAInstallPrompt from './components/PwaInstallPrompt';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 const LmsRoutes = lazyWithRetry(() => import('./routes/LmsRoutes'));
 const AffiliateRoutes = lazyWithRetry(() => import('./routes/AffiliateRoutes'));

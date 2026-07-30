@@ -824,6 +824,9 @@ export function PlayerProvider({ children, user }) {
   const handleNext = useCallback(() => {
     const list = queue.length > 0 ? queue : globalTracks;
     if (list.length === 0) {
+      if (audioRef.current) audioRef.current.pause();
+      stopAllAdAudio();
+      stopWatermark();
       setIsPlaying(false);
       setCurrentTrack(null);
       setPlaybackError("No songs available to play.");
@@ -838,12 +841,18 @@ export function PlayerProvider({ children, user }) {
       nextIdx = (idx + 1) % list.length;
     } else {
       nextIdx = idx + 1;
-      if (nextIdx >= list.length) { setIsPlaying(false); return; }
+      if (nextIdx >= list.length) { 
+        if (audioRef.current) audioRef.current.pause();
+        stopAllAdAudio();
+        stopWatermark();
+        setIsPlaying(false); 
+        return; 
+      }
     }
     const next = list[nextIdx];
     if (!next) return;
     playWithAds(next);
-  }, [queue, globalTracks, currentTrack, isShuffled, repeatMode, playWithAds]);
+  }, [queue, globalTracks, currentTrack, isShuffled, repeatMode, playWithAds, stopAllAdAudio, stopWatermark]);
 
   // Handle song ended
   const handleEnded = useCallback(() => {
