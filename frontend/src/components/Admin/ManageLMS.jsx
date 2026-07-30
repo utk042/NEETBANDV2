@@ -5,7 +5,7 @@ import {
   getAdminStudents, createAdminStudent, updateAdminStudent, deleteAdminStudent 
 } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
-import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff, IconSearch } from '@tabler/icons-react';
+import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, IconUserPlus, IconPalette, IconEye, IconEyeOff, IconSearch, IconFilter, IconX, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
 import CourseDesigner from './CourseDesigner';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
@@ -15,6 +15,11 @@ export default function ManageLMS({ subTab = 'courses', user }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
+  const [sortBy, setSortBy] = useState('title');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [filterClass, setFilterClass] = useState('All');
+  const [filterSubject, setFilterSubject] = useState('All');
   const [formData, setFormData] = useState({ title: '', class: '', subject: '', summary: '', order: 0 });
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
@@ -212,15 +217,59 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     return classToSubjects[formData.class] || existingSubjects;
   }, [formData.class, existingSubjects, classToSubjects]);
 
+  const activeClasses = React.useMemo(() => {
+    const classes = new Set(courses.map(c => c.class).filter(Boolean));
+    return Array.from(classes).sort();
+  }, [courses]);
+
+  const activeSubjects = React.useMemo(() => {
+    let relevantCourses = courses;
+    if (filterClass && filterClass !== 'All') {
+      relevantCourses = courses.filter(c => c.class === filterClass);
+    }
+    const subjects = new Set(relevantCourses.map(c => c.subject).filter(Boolean));
+    return Array.from(subjects).sort();
+  }, [courses, filterClass]);
+
   const filteredCourses = React.useMemo(() => {
-    if (!searchQuery) return courses;
-    const lowerQuery = searchQuery.toLowerCase();
-    return courses.filter(c => 
-      (c.title && c.title.toLowerCase().includes(lowerQuery)) ||
-      (c.subject && c.subject.toLowerCase().includes(lowerQuery)) ||
-      (c.class && c.class.toLowerCase().includes(lowerQuery))
-    );
-  }, [courses, searchQuery]);
+    let result = courses;
+
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        (c.title && c.title.toLowerCase().includes(lowerQuery)) ||
+        (c.subject && c.subject.toLowerCase().includes(lowerQuery)) ||
+        (c.class && c.class.toLowerCase().includes(lowerQuery))
+      );
+    }
+
+    if (filterClass && filterClass !== 'All') {
+      result = result.filter(c => c.class === filterClass);
+    }
+
+    if (filterSubject && filterSubject !== 'All') {
+      result = result.filter(c => c.subject === filterSubject);
+    }
+
+    if (sortBy === 'title') {
+      result = [...result].sort((a, b) => {
+        const val = (a.title || '').localeCompare(b.title || '');
+        return sortOrder === 'asc' ? val : -val;
+      });
+    } else if (sortBy === 'class') {
+      result = [...result].sort((a, b) => {
+        const val = (a.class || '').localeCompare(b.class || '');
+        return sortOrder === 'asc' ? val : -val;
+      });
+    } else if (sortBy === 'subject') {
+      result = [...result].sort((a, b) => {
+        const val = (a.subject || '').localeCompare(b.subject || '');
+        return sortOrder === 'asc' ? val : -val;
+      });
+    }
+
+    return result;
+  }, [courses, searchQuery, filterClass, filterSubject, sortBy, sortOrder]);
 
   if (designingCourse) {
     return (
@@ -517,6 +566,16 @@ export default function ManageLMS({ subTab = 'courses', user }) {
     );
   }
 
+  const isFilterActive = searchQuery || filterClass !== 'All' || filterSubject !== 'All';
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilterClass('All');
+    setFilterSubject('All');
+    setSortBy('title');
+    setSortOrder('asc');
+  };
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -548,15 +607,122 @@ export default function ManageLMS({ subTab = 'courses', user }) {
           </div>
         ) : (
           <>
-            <div className="mb-6 relative">
-              <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" size={18} />
-              <input
-                type="text"
-                placeholder="Search courses by title, subject, or class..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-surface-container border border-outline-variant/30 rounded-xl py-3 pl-11 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
-              />
+            {/* Search, Filter & Sort Toolbar */}
+            <div className="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border border-[var(--border-floating-card)] shadow-xs mb-6 flex flex-col gap-4">
+              
+              {/* Top Row: Search Input + Toggle */}
+              <div className="flex gap-3 items-center">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant/60">
+                    <IconSearch size={19} />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search courses by title, subject, or class..."
+                    className="w-full pl-10 pr-10 py-2.5 bg-surface-container/60 hover:bg-surface-container border border-outline-variant/40 rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface"
+                      title="Clear Search"
+                    >
+                      <IconX size={18} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Toggle Button */}
+                <button
+                  onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                  className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
+                    isFiltersExpanded || isFilterActive
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-surface-container/60 hover:bg-surface-container/80 border-outline-variant/40 text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  title="Filter & Sort"
+                >
+                  <IconFilter size={18} />
+                  <span className="hidden md:inline font-semibold text-sm">Filter & Sort</span>
+                </button>
+              </div>
+
+              {/* Collapsible Filters Area */}
+              {isFiltersExpanded && (
+                <div className="flex flex-col gap-4 pt-3 border-t border-outline-variant/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                  
+                  {/* Sort Controls */}
+                  <div className="flex items-center justify-between md:justify-start gap-2">
+                    <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2.5 rounded-xl text-xs transition-colors flex-1 md:flex-none">
+                      <SearchableSelect
+                        options={[
+                          { value: 'title', label: 'Title (A-Z)' },
+                          { value: 'class', label: 'Class' },
+                          { value: 'subject', label: 'Subject' }
+                        ]}
+                        value={sortBy}
+                        onChange={(val) => setSortBy(val || 'title')}
+                        placeholder="Sort By"
+                        hideClearOption={true}
+                        className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer min-w-[130px] w-full"
+                      />
+                    </div>
+
+                    {/* Sort Direction Toggle */}
+                    <button
+                      onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 p-2.5 rounded-xl text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center"
+                      title={sortOrder === 'asc' ? 'Ascending Order' : 'Descending Order'}
+                    >
+                      {sortOrder === 'asc' ? <IconSortAscending size={18} /> : <IconSortDescending size={18} />}
+                    </button>
+                  </div>
+
+                  {/* Bottom Row: Filters */}
+                  <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2">
+                    <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                      <SearchableSelect
+                        options={[
+                          { value: 'All', label: 'All Classes' },
+                          ...activeClasses.map(c => ({ value: c, label: c }))
+                        ]}
+                        value={filterClass}
+                        onChange={(val) => { setFilterClass(val || 'All'); setFilterSubject('All'); }}
+                        placeholder="All Classes"
+                        hideClearOption={true}
+                        className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[110px]"
+                      />
+                    </div>
+
+                    <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                      <SearchableSelect
+                        options={[
+                          { value: 'All', label: 'All Subjects' },
+                          ...activeSubjects.map(s => ({ value: s, label: s }))
+                        ]}
+                        value={filterSubject}
+                        onChange={(val) => setFilterSubject(val || 'All')}
+                        placeholder="All Subjects"
+                        hideClearOption={true}
+                        className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[110px]"
+                      />
+                    </div>
+
+                    {/* Clear Filters */}
+                    {isFilterActive && (
+                      <button
+                        onClick={handleClearFilters}
+                        className="col-span-2 md:col-span-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-1"
+                      >
+                        <IconX size={14} /> Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredCourses.map(ch => (

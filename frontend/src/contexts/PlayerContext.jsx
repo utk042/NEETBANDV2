@@ -97,6 +97,7 @@ export function PlayerProvider({ children, user }) {
   // Mount tracking
   const isMountedRef = useRef(true);
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -353,7 +354,9 @@ export function PlayerProvider({ children, user }) {
           audioRef.current.load();
         }
       }
-    }).catch(console.error);
+    }).catch(err => {
+      if (err.message !== 'Unmounted') console.error(err);
+    });
   }, [fetchWithRetry]);
 
   // Fetch ad URLs

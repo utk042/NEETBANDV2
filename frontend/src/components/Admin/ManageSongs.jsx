@@ -184,9 +184,11 @@ export default function ManageSongs() {
   const [uploadedFileName, setUploadedFileName] = useState('');
 
   // Search, Filter, Sort & Pagination States
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClass, setFilterClass] = useState('All');
   const [filterSubject, setFilterSubject] = useState('All');
+  const [filterChapter, setFilterChapter] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [sortBy, setSortBy] = useState('title'); // 'title' | 'class' | 'subject' | 'playCount' | 'createdAt'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
@@ -428,6 +430,7 @@ export default function ManageSongs() {
   };
 
   useEffect(() => {
+    isComponentMounted.current = true;
     fetchSongs();
     fetchCourses();
     fetchAdConfig();
@@ -576,6 +579,11 @@ export default function ManageSongs() {
       result = result.filter(song => song.subject === filterSubject);
     }
 
+    // Filter by Chapter
+    if (filterChapter !== 'All') {
+      result = result.filter(song => song.chapter === filterChapter);
+    }
+
     // Filter by Song Type
     if (filterType !== 'All') {
       result = result.filter(song => (song.songType || 'Study') === filterType);
@@ -604,7 +612,7 @@ export default function ManageSongs() {
   // Reset to page 1 on filter/sort/search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterClass, filterSubject, filterType, sortBy, sortOrder, itemsPerPage]);
+  }, [searchQuery, filterClass, filterSubject, filterChapter, filterType, sortBy, sortOrder, itemsPerPage]);
 
   const effectivePerPage = itemsPerPage === 'All' ? filteredAndSortedSongs.length || 1 : itemsPerPage;
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedSongs.length / effectivePerPage));
@@ -628,12 +636,13 @@ export default function ManageSongs() {
     setSearchQuery('');
     setFilterClass('All');
     setFilterSubject('All');
+    setFilterChapter('All');
     setFilterType('All');
     setSortBy('title');
     setSortOrder('asc');
   };
 
-  const isFilterActive = searchQuery || filterClass !== 'All' || filterSubject !== 'All' || filterType !== 'All';
+  const isFilterActive = searchQuery || filterClass !== 'All' || filterSubject !== 'All' || filterChapter !== 'All' || filterType !== 'All';
 
   const inputClass = "w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-on-surface placeholder:text-on-surface-variant/40";
   const labelClass = "text-sm font-bold text-on-surface-variant mb-1.5 ml-1 uppercase tracking-wide text-[11px]";
@@ -643,32 +652,32 @@ export default function ManageSongs() {
       
       {/* Existing Songs Section */}
       <section>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-on-surface">Manage Songs</h2>
             <p className="text-xs text-on-surface-variant mt-1">Search, edit, and organize study songs across courses, classes, and subjects.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsBatchModalOpen(true)}
-              className="bg-surface-container border border-outline-variant/40 text-on-surface px-4 py-2 rounded-xl flex items-center gap-2 font-medium hover:bg-surface-variant transition-colors text-sm"
+              className="bg-surface-container border border-outline-variant/40 text-on-surface px-4 py-2 rounded-xl flex items-center gap-2 font-medium hover:bg-surface-variant transition-colors text-sm whitespace-nowrap"
             >
               <IconStack2 size={18} /> Batch Upload
             </button>
             <button 
               onClick={handleOpenAddModal}
-              className="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2 font-medium text-sm"
+              className="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2 font-medium text-sm whitespace-nowrap"
             >
               <IconPlus size={18} /> Add Song
             </button>
           </div>
         </div>
 
-        {/* Search, Filter & Arrange Toolbar */}
+        {/* Search, Filter & Sort Toolbar */}
         <div className="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border border-[var(--border-floating-card)] shadow-xs mb-6 flex flex-col gap-4">
           
-          {/* Top Row: Search Input + Arrange By */}
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          {/* Top Row: Search Input + Toggle */}
+          <div className="flex gap-3 items-center">
             {/* Search Input */}
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant/60">
@@ -678,7 +687,7 @@ export default function ManageSongs() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search study songs by title, subject, class, chapter..."
+                placeholder="Search songs by title, subject, class, chapter..."
                 className="w-full pl-10 pr-10 py-2.5 bg-surface-container/60 hover:bg-surface-container border border-outline-variant/40 rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
               />
               {searchQuery && (
@@ -692,133 +701,153 @@ export default function ManageSongs() {
               )}
             </div>
 
-            {/* Arrange / Sort Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 bg-surface-container/60 border border-outline-variant/40 px-3 py-2 rounded-xl text-xs font-semibold text-on-surface-variant">
-                <IconArrowsSort size={16} className="text-primary" />
-                <span>Arrange by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  aria-label="Arrange by option"
-                  className="bg-transparent text-on-surface font-bold focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="title">Title (A-Z)</option>
-                  <option value="class">Class</option>
-                  <option value="subject">Subject</option>
-                  <option value="playCount">Most Played</option>
-                  <option value="createdAt">Date Added</option>
-                </select>
-              </div>
-
-              {/* Sort Direction Toggle */}
-              <button
-                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="bg-surface-container/60 hover:bg-surface-variant border border-outline-variant/40 px-3 py-2 rounded-xl text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-bold"
-                title={sortOrder === 'asc' ? 'Ascending Order' : 'Descending Order'}
-              >
-                {sortOrder === 'asc' ? (
-                  <>
-                    <IconSortAscending size={18} className="text-primary" />
-                    <span>Asc</span>
-                  </>
-                ) : (
-                  <>
-                    <IconSortDescending size={18} className="text-primary" />
-                    <span>Desc</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+              className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
+                isFiltersExpanded || isFilterActive
+                  ? 'bg-primary/10 border-primary/30 text-primary'
+                  : 'bg-surface-container/60 hover:bg-surface-container/80 border-outline-variant/40 text-on-surface-variant hover:text-on-surface'
+              }`}
+              title="Filter & Sort"
+            >
+              <IconFilter size={18} />
+              <span className="hidden md:inline font-semibold text-sm">Filter & Sort</span>
+            </button>
           </div>
 
-          {/* Bottom Row: Filters (Class, Subject, Type) & Song Counters */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-outline-variant/20">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1 mr-1">
-                <IconFilter size={14} /> Filter:
-              </span>
+          {/* Collapsible Filters Area */}
+          {isFiltersExpanded && (
+            <div className="flex flex-col gap-4 pt-3 border-t border-outline-variant/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              
+              {/* Sort Controls */}
+              <div className="flex items-center justify-between md:justify-start gap-2">
+                <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2.5 rounded-xl text-xs transition-colors flex-1 md:flex-none">
+                  <SearchableSelect
+                    options={[
+                      { value: 'title', label: 'Title (A-Z)' },
+                      { value: 'class', label: 'Class' },
+                      { value: 'subject', label: 'Subject' },
+                      { value: 'playCount', label: 'Most Played' },
+                      { value: 'createdAt', label: 'Date Added' }
+                    ]}
+                    value={sortBy}
+                    onChange={(val) => setSortBy(val || 'title')}
+                    placeholder="Sort By"
+                    hideClearOption={true}
+                    className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer min-w-[130px] w-full"
+                  />
+                </div>
 
-              {/* Class Filter */}
-              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
-                <span className="text-on-surface-variant font-medium">Class:</span>
-                <select
-                  value={filterClass}
-                  onChange={(e) => setFilterClass(e.target.value)}
-                  aria-label="Filter by Class"
-                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
-                >
-                  <option value="All">All Classes</option>
-                  {existingClasses.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Subject Filter */}
-              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
-                <span className="text-on-surface-variant font-medium">Subject:</span>
-                <select
-                  value={filterSubject}
-                  onChange={(e) => setFilterSubject(e.target.value)}
-                  aria-label="Filter by Subject"
-                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
-                >
-                  <option value="All">All Subjects</option>
-                  {existingSubjects.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Song Type Filter */}
-              <div className="flex items-center gap-1.5 bg-surface-container/40 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs">
-                <span className="text-on-surface-variant font-medium">Type:</span>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  aria-label="Filter by Type"
-                  className="bg-transparent text-on-surface font-semibold focus:outline-none cursor-pointer"
-                >
-                  <option value="All">All Types</option>
-                  <option value="Study">Study Songs</option>
-                  <option value="Normal">Normal Songs</option>
-                </select>
-              </div>
-
-              {/* Clear Filters */}
-              {isFilterActive && (
+                {/* Sort Direction Toggle */}
                 <button
-                  onClick={handleClearFilters}
-                  className="text-xs text-primary font-bold hover:underline px-2 py-1 flex items-center gap-1"
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 p-2.5 rounded-xl text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center"
+                  title={sortOrder === 'asc' ? 'Ascending Order' : 'Descending Order'}
                 >
-                  <IconX size={14} /> Reset
+                  {sortOrder === 'asc' ? <IconSortAscending size={18} /> : <IconSortDescending size={18} />}
                 </button>
-              )}
-            </div>
+              </div>
 
-            {/* Songs Counter & Per Page Dropdown */}
-            <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium">
-              <span>
-                Showing <strong className="text-on-surface">{filteredAndSortedSongs.length === 0 ? 0 : (currentPage - 1) * effectivePerPage + 1} - {itemsPerPage === 'All' ? filteredAndSortedSongs.length : Math.min(currentPage * itemsPerPage, filteredAndSortedSongs.length)}</strong> of <strong className="text-on-surface">{songs.length}</strong> songs
-              </span>
-              <div className="flex items-center gap-1">
-                <span>Per Page:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(e.target.value === 'All' ? 'All' : Number(e.target.value))}
-                  aria-label="Items per page"
-                  className="bg-surface-container/60 border border-outline-variant/30 rounded-lg px-2 py-1 text-on-surface font-bold focus:outline-none text-xs"
-                >
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                  <option value={250}>250</option>
-                  <option value="All">All</option>
-                </select>
+              {/* Bottom Row: Filters & Pagination */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2 w-full xl:w-auto">
+                  
+                  <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                    <SearchableSelect
+                      options={[
+                        { value: 'All', label: 'All Classes' },
+                        ...existingClasses.map(c => ({ value: c, label: c }))
+                      ]}
+                      value={filterClass}
+                      onChange={(val) => setFilterClass(val || 'All')}
+                      placeholder="All Classes"
+                      hideClearOption={true}
+                      className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[110px]"
+                    />
+                  </div>
+
+                  <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                    <SearchableSelect
+                      options={[
+                        { value: 'All', label: 'All Subjects' },
+                        ...existingSubjects.map(s => ({ value: s, label: s }))
+                      ]}
+                      value={filterSubject}
+                      onChange={(val) => setFilterSubject(val || 'All')}
+                      placeholder="All Subjects"
+                      hideClearOption={true}
+                      className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[110px]"
+                    />
+                  </div>
+
+                  <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                    <SearchableSelect
+                      options={[
+                        { value: 'All', label: 'All Chapters' },
+                        ...existingChapters.map(c => ({ value: c, label: c }))
+                      ]}
+                      value={filterChapter}
+                      onChange={(val) => setFilterChapter(val || 'All')}
+                      placeholder="All Chapters"
+                      hideClearOption={true}
+                      className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[110px]"
+                    />
+                  </div>
+
+                  <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-2 rounded-xl text-xs transition-colors">
+                    <SearchableSelect
+                      options={[
+                        { value: 'All', label: 'All Types' },
+                        { value: 'Study', label: 'Study' },
+                        { value: 'Normal', label: 'Normal' }
+                      ]}
+                      value={filterType}
+                      onChange={(val) => setFilterType(val || 'All')}
+                      placeholder="All Types"
+                      hideClearOption={true}
+                      className="bg-transparent text-on-surface font-semibold focus:outline-none min-w-[100px]"
+                    />
+                  </div>
+
+                  {/* Clear Filters */}
+                  {isFilterActive && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="col-span-2 md:col-span-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <IconX size={14} /> Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Songs Counter & Per Page Dropdown */}
+                <div className="flex items-center justify-between md:justify-end gap-3 text-xs text-on-surface-variant font-medium w-full xl:w-auto mt-2 xl:mt-0">
+                  <span className="inline">
+                    Showing <strong className="text-on-surface">{filteredAndSortedSongs.length === 0 ? 0 : (currentPage - 1) * effectivePerPage + 1} - {itemsPerPage === 'All' ? filteredAndSortedSongs.length : Math.min(currentPage * itemsPerPage, filteredAndSortedSongs.length)}</strong> of <strong className="text-on-surface">{songs.length}</strong>
+                  </span>
+                  
+                  <div className="bg-surface-container/40 hover:bg-surface-container/80 border border-outline-variant/30 px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center gap-2">
+                    <span className="text-on-surface-variant/70">Per page:</span>
+                    <SearchableSelect
+                      options={[
+                        { value: 25, label: '25' },
+                        { value: 50, label: '50' },
+                        { value: 100, label: '100' },
+                        { value: 250, label: '250' },
+                        { value: 'All', label: 'All' }
+                      ]}
+                      value={itemsPerPage}
+                      onChange={(val) => setItemsPerPage(val === 'All' ? 'All' : (Number(val) || 50))}
+                      placeholder="50"
+                      hideClearOption={true}
+                      className="bg-transparent text-on-surface font-bold focus:outline-none min-w-[50px]"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {loading ? (

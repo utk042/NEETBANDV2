@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-export default function SearchableSelect({ options, value, onChange, placeholder, className, creatable = false }) {
+export default function SearchableSelect({ options, value, onChange, placeholder, className, creatable = false, hideClearOption = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownStyle, setDropdownStyle] = useState({});
   const wrapperRef = useRef(null);
+  const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
   // Compute fixed position from trigger's bounding rect
@@ -29,7 +31,10 @@ export default function SearchableSelect({ options, value, onChange, placeholder
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+      const clickedOutsideWrapper = wrapperRef.current && !wrapperRef.current.contains(event.target);
+      const clickedOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+      
+      if (clickedOutsideWrapper && clickedOutsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -84,9 +89,10 @@ export default function SearchableSelect({ options, value, onChange, placeholder
         </svg>
       </div>
 
-      {/* Dropdown — position:fixed escapes overflow:hidden without a portal */}
-      {isOpen && (
+      {/* Dropdown — use portal to completely escape any CSS containing blocks (like transform from animate-in) */}
+      {isOpen && createPortal(
         <div
+          ref={dropdownRef}
           style={dropdownStyle}
           className="bg-surface border border-outline-variant/40 rounded-xl shadow-2xl flex flex-col overflow-hidden"
         >
@@ -106,12 +112,14 @@ export default function SearchableSelect({ options, value, onChange, placeholder
           {/* Options */}
           <div className="overflow-y-auto max-h-48 no-scrollbar">
             {/* Clear / placeholder option */}
-            <div
-              className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${!value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
-              onMouseDown={(e) => { e.preventDefault(); onChange(''); setIsOpen(false); }}
-            >
-              {placeholder}
-            </div>
+            {!hideClearOption && (
+              <div
+                className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 ${!value ? 'bg-primary/5 text-primary font-medium' : 'text-on-surface'}`}
+                onMouseDown={(e) => { e.preventDefault(); onChange(''); setIsOpen(false); }}
+              >
+                {placeholder}
+              </div>
+            )}
 
             {/* Create new option */}
             {showCreateOption && (
@@ -143,7 +151,8 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                   </div>
                 )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
