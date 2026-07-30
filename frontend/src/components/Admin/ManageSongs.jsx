@@ -168,8 +168,6 @@ export default function ManageSongs() {
   const [testingAudioUrl, setTestingAudioUrl] = useState(false);
   const [audioUrlValid, setAudioUrlValid] = useState(null);
   const [adConfig, setAdConfig] = useState({
-    watermarkUrl: '',
-    watermarkPositions: [20, 50, 90],
     audioRollsEnabled: true,
     popupsEnabled: true,
     popupPositions: [10, 40, 75],
@@ -177,7 +175,8 @@ export default function ManageSongs() {
   });
   const [formData, setFormData] = useState({
     title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
-    watermarkUrl: '', watermarkPositions: [20, 50, 90], audioRollsEnabled: true,
+    overrideGlobalAds: false,
+    audioRollsEnabled: true,
     popupsEnabled: true, popupPositions: [10, 40, 75], popupHtml: ''
   });
   const [editingSongId, setEditingSongId] = useState(null);
@@ -218,19 +217,19 @@ export default function ManageSongs() {
   const handlePositionChange = (type, index, value) => {
     const num = parseInt(value, 10);
     if (isNaN(num)) return;
-    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    const field = type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
     const newPos = [...(formData[field] || [])];
     newPos[index] = num;
     setFormData(prev => ({ ...prev, [field]: newPos }));
   };
 
   const addPosition = (type) => {
-    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    const field = type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
     setFormData(prev => ({ ...prev, [field]: [...(prev[field] || []), 50] }));
   };
 
   const removePosition = (type, index) => {
-    const field = type === 'watermark' ? 'watermarkPositions' : type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
+    const field = type === 'audioRoll' ? 'audioRollPositions' : 'popupPositions';
     setFormData(prev => ({ ...prev, [field]: (prev[field] || []).filter((_, i) => i !== index) }));
   };
 
@@ -375,14 +374,13 @@ export default function ManageSongs() {
     setUploadedFileName('');
     setFormData({
       title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
-      watermarkUrl: '',
-      watermarkPositions: [],
-      audioRollUrl: adConfig.audioRollUrl || '',
-      audioRollPositions: adConfig.audioRollPositions || [20, 50, 90],
-      audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
-      popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
-      popupPositions: adConfig.popupPositions || [10, 40, 75],
-      popupHtml: adConfig.popupHtml || ''
+      overrideGlobalAds: false,
+      audioRollUrl: '',
+      audioRollPositions: [],
+      audioRollsEnabled: true,
+      popupsEnabled: true,
+      popupPositions: [],
+      popupHtml: ''
     });
     setEditingSongId(null);
     setIsAddSongModalOpen(true);
@@ -404,14 +402,13 @@ export default function ManageSongs() {
       lyricsUrl: song.lyricsUrl || '',
       duration: song.duration || '',
       songType: song.songType || 'Study',
-      watermarkUrl: song.watermarkUrl || '',
-      watermarkPositions: (song.watermarkPositions && song.watermarkPositions.length > 0) ? song.watermarkPositions : [],
-      audioRollUrl: song.audioRollUrl || adConfig.audioRollUrl || '',
-      audioRollPositions: (song.audioRollPositions && song.audioRollPositions.length > 0) ? song.audioRollPositions : (adConfig.audioRollPositions || [20, 50, 90]),
-      audioRollsEnabled: song.audioRollsEnabled !== undefined ? song.audioRollsEnabled : (adConfig.audioRollsEnabled ?? true),
-      popupsEnabled: song.popupsEnabled !== undefined ? song.popupsEnabled : (adConfig.popupsEnabled ?? true),
-      popupPositions: (song.popupPositions && song.popupPositions.length > 0) ? song.popupPositions : (adConfig.popupPositions || [10, 40, 75]),
-      popupHtml: song.popupHtml !== undefined ? song.popupHtml : (adConfig.popupHtml || ''),
+      overrideGlobalAds: Boolean(song.overrideGlobalAds),
+      audioRollUrl: song.audioRollUrl || '',
+      audioRollPositions: Array.isArray(song.audioRollPositions) ? song.audioRollPositions : [],
+      audioRollsEnabled: song.audioRollsEnabled !== undefined ? song.audioRollsEnabled : true,
+      popupsEnabled: song.popupsEnabled !== undefined ? song.popupsEnabled : true,
+      popupPositions: Array.isArray(song.popupPositions) ? song.popupPositions : [],
+      popupHtml: song.popupHtml !== undefined ? song.popupHtml : '',
       __v: song.__v
     });
     setEditingSongId(song._id);
@@ -457,21 +454,11 @@ export default function ManageSongs() {
         };
         if (isComponentMounted.current) {
           setAdConfig(config);
-          if (!editingSongId && !isAddSongModalOpen) {
-            setFormData(prev => ({
-              ...prev,
-              audioRollUrl: prev.audioRollUrl || config.audioRollUrl,
-              audioRollPositions: prev.audioRollPositions?.length ? prev.audioRollPositions : config.audioRollPositions,
-              audioRollsEnabled: prev.audioRollsEnabled !== undefined ? prev.audioRollsEnabled : config.audioRollsEnabled,
-              popupsEnabled: prev.popupsEnabled !== undefined ? prev.popupsEnabled : config.popupsEnabled,
-              popupPositions: prev.popupPositions?.length ? prev.popupPositions : config.popupPositions,
-              popupHtml: prev.popupHtml !== undefined ? prev.popupHtml : config.popupHtml
-            }));
-          }
         }
       }
     } catch (err) {
       console.error('Error fetching ad config', err);
+      toast.error('Failed to fetch ad config');
     }
   };
 
@@ -483,6 +470,7 @@ export default function ManageSongs() {
       }
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load courses');
     }
   };
 
@@ -492,6 +480,7 @@ export default function ManageSongs() {
       if (isComponentMounted.current) setSongs(data);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load songs');
     } finally {
       if (isComponentMounted.current) setLoading(false);
     }
@@ -507,6 +496,18 @@ export default function ManageSongs() {
     setIsSubmitting(true);
     try {
       const payload = { ...formData };
+      
+      const filterInvalid = (val) => val !== '' && val !== null && val !== undefined;
+      payload.audioRollPositions = (payload.audioRollPositions || []).filter(filterInvalid).map(Number);
+      payload.popupPositions = (payload.popupPositions || []).filter(filterInvalid).map(Number);
+      
+      const isInvalidPos = (p) => isNaN(p) || p < 0 || p > 100;
+      if (payload.audioRollPositions.some(isInvalidPos) || payload.popupPositions.some(isInvalidPos)) {
+        toast.error('All positions must be valid numbers between 0 and 100. Please correct or delete invalid fields before saving.');
+        setIsSubmitting(false);
+        return;
+      }
+      
       if (!payload.courseId) {
         payload.courseId = null;
       }
@@ -539,10 +540,12 @@ export default function ManageSongs() {
       newlyUploadedUrlsRef.current = [];
       setFormData({
         title: '', class: '', subject: '', chapter: '', chapterNumber: '', courseId: '', audioUrl: '', thumbnailUrl: '', lyricsUrl: '', duration: '', songType: 'Study',
-        watermarkUrl: adConfig.watermarkUrl || '', watermarkPositions: adConfig.watermarkPositions || [20, 50, 90],
-        audioRollsEnabled: adConfig.audioRollsEnabled !== undefined ? adConfig.audioRollsEnabled : true,
-        popupsEnabled: adConfig.popupsEnabled !== undefined ? adConfig.popupsEnabled : true,
-        popupPositions: adConfig.popupPositions || [10, 40, 75], popupHtml: adConfig.popupHtml || ''
+        overrideGlobalAds: false,
+        audioRollUrl: '',
+        audioRollPositions: [],
+        audioRollsEnabled: true,
+        popupsEnabled: true,
+        popupPositions: [], popupHtml: ''
       });
       setUploadedFileName('');
       setEditingSongId(null);
@@ -1233,6 +1236,24 @@ export default function ManageSongs() {
                     </div>
                     </div>
                   </div>
+                  {/* OVERRIDE GLOBAL ADS */}
+                  {formData.songType === 'Study' && (
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 mt-4 mb-2">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-on-surface text-sm">Override Global Ads</span>
+                        <span className="text-xs text-on-surface-variant mt-0.5">Ignore global ad settings and strictly use this song's ad config below. Checking this and leaving ad positions empty will disable ads for this song.</span>
+                      </div>
+                      <label className="flex items-center cursor-pointer select-none">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.overrideGlobalAds} 
+                          onChange={(e) => setFormData(prev => ({ ...prev, overrideGlobalAds: e.target.checked }))} 
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary relative"></div>
+                      </label>
+                    </div>
+                  )}
 
                   {/* AUDIO & POPUP AD SETTINGS */}
                   {formData.songType === 'Normal' && (
@@ -1327,76 +1348,6 @@ export default function ManageSongs() {
                       )}
                     </div>
 
-                    {/* WATERMARKS SECTION */}
-                    <div className="flex flex-col gap-4 pt-4 border-t border-outline-variant/30">
-                      <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
-                        <div className="flex items-center gap-2">
-                          <IconMusic size={20} className="text-primary" />
-                          <div>
-                            <h4 className="font-bold text-on-surface text-base">Watermarks</h4>
-                            <p className="text-xs text-on-surface-variant font-medium">Dip main audio volume and play watermark track over it.</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col">
-                          <label className={labelClass}>Watermark Audio URL</label>
-                          <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'watermarkUrl', 'songs/watermarks')}>
-                            <div className="relative">
-                              <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.watermarkUrl} onChange={e => setFormData({...formData, watermarkUrl: e.target.value})} />
-                              {uploadProgress.watermarkUrl !== undefined ? (
-                                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
-                                  <span>{uploadProgress.watermarkUrl}%</span>
-                                  <div className="w-10 h-1 bg-primary/20 rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress.watermarkUrl}%` }} />
-                                  </div>
-                                </div>
-                              ) : (
-                                <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                                  <IconUpload size={12} stroke={2.5} /> Upload
-                                  <input type="file" className="hidden" accept="audio/*,audio/mpeg,audio/mp3,audio/x-mp3,audio/x-mpeg,audio/wav,audio/x-wav,audio/aac,audio/ogg,audio/flac,audio/mp4,audio/webm,audio/3gpp,audio/amr,.mp3,.mpeg,.mpga,.wav,.flac,.aac,.ogg,.m4a,.opus,.wma,.m4p,.mp2,.aiff,.aif,.caf,.webm,.3gp,.amr,.mid,.midi" onChange={e => { handleFileUpload(e, 'watermarkUrl', 'songs/watermarks'); e.target.value = ''; }} />
-                                </label>
-                              )}
-                            </div>
-                          </DragDropWrapper>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <label className={labelClass}>Watermark Positions (% of song length)</label>
-                          <div className="flex flex-wrap gap-2.5 items-center">
-                            {(formData.watermarkPositions || []).map((pos, i) => (
-                              <div key={i} className="flex items-center gap-1 bg-surface px-2.5 py-1.5 rounded-lg border border-outline-variant/30 shadow-xs">
-                                <input 
-                                  type="number" 
-                                  min="0" max="100" 
-                                  value={pos} 
-                                  onChange={(e) => handlePositionChange('watermark', i, e.target.value)}
-                                  className="w-12 bg-transparent border-none text-on-surface focus:ring-0 p-0 text-center font-bold text-sm"
-                                />
-                                <span className="text-xs text-on-surface-variant font-bold">%</span>
-                                <button type="button" aria-label="Remove position" onClick={() => removePosition('watermark', i)} className="text-red-500 hover:text-red-400 ml-1 p-1 font-bold text-xs" title="Remove">
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                            <button 
-                              type="button"
-                              onClick={() => addPosition('watermark')} 
-                              className="flex items-center justify-center h-9 px-3 bg-surface hover:bg-surface-variant border border-outline-variant/30 rounded-lg text-on-surface transition-colors font-bold text-sm"
-                              title="Add Position"
-                            >
-                              + Add Position
-                            </button>
-                          </div>
-                          <WaveformSlider 
-                            audioUrl={formData.audioUrl}
-                            positions={formData.watermarkPositions || []}
-                            onChange={(newPositions) => setFormData({ ...formData, watermarkPositions: newPositions })}
-                          />
-                        </div>
-                      </div>
-                    </div>
 
                     {/* POPUP ADS SECTION */}
                     <div className="flex flex-col gap-4 pt-4 border-t border-outline-variant/30">

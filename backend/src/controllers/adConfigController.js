@@ -53,7 +53,7 @@ export const updateAdConfig = async (req, res) => {
       updateDoc.$set.popupPositions = Array.from(new Set(popupPositions)).sort((a, b) => a - b);
     }
     if (popupHtml !== undefined) updateDoc.$set.popupHtml = popupHtml;
-    if (guestAdUrl !== undefined) updateDoc.$set.guestAdUrl = guestAdUrl === '' ? '/uploads/post_roll_ad.mp3' : guestAdUrl;
+    if (guestAdUrl !== undefined) updateDoc.$set.guestAdUrl = guestAdUrl;
     if (audioRollsEnabled !== undefined) updateDoc.$set.audioRollsEnabled = audioRollsEnabled;
     if (popupsEnabled !== undefined) updateDoc.$set.popupsEnabled = popupsEnabled;
     if (adBannerText !== undefined) updateDoc.$set.adBannerText = adBannerText;

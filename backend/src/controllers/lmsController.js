@@ -370,31 +370,36 @@ export const markItemComplete = async (req, res) => {
     const { courseId, itemId } = req.params;
     const userId = req.user._id;
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Try to atomically add the itemId to completedItems if the course progress exists
+    let user = await User.findOneAndUpdate(
+      { _id: userId, 'progress.courseId': courseId },
+      { $addToSet: { 'progress.$.completedItems': itemId } },
+      { new: true }
+    );
 
-    let courseProgress = user.progress.find(p => p.courseId.toString() === courseId);
-    
-    if (!courseProgress) {
-      // Create progress entry if it doesn't exist
-      user.progress.push({
-        courseId: courseId,
-        completed: false,
-        score: 0,
-        completedItems: [itemId]
-      });
-    } else {
-      // Add to completedItems if not already there
-      if (!courseProgress.completedItems) {
-        courseProgress.completedItems = [];
-      }
-      const itemExists = courseProgress.completedItems.some(id => id.toString() === itemId);
-      if (!itemExists) {
-        courseProgress.completedItems.push(itemId);
+    if (!user) {
+      // If course progress doesn't exist, atomically push a new progress entry
+      user = await User.findOneAndUpdate(
+        { _id: userId, 'progress.courseId': { $ne: courseId } },
+        {
+          $push: {
+            progress: {
+              courseId: courseId,
+              completed: false,
+              score: 0,
+              completedItems: [itemId]
+            }
+          }
+        },
+        { new: true }
+      );
+      
+      // If still not found, check if user exists at all
+      if (!user) {
+        const userExists = await User.findById(userId);
+        if (!userExists) return res.status(404).json({ message: 'User not found' });
       }
     }
-
-    await user.save();
 
     res.json({ message: 'Item marked as complete' });
   } catch (error) {

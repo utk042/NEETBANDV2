@@ -713,7 +713,20 @@ export const updateNewsScrollSettings = async (settingsData) => {
 };
 
 // --- SONG ANALYTICS ---
-const makeIdempotencyKey = (id, event) => `${id}-${event}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+const idempotencyKeys = new Map();
+const makeIdempotencyKey = (id, event) => {
+  const cacheKey = `${id}-${event}`;
+  const now = Date.now();
+  if (idempotencyKeys.has(cacheKey)) {
+    const { key, timestamp } = idempotencyKeys.get(cacheKey);
+    if (now - timestamp < 10000) { // 10 seconds TTL
+      return key;
+    }
+  }
+  const newKey = `${id}-${event}-${now}-${Math.random().toString(36).substring(2, 7)}`;
+  idempotencyKeys.set(cacheKey, { key: newKey, timestamp: now });
+  return newKey;
+};
 
 export const recordSongPlay = async (id) => {
   try {

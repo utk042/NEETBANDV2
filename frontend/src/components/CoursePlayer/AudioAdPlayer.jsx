@@ -7,7 +7,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
   const {
     currentTrack, isAnyAudioActive, currentTime, duration,
     togglePlay, handleTrackSelect, handleSeek,
-    playbackError, retryPlayback, isAudioRollActive, activeRollType, isPlayingAd, adConfig
+    playbackError, retryPlayback, isAudioRollActive, activeRollType, adConfig
   } = usePlayer();
 
   const originalAudio = resolveAudioUrl(item.audioUrl || item.videoUrl);
@@ -91,7 +91,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
             </div>
           )}
 
-          {isThisTrackCurrent && (isPlayingAd || isAudioRollActive) && (
+          {isThisTrackCurrent && isAudioRollActive && (
             <div 
               className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse tracking-wide"
               style={adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}

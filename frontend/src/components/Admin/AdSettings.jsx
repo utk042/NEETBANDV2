@@ -85,8 +85,9 @@ export default function AdSettings() {
         adBannerText,
         adTextColor,
       });
-      if (res.data && res.data.__v !== undefined) {
-        setConfigVersion(res.data.__v);
+      if (res.data) {
+        if (res.data.__v !== undefined) setConfigVersion(res.data.__v);
+        if (res.data.guestAdUrl !== undefined) setGuestAdUrl(res.data.guestAdUrl);
       }
       alert('Success', 'Ad configuration saved successfully.');
     } catch (err) {
@@ -484,7 +485,7 @@ export default function AdSettings() {
                 </div>
                 <div className="bg-surface-container-low border border-outline-variant/30 p-4 rounded-xl space-y-2 text-xs text-on-surface-variant">
                   <p><strong className="text-on-surface">Central (Global) Level:</strong> Setting Audio Roll Ads to <strong>Disabled</strong> here acts as the <strong>Master Kill Switch</strong> — shutting off audio ads site-wide across all songs.</p>
-                  <p><strong className="text-on-surface">Song Level:</strong> When Global is Enabled, you can edit individual songs in <em>Manage Songs</em> to toggle audio ads for specific tracks, or upload custom audio watermark URLs and custom percentage positions.</p>
+                  <p><strong className="text-on-surface">Song Level:</strong> When Global is Enabled, you can edit individual songs in <em>Manage Songs</em> to toggle audio ads for specific tracks, or upload custom audio roll URLs and custom percentage positions.</p>
                 </div>
               </div>
 

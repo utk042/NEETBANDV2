@@ -53,8 +53,7 @@ const songSchema = new mongoose.Schema({
   completionCount: { type: Number, default: 0 },
   shareCount: { type: Number, default: 0 },
   repeatCount: { type: Number, default: 0 },
-  watermarkUrl: { type: String }, // External link to mp3 for ad/watermark
-  watermarkPositions: { type: [Number] }, // Percentages where watermark plays (undefined = inherit global, [] = none)
+  overrideGlobalAds: { type: Boolean, default: false },
   audioRollUrl: { type: String }, // Per-song audio roll url override
   audioRollPositions: { type: [Number] }, // Per-song audio roll positions override
   audioRollsEnabled: { type: Boolean, default: true },

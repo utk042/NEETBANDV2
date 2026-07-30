@@ -6,6 +6,7 @@ function sanitizeSongPayload(payload = {}) {
 
   if (typeof data.title === 'string') data.title = data.title.trim();
   if (typeof data.audioUrl === 'string') data.audioUrl = data.audioUrl.trim();
+  if (data.overrideGlobalAds !== undefined) data.overrideGlobalAds = Boolean(data.overrideGlobalAds);
 
   if (!data.courseId || data.courseId === '') {
     data.courseId = null;
@@ -15,17 +16,17 @@ function sanitizeSongPayload(payload = {}) {
     if (typeof data.duration === 'string') {
       const trimmed = data.duration.trim();
       if (trimmed === '') {
-        delete data.duration;
+        data.duration = null;
       } else {
         const parsed = Number(trimmed);
         if (!isNaN(parsed) && parsed >= 0) {
           data.duration = parsed;
         } else {
-          delete data.duration;
+          data.duration = null;
         }
       }
     } else if (typeof data.duration === 'number' && isNaN(data.duration)) {
-      delete data.duration;
+      data.duration = null;
     }
   }
 
@@ -43,23 +44,21 @@ function sanitizeSongPayload(payload = {}) {
     }
   }
 
-  if (Array.isArray(data.watermarkPositions)) {
-    const validPositions = data.watermarkPositions
-      .map(p => Number(p))
-      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
-    data.watermarkPositions = [...new Set(validPositions)].sort((a, b) => a - b);
-  }
   if (Array.isArray(data.popupPositions)) {
-    const validPositions = data.popupPositions
-      .map(p => Number(p))
-      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
-    data.popupPositions = [...new Set(validPositions)].sort((a, b) => a - b);
+    const parsedPositions = data.popupPositions.map(p => Math.round(Number(p)));
+    const invalidPositions = parsedPositions.filter(p => isNaN(p) || p < 0 || p > 100);
+    if (invalidPositions.length > 0) {
+      throw new Error('Popup positions must be numbers between 0 and 100');
+    }
+    data.popupPositions = [...new Set(parsedPositions)].sort((a, b) => a - b);
   }
   if (Array.isArray(data.audioRollPositions)) {
-    const validPositions = data.audioRollPositions
-      .map(p => Number(p))
-      .filter(p => !isNaN(p) && p >= 0 && p <= 100);
-    data.audioRollPositions = [...new Set(validPositions)].sort((a, b) => a - b);
+    const parsedPositions = data.audioRollPositions.map(p => Math.round(Number(p)));
+    const invalidPositions = parsedPositions.filter(p => isNaN(p) || p < 0 || p > 100);
+    if (invalidPositions.length > 0) {
+      throw new Error('Audio roll positions must be numbers between 0 and 100');
+    }
+    data.audioRollPositions = [...new Set(parsedPositions)].sort((a, b) => a - b);
   }
 
   return data;
@@ -205,21 +204,6 @@ export const deleteSong = async (req, res) => {
   }
 };
 
-// @desc    Get ad URLs from config
-// @route   GET /api/ads
-// @access  Public
-export const getAds = async (req, res) => {
-  try {
-    const config = await AdConfig.findOne();
-    if (config && config.audioRollUrl) {
-      return res.json({ ads: [config.audioRollUrl] });
-    }
-  } catch (error) {
-    console.error("Error fetching ad config for pre-roll ads:", error);
-  }
-
-  res.json({ ads: [] });
-};
 
 const processedIdempotencyKeys = new Map();
 const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000; // 10 minutes

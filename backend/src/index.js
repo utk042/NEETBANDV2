@@ -18,7 +18,7 @@ import newsletterRoutes from './routes/newsletterRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
 import adConfigRoutes from './routes/adConfigRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
-import { getAds } from './controllers/songController.js';
+import { startBackgroundCleanup } from './utils/cleanup.js';
 
 dotenv.config();
 
@@ -27,6 +27,9 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to Database
 connectDB();
+
+// Start background tasks
+startBackgroundCleanup();
 
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -78,10 +81,6 @@ app.use('/newsletter', newsletterRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
 app.use('/categories', categoryRoutes);
-
-
-// Ad URLs endpoint
-app.get('/ads', getAds);
 
 // Base route
 app.get('/', (req, res) => {

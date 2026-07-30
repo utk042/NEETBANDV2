@@ -59,8 +59,7 @@ const defaultSongSettings = (adConfig) => ({
   thumbnailUrl: '',
   lyricsUrl: '',
   songType: 'Study',
-  watermarkUrl: adConfig?.watermarkUrl || '',
-  watermarkPositions: adConfig?.watermarkPositions || [20, 50, 90],
+
   audioRollsEnabled: adConfig?.audioRollsEnabled ?? true,
   popupsEnabled: adConfig?.popupsEnabled ?? true,
   popupPositions: adConfig?.popupPositions || [10, 40, 75],

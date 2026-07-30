@@ -19,7 +19,7 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     favoritedTrackIds, toggleFavorite: onToggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
     requestPip, playbackError, retryPlayback,
-    isAudioRollActive, activeRollType, isPlayingAd, adConfig, isBuffering
+    isAudioRollActive, activeRollType, adConfig, isBuffering
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -178,10 +178,10 @@ export default function FullPlayerModal({ isOpen, onClose }) {
         </div>
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-0 w-[60%] text-center">
           <span 
-            className={`text-xs font-bold uppercase tracking-widest truncate w-full ${(isPlayingAd || isAudioRollActive) ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse' : 'text-on-surface-variant'}`}
-            style={(isPlayingAd || isAudioRollActive) && adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
+            className={`text-xs font-bold uppercase tracking-widest truncate w-full ${isAudioRollActive ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse' : 'text-on-surface-variant'}`}
+            style={isAudioRollActive && adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
           >
-            {(isPlayingAd || isAudioRollActive) ? (activeRollType === 'guestAd' ? 'Guest Roll Playing' : (adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.')) : 'Now Playing'}
+            {isAudioRollActive ? (activeRollType === 'guestAd' ? 'Guest Roll Playing' : (adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.')) : 'Now Playing'}
           </span>
           <span className="text-sm font-semibold text-primary truncate w-full">{displayTrack.chapter || "NeetBand"}</span>
         </div>

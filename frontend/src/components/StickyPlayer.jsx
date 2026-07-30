@@ -19,7 +19,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
     favoritedTrackIds, toggleFavorite,
     isShuffled, setIsShuffled, repeatMode, cycleRepeat,
     requestPip, playbackError, retryPlayback,
-    isAudioRollActive, activeRollType, isPlayingAd, adConfig, isBuffering
+    isAudioRollActive, activeRollType, adConfig, isBuffering
   } = usePlayer();
   const { user } = useUserAuth();
 
@@ -129,7 +129,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
                 Retry
               </button>
             </div>
-          ) : (isPlayingAd || isAudioRollActive) ? (
+          ) : isAudioRollActive ? (
             <div 
               className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse tracking-wide truncate"
               style={adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}

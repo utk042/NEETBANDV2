@@ -8,7 +8,7 @@ import { useLyrics } from '../hooks/useLyrics';
 export default function MobilePlayer({ onOpenFullPlayer }) {
   const {
     currentTrack, globalTracks, isAnyAudioActive, currentTime, duration, togglePlay, handleNext, handlePrev, handleSeek, favoritedTrackIds, toggleFavorite,
-    playbackError, retryPlayback, isAudioRollActive, activeRollType, isPlayingAd, adConfig, isBuffering
+    playbackError, retryPlayback, isAudioRollActive, activeRollType, adConfig, isBuffering
   } = usePlayer();
 
   const displayTrack = currentTrack || (globalTracks && globalTracks.length > 0 ? globalTracks[0] : {
@@ -73,15 +73,15 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
           <div className="flex flex-col min-w-0">
             <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
             <span 
-              className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : (isPlayingAd || isAudioRollActive) ? 'text-amber-600 dark:text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}
-              style={(isPlayingAd || isAudioRollActive) && adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
+              className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : isAudioRollActive ? 'text-amber-600 dark:text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}
+              style={isAudioRollActive && adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
             >
               {playbackError ? (
                 <span className="flex items-center gap-1">
                   <IconAlertTriangle size={12} className="shrink-0" />
                   Playback error • Tap to retry
                 </span>
-              ) : (isPlayingAd || isAudioRollActive) ? (
+              ) : isAudioRollActive ? (
                 activeRollType === 'guestAd' 
                   ? 'Guest Roll Playing' 
                   : (adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.')
