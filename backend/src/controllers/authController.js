@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { supabase } from '../config/supabaseClient.js';
+import { addActiveTokenAtomic, removeActiveTokenAtomic } from '../utils/tokenUtils.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -21,8 +22,7 @@ export const registerUser = async (req, res) => {
     const user = await User.create({ name, email, password });
     if (user) {
       const token = generateToken(user._id);
-      user.activeTokens = [token];
-      await user.save();
+      await addActiveTokenAtomic(User, user._id, token);
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -64,13 +64,9 @@ export const loginUser = async (req, res) => {
         newStreak = 1;
       }
 
-      // Manage active tokens (Max 3)
+      // Manage active tokens atomically (Max 2 limit)
       const token = generateToken(user._id);
-      if (!user.activeTokens) user.activeTokens = [];
-      user.activeTokens.push(token);
-      if (user.activeTokens.length > 3) {
-        user.activeTokens = user.activeTokens.slice(-3);
-      }
+      await addActiveTokenAtomic(User, user._id, token);
 
       user.streak = newStreak;
       user.lastLoginDate = now;
@@ -88,6 +84,18 @@ export const loginUser = async (req, res) => {
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token && req.user) {
+      await removeActiveTokenAtomic(User, req.user._id, token);
+    }
+    res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -204,15 +212,9 @@ export const supabaseLoginUser = async (req, res) => {
       user.lastLoginDate = now;
     }
 
-    // 3. Generate backend JWT
+    // 3. Generate backend JWT & manage active tokens atomically (Max 2 limit)
     const token = generateToken(user._id);
-    if (!user.activeTokens) user.activeTokens = [];
-    user.activeTokens.push(token);
-    
-    if (user.activeTokens.length > 3) {
-      user.activeTokens = user.activeTokens.slice(-3);
-    }
-    
+    await addActiveTokenAtomic(User, user._id, token);
     await user.save();
 
     res.json({

@@ -5,6 +5,7 @@ import Affiliate from '../models/Affiliate.js';
 import BookClaim from '../models/BookClaim.js';
 import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js';
+import { sendOrderReceiptEmail } from '../utils/emailService.js';
 
 const getRazorpayInstance = () => {
   return new Razorpay({
@@ -139,7 +140,8 @@ export const fulfillOrderInternal = async ({
   address,
   phone,
   bookTitle,
-  discountCode
+  discountCode,
+  billingCycle
 }) => {
   let order = await Order.findOne({ razorpayOrderId: orderId });
 
@@ -163,6 +165,7 @@ export const fulfillOrderInternal = async ({
       plan: normalizedPlan,
       amount,
       currency: 'INR',
+      billingCycle: billingCycle || 'yearly',
       discountCode: normalizedCode,
       shippingDetails: {
         fullName: shippingObj.fullName || null,
@@ -270,9 +273,13 @@ export const fulfillOrderInternal = async ({
     user.isPremium = true;
     user.membershipPlan = order.plan || 'premium_scholar';
     
-    // Subscription expires in 1 year
+    // Set expiry based on billing cycle: 1 month for monthly, 1 year for yearly
     const expiry = new Date();
-    expiry.setFullYear(expiry.getFullYear() + 1);
+    if (order.billingCycle === 'monthly') {
+      expiry.setMonth(expiry.getMonth() + 1);
+    } else {
+      expiry.setFullYear(expiry.getFullYear() + 1);
+    }
     user.membershipExpiry = expiry;
   }
 
@@ -352,6 +359,11 @@ export const fulfillOrderInternal = async ({
 
   await user.save();
 
+  // Send order confirmation & receipt email asynchronously
+  sendOrderReceiptEmail({ user, order, claim: claimDoc }).catch(err => {
+    console.error('Failed to trigger order receipt email:', err);
+  });
+
   return { message: 'Payment verified successfully', user: sanitizeUser(user), claim: claimDoc, order };
 };
 
@@ -360,17 +372,24 @@ export const fulfillOrderInternal = async ({
 // @access  Private
 export const createOrder = async (req, res) => {
   try {
-    const { plan, discountCode, shippingDetails } = req.body;
+    const { plan, discountCode, shippingDetails, billingCycle: rawBillingCycle } = req.body;
+    const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
     
-    // Amount calculation in paise
-    const validPlans = ['premium_scholar', 'scale_plan', 'book_order'];
+    const validPlans = ['premium_scholar', 'scale_plan', 'book_order', 'inst_20', 'inst_50', 'premium'];
     const validatedPlan = validPlans.includes(plan) ? plan : 'premium_scholar';
 
-    let amount = 29900; // Default: Premium Scholar (₹299)
-    if (validatedPlan === 'scale_plan') {
-      amount = 99900; // ₹999
-    } else if (validatedPlan === 'book_order') {
+    let amount;
+    if (validatedPlan === 'book_order') {
       amount = 49900; // ₹499
+    } else if (validatedPlan === 'inst_20') {
+      amount = billingCycle === 'yearly' ? 4765200 : 568100; // ₹47,652 yearly or ₹5,681 monthly
+    } else if (validatedPlan === 'inst_50') {
+      amount = billingCycle === 'yearly' ? 11286000 : 1345500; // ₹1,12,860 yearly or ₹13,455 monthly
+    } else if (validatedPlan === 'scale_plan') {
+      amount = 99900; // ₹999
+    } else {
+      // premium_scholar or premium
+      amount = billingCycle === 'yearly' ? 250800 : 29900; // ₹2508 yearly or ₹299 monthly
     }
 
     // Apply Coupon/Discount Logic
@@ -386,6 +405,17 @@ export const createOrder = async (req, res) => {
           amount = Math.max(0, amount - fixedPaise);
         }
       }
+    }
+
+    // If coupon brings amount to zero, tell the frontend to use the free redemption flow
+    if (amount <= 0) {
+      return res.json({
+        id: null,
+        amount: 0,
+        currency: 'INR',
+        freeRedemption: true,
+        key_id: process.env.RAZORPAY_KEY_ID || 'test_key_id'
+      });
     }
 
     // Enforce Razorpay minimum order requirement of ₹1 (100 paise)
@@ -420,6 +450,7 @@ export const createOrder = async (req, res) => {
       plan: validatedPlan,
       amount,
       currency: 'INR',
+      billingCycle,
       discountCode: normalizedCode,
       shippingDetails: shippingDetails || null,
       status: 'created'
@@ -446,7 +477,7 @@ export const createOrder = async (req, res) => {
 // @access  Private
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, address, phone, bookTitle, discountCode } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, address, phone, bookTitle, discountCode, billingCycle } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ message: 'Missing required payment verification parameters' });
@@ -476,7 +507,8 @@ export const verifyPayment = async (req, res) => {
       address,
       phone,
       bookTitle,
-      discountCode
+      discountCode,
+      billingCycle
     });
 
     res.json(result);
@@ -569,5 +601,144 @@ export const razorpayWebhook = async (req, res) => {
   } catch (error) {
     console.error('Razorpay Webhook Error:', error);
     res.status(500).json({ message: 'Webhook processing error', error: error.message });
+  }
+};
+
+// @desc    Redeem a 100% discount coupon (free premium activation, no Razorpay)
+// @route   POST /api/payments/redeem-free
+// @access  Private
+export const redeemFreeCoupon = async (req, res) => {
+  try {
+    const { plan, discountCode, billingCycle: rawBillingCycle } = req.body;
+
+    if (!discountCode || !discountCode.trim()) {
+      return res.status(400).json({ message: 'Discount code is required' });
+    }
+
+    const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
+    const validPlans = ['premium_scholar', 'scale_plan', 'inst_20', 'inst_50', 'premium'];
+    const validatedPlan = validPlans.includes(plan) ? plan : 'premium_scholar';
+
+    let baseAmount = 29900; // ₹299 in paise
+    if (validatedPlan === 'scale_plan') baseAmount = 99900;
+    else if (validatedPlan === 'inst_20') baseAmount = 200000;
+    else if (validatedPlan === 'inst_50') baseAmount = 500000;
+    else if (validatedPlan === 'premium') baseAmount = 100000;
+
+    const normalizedCode = discountCode.trim().toUpperCase();
+    const discountRes = await validateDiscountCode(normalizedCode, validatedPlan, req.user._id);
+
+    if (!discountRes.valid) {
+      return res.status(400).json({ message: discountRes.message || 'Invalid discount code' });
+    }
+
+    // Calculate discounted amount
+    let finalAmount = baseAmount;
+    if (discountRes.discountType === 'percentage') {
+      finalAmount = Math.round(baseAmount * (1 - discountRes.discountValue / 100));
+    } else if (discountRes.discountType === 'fixed') {
+      finalAmount = Math.max(0, baseAmount - discountRes.discountValue * 100);
+    }
+
+    if (finalAmount > 0) {
+      return res.status(400).json({ message: 'This coupon does not provide a full discount. Please use the regular checkout.' });
+    }
+
+    // Create a fulfilled Order record
+    const orderDoc = new Order({
+      user: req.user._id,
+      razorpayOrderId: `free_coupon_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      plan: validatedPlan,
+      amount: 0,
+      currency: 'INR',
+      billingCycle,
+      discountCode: normalizedCode,
+      status: 'paid',
+      fulfilled: true,
+      paidAt: new Date()
+    });
+    await orderDoc.save();
+
+    // Activate premium on user
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isPremium = true;
+    user.membershipPlan = validatedPlan;
+    const expiry = new Date();
+    if (billingCycle === 'monthly') {
+      expiry.setMonth(expiry.getMonth() + 1);
+    } else {
+      expiry.setFullYear(expiry.getFullYear() + 1);
+    }
+    user.membershipExpiry = expiry;
+    await user.save();
+
+    // Send order confirmation & receipt email
+    sendOrderReceiptEmail({ user, order: orderDoc }).catch(err => {
+      console.error('Failed to trigger free order receipt email:', err);
+    });
+
+    // Record coupon usage
+    if (discountRes.isCoupon && discountRes.couponDoc) {
+      await Coupon.findByIdAndUpdate(discountRes.couponDoc._id, {
+        $inc: { usedCount: 1 },
+        $push: {
+          usageHistory: {
+            userId: req.user._id,
+            usedAt: new Date(),
+            orderId: orderDoc._id
+          }
+        }
+      });
+    }
+
+    res.json({
+      message: 'Premium activated successfully with coupon',
+      user: sanitizeUser(user),
+      order: orderDoc
+    });
+  } catch (error) {
+    console.error('redeemFreeCoupon Error:', error);
+    res.status(500).json({ message: error.message || 'Error redeeming free coupon' });
+  }
+};
+
+// @desc    Get user order history
+// @route   GET /api/payments/orders
+// @access  Private
+export const getUserOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id, status: 'paid' }).sort({ paidAt: -1, createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching user orders' });
+  }
+};
+
+// @desc    Get receipt details for a specific order
+// @route   GET /api/payments/receipt/:orderId
+// @access  Private
+export const getOrderReceipt = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findOne({ 
+      $or: [{ _id: orderId }, { razorpayOrderId: orderId }],
+      user: req.user._id,
+      status: 'paid'
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order receipt not found' });
+    }
+
+    res.json({
+      order,
+      user: sanitizeUser(req.user)
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching receipt' });
   }
 };

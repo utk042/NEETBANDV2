@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getLmsUserProfile } from '../services/api';
+import { getLmsUserProfile, logoutApi } from '../services/api';
 
-const LmsAuthContext = createContext(null);
+const defaultLmsAuth = {
+  lmsUser: { isLoggedIn: false, name: '', email: '' },
+  setLmsUser: () => {},
+  login: () => {},
+  logout: async () => {},
+  isAuthLoading: false
+};
+
+const LmsAuthContext = createContext(defaultLmsAuth);
 
 export function LmsAuthProvider({ children }) {
   const [lmsUser, setLmsUser] = useState(() => {
@@ -18,6 +26,17 @@ export function LmsAuthProvider({ children }) {
     return { isLoggedIn: false, name: '', email: '' };
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const handleUnauthorized = (event) => {
+      localStorage.removeItem('lms_token');
+      localStorage.removeItem('neetband_lms_user');
+      setLmsUser({ isLoggedIn: false, name: '', email: '', sessionExpired: true });
+    };
+
+    window.addEventListener('neetband:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('neetband:unauthorized', handleUnauthorized);
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,7 +74,12 @@ export function LmsAuthProvider({ children }) {
     localStorage.setItem('neetband_lms_user', JSON.stringify(updated));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } catch (e) {
+      console.warn('Failed to invalidate LMS session on server:', e);
+    }
     localStorage.removeItem('lms_token');
     localStorage.removeItem('neetband_lms_user');
     setLmsUser({ isLoggedIn: false, name: '', email: '' });
@@ -70,8 +94,5 @@ export function LmsAuthProvider({ children }) {
 
 export function useLmsAuth() {
   const context = useContext(LmsAuthContext);
-  if (!context) {
-    throw new Error('useLmsAuth must be used within a LmsAuthProvider');
-  }
-  return context;
+  return context || defaultLmsAuth;
 }

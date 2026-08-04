@@ -32,6 +32,7 @@ import CourseCarousel from '../components/CourseCarousel';
 const LibraryPage = lazyWithRetry(() => import('../components/LibraryPage'));
 const SongLibrary = lazyWithRetry(() => import('../components/SongLibrary'));
 import GoToTop from '../components/GoToTop';
+import FollowUsSidebar from '../components/FollowUsSidebar';
 import ProtectedRoute, { PublicOnlyRoute } from '../components/ProtectedRoute';
 const CommunityForum = lazyWithRetry(() => import('../components/CommunityForum'));
 const CoursePlayer = lazyWithRetry(() => import('../components/CoursePlayer'));
@@ -40,6 +41,9 @@ import NotFound from '../components/NotFound';
 import TermsAndConditions from '../components/TermsAndConditions';
 import DataPolicy from '../components/DataPolicy';
 import RefundPolicy from '../components/RefundPolicy';
+import Careers from '../components/Careers';
+import Advertise from '../components/Advertise';
+import Partner from '../components/Partner';
 const BookOfferPreview = lazyWithRetry(() => import('../components/Offers/BookOfferPreview'));
 const BookCheckout = lazyWithRetry(() => import('../components/Offers/BookCheckout'));
 const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
@@ -184,7 +188,7 @@ export default function UserRoutes() {
               <VideoReviewsGallery />
               <StatsSection appReady={!isLoading} />
               <WhatIsNeetBand />
-              <Pricing onUpgrade={handleUpgradeClick} onSelectPlan={(planId) => navigate(`/checkout?plan=${planId}`)} user={user} />
+              <Pricing onUpgrade={handleUpgradeClick} onSelectPlan={(planId, isYearly) => navigate(`/checkout?plan=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`)} user={user} />
               <FAQ />
             </>} />
 
@@ -245,6 +249,9 @@ export default function UserRoutes() {
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/privacy" element={<DataPolicy />} />
             <Route path="/refund" element={<RefundPolicy />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/advertise" element={<Advertise />} />
+            <Route path="/partner" element={<Partner />} />
 
             <Route path="/login" element={
               <PublicOnlyRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} redirectTo="/dashboard">
@@ -268,7 +275,6 @@ export default function UserRoutes() {
             <Route path="/checkout" element={<Checkout user={user} navigate={navigate} onCheckoutSuccess={(updatedUser) => {
                 login(updatedUser);
                 localStorage.setItem('neetband_current_user', JSON.stringify(updatedUser));
-                navigate('/dashboard');
               }} />} />
 
             <Route path="*" element={<NotFound />} />
@@ -276,7 +282,7 @@ export default function UserRoutes() {
         </React.Suspense>
       </main>
 
-      {['home', 'pricing', 'blog', 'about', 'contact', 'terms', 'privacy', 'refund', 'benefits'].includes(currentPage) && (
+      {['home', 'pricing', 'blog', 'about', 'contact', 'terms', 'privacy', 'refund', 'benefits', 'careers', 'advertise', 'partner'].includes(currentPage) && (
         <div className={currentPage !== 'home' ? 'hidden md:block' : ''}>
           <Footer navigate={navigate} />
         </div>
@@ -290,6 +296,7 @@ export default function UserRoutes() {
       )}
 
       {!['login', 'checkout'].includes(currentPage) && <MobileNavbar currentPage={currentPage} navigate={navigate} user={user} />}
+      {!['login', 'checkout'].includes(currentPage) && <FollowUsSidebar />}
 
       <PWAInstallPrompt />
 

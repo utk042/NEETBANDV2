@@ -10,9 +10,11 @@ import {
   IconInfoCircle,
   IconCalendar,
   IconSearch,
-  IconInfinity
+  IconInfinity,
+  IconCopy,
+  IconStack2
 } from '@tabler/icons-react';
-import { getCoupons, createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus } from '../../services/api';
+import { getCoupons, createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus, bulkCreateCoupons } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 
 export default function ManageCoupons() {
@@ -21,6 +23,17 @@ export default function ManageCoupons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Selection state for bulk copy
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [copySuccess, setCopySuccess] = useState('');
+  
+  // Bulk generate modal state
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkCount, setBulkCount] = useState(10);
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkResult, setBulkResult] = useState(null);
   
   // Modal / Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,6 +121,29 @@ export default function ManageCoupons() {
     setExpireEnabled(false);
     setExpireDate('');
     setApplicableMemberships(['all']);
+    setFormError('');
+    setIsModalOpen(true);
+  };
+
+  const openFreePremiumPreset = () => {
+    setEditingCoupon(null);
+    generateRandomCode();
+    setIsMembershipSpecific(true);
+    setDiscountValue(100);
+    setDiscountType('percentage');
+    setDiscountMode('Standard');
+    setHasUsageCountMax(true);
+    setUsageCountMax(1);
+    setHasUsageLimitPerUser(true);
+    setUsageLimitPerUser(1);
+    setUsageLimitPerUserTimeframe('Lifetime');
+    setAllowOnUpgradesDowngrades('No');
+    setAllowOnlyIfCustomerAlreadyUsed('Unset');
+    setScheduleStartEnabled(false);
+    setStartDate('');
+    setExpireEnabled(false);
+    setExpireDate('');
+    setApplicableMemberships(['premium_scholar']);
     setFormError('');
     setIsModalOpen(true);
   };
@@ -249,10 +285,101 @@ export default function ManageCoupons() {
     }
   };
 
-  const filteredCoupons = coupons.filter(c => 
-    c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.applicableMemberships || []).some(m => m.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const now = new Date();
+
+  const getStatus = (c) => {
+    if (!c.isActive) return 'inactive';
+    if (c.expireEnabled && c.expireDate && new Date(c.expireDate) < now) return 'expired';
+    if (c.scheduleStartEnabled && c.startDate && new Date(c.startDate) > now) return 'scheduled';
+    if (c.usageCountMax !== null && c.usageCountMax !== undefined && c.usedCount >= c.usageCountMax) return 'used_up';
+    return 'live';
+  };
+
+  const statusCounts = coupons.reduce((acc, c) => {
+    const s = getStatus(c);
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredCoupons = coupons.filter(c => {
+    const matchesSearch = c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.applicableMemberships || []).some(m => m.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (!matchesSearch) return false;
+    if (statusFilter === 'all') return true;
+    return getStatus(c) === statusFilter;
+  });
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredCoupons.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredCoupons.map(c => c._id)));
+    }
+  };
+
+  const handleBulkCopy = async () => {
+    const selectedCodes = coupons
+      .filter(c => selectedIds.has(c._id))
+      .map(c => c.code);
+    if (selectedCodes.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(selectedCodes.join('\n'));
+      setCopySuccess(`${selectedCodes.length} coupon code${selectedCodes.length > 1 ? 's' : ''} copied!`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch {
+      setCopySuccess('Failed to copy');
+      setTimeout(() => setCopySuccess(''), 3000);
+    }
+  };
+
+  const handleBulkGenerate = async () => {
+    try {
+      setBulkGenerating(true);
+      setBulkResult(null);
+      const template = {
+        isMembershipSpecific: true,
+        discountType: 'percentage',
+        discountValue: 100,
+        discountMode: 'Standard',
+        usageCountMax: 1,
+        usageLimitPerUser: 1,
+        usageLimitPerUserTimeframe: 'Lifetime',
+        allowOnUpgradesDowngrades: 'No',
+        allowOnlyIfCustomerAlreadyUsed: 'Unset',
+        applicableMemberships: ['premium_scholar'],
+        isActive: true
+      };
+      const result = await bulkCreateCoupons(bulkCount, template);
+      setBulkResult(result);
+      fetchCouponsList();
+    } catch (err) {
+      setBulkResult({ error: err.message || 'Failed to bulk generate coupons' });
+    } finally {
+      setBulkGenerating(false);
+    }
+  };
+
+  const handleCopyBulkResult = async () => {
+    if (!bulkResult?.coupons) return;
+    const codes = bulkResult.coupons.map(c => c.code).join('\n');
+    try {
+      await navigator.clipboard.writeText(codes);
+      setCopySuccess(`${bulkResult.coupons.length} new codes copied!`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch {
+      setCopySuccess('Failed to copy');
+      setTimeout(() => setCopySuccess(''), 3000);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -266,12 +393,26 @@ export default function ManageCoupons() {
             Create, edit, schedule, and manage member discount codes.
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all self-start md:self-auto"
-        >
-          <IconPlus size={20} /> Add New Coupon
-        </button>
+        <div className="flex flex-wrap gap-3 self-start md:self-auto">
+          <button
+            onClick={() => { setBulkResult(null); setBulkCount(10); setIsBulkModalOpen(true); }}
+            className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+          >
+            <IconStack2 size={20} /> Bulk Generate
+          </button>
+          <button
+            onClick={openFreePremiumPreset}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+          >
+            <IconTag size={20} /> 100% Free Premium
+          </button>
+          <button
+            onClick={openAddModal}
+            className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+          >
+            <IconPlus size={20} /> Add New Coupon
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -297,6 +438,63 @@ export default function ManageCoupons() {
         </div>
       </div>
 
+      {/* Status Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { id: 'all', label: 'All', count: coupons.length },
+          { id: 'live', label: 'Live', count: statusCounts.live || 0 },
+          { id: 'expired', label: 'Expired', count: statusCounts.expired || 0 },
+          { id: 'scheduled', label: 'Scheduled', count: statusCounts.scheduled || 0 },
+          { id: 'inactive', label: 'Inactive', count: statusCounts.inactive || 0 },
+          { id: 'used_up', label: 'Used Up', count: statusCounts.used_up || 0 }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setStatusFilter(tab.id)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              statusFilter === tab.id
+                ? tab.id === 'live' ? 'bg-emerald-500 text-white shadow-sm'
+                : tab.id === 'expired' ? 'bg-error text-white shadow-sm'
+                : tab.id === 'scheduled' ? 'bg-amber-500 text-white shadow-sm'
+                : tab.id === 'inactive' ? 'bg-gray-500 text-white shadow-sm'
+                : tab.id === 'used_up' ? 'bg-violet-500 text-white shadow-sm'
+                : 'bg-primary text-on-primary shadow-sm'
+                : 'bg-surface-variant/50 text-on-surface-variant hover:bg-surface-variant'
+            }`}
+          >
+            {tab.label} <span className="ml-1 opacity-80">{tab.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Bulk Selection Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-4 bg-primary/10 border border-primary/20 p-3 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <span className="text-sm font-bold text-primary">
+            {selectedIds.size} coupon{selectedIds.size > 1 ? 's' : ''} selected
+          </span>
+          <button
+            onClick={handleBulkCopy}
+            className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-all shadow-sm"
+          >
+            <IconCopy size={16} /> Copy Selected Codes
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            Clear Selection
+          </button>
+        </div>
+      )}
+
+      {/* Copy Success Toast */}
+      {copySuccess && (
+        <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg font-bold text-sm flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <IconCheck size={18} /> {copySuccess}
+        </div>
+      )}
+
       {/* Coupons Table */}
       {loading ? (
         <div className="py-12 text-center text-on-surface-variant">
@@ -314,6 +512,15 @@ export default function ManageCoupons() {
           <table className="w-full text-left text-sm text-on-surface border-collapse">
             <thead>
               <tr className="bg-surface-variant/50 border-b border-outline-variant/30 text-on-surface-variant font-semibold">
+                <th className="p-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={filteredCoupons.length > 0 && selectedIds.size === filteredCoupons.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-outline-variant accent-primary cursor-pointer"
+                    title="Select all"
+                  />
+                </th>
                 <th className="p-4">Coupon Code</th>
                 <th className="p-4">Discount</th>
                 <th className="p-4">Usage</th>
@@ -329,7 +536,15 @@ export default function ManageCoupons() {
                 const isScheduledFuture = coupon.scheduleStartEnabled && coupon.startDate && new Date(coupon.startDate) > new Date();
 
                 return (
-                  <tr key={coupon._id} className="hover:bg-surface-variant/20 transition-colors">
+                  <tr key={coupon._id} className={`hover:bg-surface-variant/20 transition-colors ${selectedIds.has(coupon._id) ? 'bg-primary/5' : ''}`}>
+                    <td className="p-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(coupon._id)}
+                        onChange={() => toggleSelect(coupon._id)}
+                        className="w-4 h-4 rounded border-outline-variant accent-primary cursor-pointer"
+                      />
+                    </td>
                     <td className="p-4 font-mono font-bold text-primary tracking-wide">
                       {coupon.code}
                     </td>
@@ -740,6 +955,105 @@ export default function ManageCoupons() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Generate Modal */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl border border-outline-variant/30 w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-surface-variant/40 px-6 py-4 border-b border-outline-variant/30 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-on-surface flex items-center gap-2">
+                <IconStack2 className="text-violet-500" size={24} />
+                Bulk Generate 100% Free Coupons
+              </h3>
+              <button
+                onClick={() => setIsBulkModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <p className="text-sm text-on-surface-variant">
+                Generate multiple single-use 100% discount coupons for Premium Scholar. Each coupon gets a unique random code and can only be used once.
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">
+                  Number of Coupons to Generate
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={bulkCount}
+                  onChange={(e) => setBulkCount(Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-full bg-surface-container border border-outline-variant/40 rounded-xl px-4 py-3 text-lg font-bold text-on-surface focus:outline-none focus:border-primary transition-colors"
+                />
+                <p className="text-xs text-on-surface-variant mt-1">Max 500 per batch</p>
+              </div>
+
+              {/* Bulk Result */}
+              {bulkResult && (
+                <div className="space-y-3">
+                  {bulkResult.error ? (
+                    <div className="p-4 bg-error/10 border border-error/20 text-error rounded-xl text-sm font-medium">
+                      {bulkResult.error}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium">
+                        ✓ Successfully created {bulkResult.created} coupon{bulkResult.created !== 1 ? 's' : ''}
+                        {bulkResult.errors > 0 && ` (${bulkResult.errors} failed)`}
+                      </div>
+                      {bulkResult.coupons && bulkResult.coupons.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-on-surface-variant uppercase">Generated Codes</span>
+                            <button
+                              onClick={handleCopyBulkResult}
+                              className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                              <IconCopy size={14} /> Copy All Codes
+                            </button>
+                          </div>
+                          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-3 max-h-48 overflow-y-auto font-mono text-xs space-y-1">
+                            {bulkResult.coupons.map((c) => (
+                              <div key={c._id} className="text-primary font-bold tracking-wide">{c.code}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant/30">
+                <button
+                  onClick={() => setIsBulkModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-outline-variant/40 font-bold text-sm text-on-surface-variant hover:bg-surface-variant transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleBulkGenerate}
+                  disabled={bulkGenerating}
+                  className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {bulkGenerating ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <IconStack2 size={18} /> Generate {bulkCount} Coupon{bulkCount !== 1 ? 's' : ''}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

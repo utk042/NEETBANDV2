@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  * Token refresh rule: only the exact token that was SENT gets refreshed.
  * This prevents user/affiliate/lms tokens from cross-contaminating each other.
  */
-const apiFetch = async (url, options = {}) => {
+export const apiFetch = async (url, options = {}) => {
   const response = await fetch(url, options);
   try {
     const newToken = response.headers.get('x-new-token');
@@ -31,6 +31,24 @@ const apiFetch = async (url, options = {}) => {
     // Non-fatal: token refresh failure should not break the actual API response
     console.warn('apiFetch: token refresh error', err);
   }
+
+  // Intercept 401 Unauthorized errors on protected requests
+  if (response.status === 401) {
+    const isPublicAuthEndpoint =
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/supabase-login') ||
+      url.includes('/affiliates/login');
+
+    if (!isPublicAuthEndpoint && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('neetband:unauthorized', {
+          detail: { url, status: 401, message: 'Not authorized, session expired or logged in from another device' }
+        })
+      );
+    }
+  }
+
   return response;
 };
 
@@ -84,6 +102,32 @@ export const loginWithSupabaseToken = async (accessToken) => {
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+};
+
+export const logoutApi = async () => {
+  try {
+    await apiFetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+  } catch (err) {
+    console.warn('Backend logout failed:', err);
+  }
+};
+
+export const logoutAffiliateApi = async () => {
+  try {
+    const token = localStorage.getItem('affiliate_token');
+    await apiFetch(`${API_URL}/affiliates/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+    });
+  } catch (err) {
+    console.warn('Backend affiliate logout failed:', err);
+  }
 };
 
 export const getUserProfile = async () => {
@@ -445,7 +489,7 @@ export const parseDocumentFile = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${API_URL}/upload/parse`, {
+  const res = await apiFetch(`${API_URL}/upload/parse`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('lms_token')}`
@@ -470,11 +514,11 @@ export const deleteUploadedFile = async (url) => {
 };
 
 // --- PAYMENTS ---
-export const createPaymentOrder = async (plan, discountCode, shippingDetails) => {
+export const createPaymentOrder = async (plan, discountCode, shippingDetails, billingCycle) => {
   const res = await apiFetch(`${API_URL}/payments/order`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ plan, discountCode, shippingDetails }),
+    body: JSON.stringify({ plan, discountCode, shippingDetails, billingCycle }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -490,11 +534,36 @@ export const verifyPayment = async (verificationData) => {
   return res.json();
 };
 
+export const redeemFreeCoupon = async (plan, discountCode, billingCycle) => {
+  const res = await apiFetch(`${API_URL}/payments/redeem-free`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, discountCode, billingCycle }),
+  });
+  return handleResponse(res);
+};
+
 export const verifyPromo = async (discountCode, plan = null) => {
   const res = await apiFetch(`${API_URL}/payments/verify-promo`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ discountCode, plan }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getUserOrders = async () => {
+  const res = await apiFetch(`${API_URL}/payments/orders`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getOrderReceipt = async (orderId) => {
+  const res = await apiFetch(`${API_URL}/payments/receipt/${orderId}`, {
+    headers: getHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -542,6 +611,16 @@ export const toggleCouponStatus = async (id) => {
   const res = await apiFetch(`${API_URL}/admin/coupons/${id}/toggle`, {
     method: 'PATCH',
     headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const bulkCreateCoupons = async (count, template) => {
+  const res = await apiFetch(`${API_URL}/admin/coupons/bulk`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ count, template }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -835,13 +914,13 @@ export const recordSongDropOff = async (id, segment) => {
 };
 
 export const getSongAnalytics = async (id) => {
-  const res = await fetch(`${API_URL}/songs/${id}/analytics`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/songs/${id}/analytics`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
 export const getAllSongAnalytics = async () => {
-  const res = await fetch(`${API_URL}/songs/analytics`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_URL}/songs/analytics`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
@@ -945,6 +1024,14 @@ export const deleteBenefit = async (id) => {
 export const toggleBenefitAvailability = async (id) => {
   const res = await apiFetch(`${API_URL}/benefits/${id}/toggle`, {
     method: 'PATCH',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getInstitutePurchases = async () => {
+  const res = await apiFetch(`${API_URL}/admin/institute-purchases`, {
     headers: getLmsHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());

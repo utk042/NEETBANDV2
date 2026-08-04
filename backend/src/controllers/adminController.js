@@ -5,6 +5,8 @@ import Quiz from '../models/Quiz.js';
 import Affiliate from '../models/Affiliate.js';
 import NewsScroll from '../models/NewsScroll.js';
 import WithdrawalRequest from '../models/WithdrawalRequest.js';
+import Order from '../models/Order.js';
+
 export const getDashboardStats = async (req, res) => {
   try {
     const totalStudents = await User.countDocuments({ role: 'student' });
@@ -426,6 +428,23 @@ export const updateNewsScrollSettings = async (req, res) => {
     res.json(settings);
   } catch (error) {
     console.error('Error updating news scroll settings:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get institute purchases
+// @route   GET /api/admin/institute-purchases
+// @access  Private/Admin
+export const getInstitutePurchases = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      status: 'paid',
+      plan: { $in: ['scale_plan', 'inst_20', 'inst_50'] }
+    }).populate('user', 'name email phone').sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching institute purchases:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -4,11 +4,33 @@ import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { createPaymentOrder, verifyPayment, verifyPromo } from '../../services/api';
 import { useUserAuth } from '../../contexts/UserAuthContext';
+import { useDialog } from '../../contexts/DialogContext';
 import { loadRazorpayScript } from '../../utils/razorpayUtils';
 
 export default function BookCheckout() {
   const navigate = useNavigate();
-  const { user, login } = useUserAuth();
+  const { user, isAuthLoading, login } = useUserAuth();
+  const { alert: dialogAlert } = useDialog();
+
+  const isPremiumUser = user?.isPremium || user?.role === 'admin' || user?.role === 'owner';
+
+  useEffect(() => {
+    if (!isAuthLoading && user?.isLoggedIn && !isPremiumUser) {
+      dialogAlert("Premium Required", "This offer is exclusively for premium members. Redirecting to pricing plans...").then(() => {
+        navigate('/pricing', { replace: true });
+      }).catch(() => {
+        navigate('/pricing', { replace: true });
+      });
+    }
+  }, [user, isAuthLoading, isPremiumUser, navigate, dialogAlert]);
+
+  if (isAuthLoading || !user?.isLoggedIn || !isPremiumUser) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
+      </div>
+    );
+  }
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');

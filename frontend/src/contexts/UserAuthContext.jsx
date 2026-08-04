@@ -1,8 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getUserProfile } from '../services/api';
+import { getUserProfile, logoutApi } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 
-const UserAuthContext = createContext(null);
+const defaultUserAuth = {
+  user: { isLoggedIn: false, name: '', email: '' },
+  setUser: () => {},
+  login: () => {},
+  logout: async () => {},
+  isAuthLoading: false
+};
+
+const UserAuthContext = createContext(defaultUserAuth);
 
 export function UserAuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -19,6 +27,17 @@ export function UserAuthProvider({ children }) {
     return { isLoggedIn: false, name: '', email: '' };
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const handleUnauthorized = (event) => {
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('neetband_current_user');
+      setUser({ isLoggedIn: false, name: '', email: '', sessionExpired: true });
+    };
+
+    window.addEventListener('neetband:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('neetband:unauthorized', handleUnauthorized);
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -58,6 +77,11 @@ export function UserAuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      await logoutApi();
+    } catch (e) {
+      console.warn('Failed to invalidate session on server:', e);
+    }
+    try {
       await supabase.auth.signOut();
     } catch (e) {
       console.error('Failed to sign out from Supabase:', e);
@@ -76,8 +100,6 @@ export function UserAuthProvider({ children }) {
 
 export function useUserAuth() {
   const context = useContext(UserAuthContext);
-  if (!context) {
-    throw new Error('useUserAuth must be used within a UserAuthProvider');
-  }
-  return context;
+  return context || defaultUserAuth;
 }
+

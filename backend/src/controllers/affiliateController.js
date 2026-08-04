@@ -1,6 +1,7 @@
 import Affiliate from '../models/Affiliate.js';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { addActiveTokenAtomic, removeActiveTokenAtomic } from '../utils/tokenUtils.js';
 
 // Generate JWT
 const generateToken = (id) => {
@@ -23,12 +24,7 @@ export const authAffiliate = async (req, res) => {
       }
 
       const token = generateToken(affiliate._id);
-      if (!affiliate.activeTokens) affiliate.activeTokens = [];
-      affiliate.activeTokens.push(token);
-      if (affiliate.activeTokens.length > 2) {
-        affiliate.activeTokens = affiliate.activeTokens.slice(-2);
-      }
-      await affiliate.save();
+      await addActiveTokenAtomic(Affiliate, affiliate._id, token);
 
       res.json({
         _id: affiliate._id,
@@ -40,6 +36,18 @@ export const authAffiliate = async (req, res) => {
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const logoutAffiliate = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token && req.user) {
+      await removeActiveTokenAtomic(Affiliate, req.user._id, token);
+    }
+    res.json({ message: 'Affiliate logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

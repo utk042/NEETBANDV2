@@ -90,7 +90,8 @@ const affiliateSchema = new mongoose.Schema({
   },
   activeTokens: {
     type: [String],
-    default: []
+    default: [],
+    select: false
   },
   pendingWithdrawalTotal: {
     type: Number,

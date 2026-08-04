@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAffiliateUserProfile } from '../services/api';
+import { getAffiliateUserProfile, logoutAffiliateApi } from '../services/api';
 
-const AffiliateAuthContext = createContext(null);
+const defaultAffiliateAuth = {
+  affiliateUser: { isLoggedIn: false, name: '', email: '' },
+  setAffiliateUser: () => {},
+  login: () => {},
+  logout: async () => {},
+  isAuthLoading: false
+};
+
+const AffiliateAuthContext = createContext(defaultAffiliateAuth);
 
 export function AffiliateAuthProvider({ children }) {
   const [affiliateUser, setAffiliateUser] = useState(() => {
@@ -18,6 +26,17 @@ export function AffiliateAuthProvider({ children }) {
     return { isLoggedIn: false, name: '', email: '' };
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const handleUnauthorized = (event) => {
+      localStorage.removeItem('affiliate_token');
+      localStorage.removeItem('neetband_affiliate_user');
+      setAffiliateUser({ isLoggedIn: false, name: '', email: '', sessionExpired: true });
+    };
+
+    window.addEventListener('neetband:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('neetband:unauthorized', handleUnauthorized);
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,7 +74,12 @@ export function AffiliateAuthProvider({ children }) {
     localStorage.setItem('neetband_affiliate_user', JSON.stringify(updated));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutAffiliateApi();
+    } catch (e) {
+      console.warn('Failed to invalidate affiliate session on server:', e);
+    }
     localStorage.removeItem('affiliate_token');
     localStorage.removeItem('neetband_affiliate_user');
     setAffiliateUser({ isLoggedIn: false, name: '', email: '' });
@@ -70,8 +94,5 @@ export function AffiliateAuthProvider({ children }) {
 
 export function useAffiliateAuth() {
   const context = useContext(AffiliateAuthContext);
-  if (!context) {
-    throw new Error('useAffiliateAuth must be used within an AffiliateAuthProvider');
-  }
-  return context;
+  return context || defaultAffiliateAuth;
 }

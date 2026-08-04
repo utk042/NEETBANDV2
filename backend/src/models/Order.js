@@ -20,7 +20,7 @@ const orderSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['premium_scholar', 'scale_plan', 'book_order'],
+    enum: ['premium_scholar', 'scale_plan', 'book_order', 'inst_20', 'inst_50', 'premium'],
     required: true
   },
   amount: {
@@ -30,6 +30,11 @@ const orderSchema = new mongoose.Schema({
   currency: {
     type: String,
     default: 'INR'
+  },
+  billingCycle: {
+    type: String,
+    enum: ['monthly', 'yearly'],
+    default: 'yearly'
   },
   discountCode: {
     type: String

@@ -41,7 +41,7 @@ const STATIC_BENEFITS = [
     description: 'Exclusive 25% discount on medical textbooks, reference guides, practice question banks and prep material.',
     memberValue: '25% off',
     code: 'NEETBOOKS25',
-    link: '/store',
+    link: '/offers/book',
     imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=800',
     isAvailable: true,
     isComingSoon: false
@@ -123,7 +123,7 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
         {/* Hero Section */}
         <div className="space-y-4 max-w-3xl">
           <h1 className="font-headline-lg text-3xl sm:text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight leading-[1.15]">
-            Members Benefit crafted for student's health, mind & lifestyle
+            Member Benefits crafted for student's health, mind & lifestyle
           </h1>
 
           <p className="font-body-md text-base sm:text-lg text-on-surface-variant leading-relaxed opacity-90">

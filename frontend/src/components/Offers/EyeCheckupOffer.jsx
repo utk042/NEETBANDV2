@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconEye, IconCheck, IconCalendarEvent } from '@tabler/icons-react';
 import Button from '../ui/Button';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useUserAuth } from '../../contexts/UserAuthContext';
+import { useDialog } from '../../contexts/DialogContext';
 
 export default function EyeCheckupOffer() {
   const navigate = useNavigate();
-  const { user } = useUserAuth();
+  const { user, isAuthLoading } = useUserAuth();
+  const { alert: dialogAlert } = useDialog();
   
+  const isPremiumUser = user?.isPremium || user?.role === 'admin' || user?.role === 'owner';
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -18,6 +22,24 @@ export default function EyeCheckupOffer() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthLoading && user?.isLoggedIn && !isPremiumUser) {
+      dialogAlert("Premium Required", "This offer is exclusively for premium members. Redirecting to pricing plans...").then(() => {
+        navigate('/pricing', { replace: true });
+      }).catch(() => {
+        navigate('/pricing', { replace: true });
+      });
+    }
+  }, [user, isAuthLoading, isPremiumUser, navigate, dialogAlert]);
+
+  if (isAuthLoading || !user?.isLoggedIn || !isPremiumUser) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary/20 border-t-primary"></div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

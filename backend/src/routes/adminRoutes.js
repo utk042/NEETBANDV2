@@ -15,7 +15,8 @@ import {
   getWithdrawalRequests,
   processWithdrawalRequest,
   getNewsScrollSettings,
-  updateNewsScrollSettings
+  updateNewsScrollSettings,
+  getInstitutePurchases
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { 
@@ -28,7 +29,8 @@ import {
   createCoupon,
   updateCoupon,
   deleteCoupon,
-  toggleCouponStatus
+  toggleCouponStatus,
+  bulkCreateCoupons
 } from '../controllers/couponController.js';
 
 const router = express.Router();
@@ -39,6 +41,9 @@ router.get('/students', protect, authorize('admin', 'owner'), getStudents);
 router.post('/students', protect, authorize('admin', 'owner'), createStudent);
 router.put('/students/:id', protect, authorize('admin', 'owner'), updateStudent);
 router.delete('/students/:id', protect, authorize('admin', 'owner'), deleteStudent);
+
+// Institute Purchases
+router.get('/institute-purchases', protect, authorize('admin', 'owner'), getInstitutePurchases);
 
 // Affiliate routes
 router.get('/affiliates', protect, authorize('admin', 'owner'), getAffiliates);
@@ -72,6 +77,7 @@ router.delete('/offers/eye-checkup/:id', protect, authorize('admin', 'owner'), d
 router.get('/coupons', protect, authorize('admin', 'owner'), getCoupons);
 router.get('/coupons/:id', protect, authorize('admin', 'owner'), getCouponById);
 router.post('/coupons', protect, authorize('admin', 'owner'), createCoupon);
+router.post('/coupons/bulk', protect, authorize('admin', 'owner'), bulkCreateCoupons);
 router.put('/coupons/:id', protect, authorize('admin', 'owner'), updateCoupon);
 router.delete('/coupons/:id', protect, authorize('admin', 'owner'), deleteCoupon);
 router.patch('/coupons/:id/toggle', protect, authorize('admin', 'owner'), toggleCouponStatus);

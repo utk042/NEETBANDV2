@@ -6,7 +6,7 @@ export default function MobileNavbar({ currentPage, navigate, user = { isLoggedI
     { id: 'home',      label: 'Home',      icon: IconHome },
     { id: 'library',   label: 'Study Songs',   icon: IconPlaylist },
     { id: 'course',    label: 'Course',    icon: IconBook2 },
-    { id: 'benefits',  label: 'Members Benefit', icon: IconGift },
+    { id: 'benefits',  label: 'Member Benefits', icon: IconGift },
     { id: 'dashboard', label: 'Dashboard', icon: IconLayoutDashboard },
   ];
 

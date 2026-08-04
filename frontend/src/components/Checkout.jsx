@@ -1,21 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { IconChevronLeft, IconTag, IconCreditCard } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
-import { createPaymentOrder, verifyPayment, verifyPromo } from '../services/api';
+import { createPaymentOrder, verifyPayment, verifyPromo, redeemFreeCoupon } from '../services/api';
 import { loadRazorpayScript } from '../utils/razorpayUtils';
+import { printReceipt, formatPlanTitle, isInstitutePlan } from '../utils/receiptGenerator';
+import { IconCheck, IconDownload, IconMail, IconPhone, IconBuilding, IconArrowRight } from '@tabler/icons-react';
 
 export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }) {
   const [searchParams] = useSearchParams();
   const selectedPlan = planProp || searchParams.get('plan') || 'premium_scholar';
+  const billingCycle = searchParams.get('billing') || 'yearly';
   
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [completedOrder, setCompletedOrder] = useState(null);
 
-  const basePrice = selectedPlan === 'scale_plan' ? 999 : 299;
-  const planDisplayName = selectedPlan === 'scale_plan' ? 'Scale Plan Subscription' : 'Premium Scholar (Monthly)';
+  const planMonthlyPrices = {
+    premium: 299,
+    inst_20: 5681,
+    inst_50: 13455,
+  };
+
+  const planYearlyPrices = {
+    premium: 2508,
+    inst_20: 47652,
+    inst_50: 112860,
+  };
+
+  const planNames = {
+    premium: 'Premium Scholar Subscription',
+    inst_20: '20-User Institute Batch Access',
+    inst_50: '50-User Institute Batch Access',
+  };
+
+  const basePrice = billingCycle === 'yearly'
+    ? (planYearlyPrices[selectedPlan] || 2508)
+    : (planMonthlyPrices[selectedPlan] || 299);
+  const planDisplayName = planNames[selectedPlan] || 'Premium Scholar Subscription';
 
   // Require login
   useEffect(() => {
@@ -64,8 +88,39 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
       setIsLoading(true);
       setError('');
       
-      const finalDiscountCode = appliedPromo ? appliedPromo.code : '';
-      const order = await createPaymentOrder(selectedPlan, finalDiscountCode);
+      // Helper for completion
+      const handleSuccessResult = (res) => {
+        const orderData = res.order || {
+          razorpayOrderId: res.orderId || `ORD-${Date.now()}`,
+          razorpayPaymentId: res.paymentId || 'pay_completed',
+          plan: selectedPlan,
+          amount: calculateTotal() * 100,
+          billingCycle,
+          paidAt: new Date()
+        };
+        setCompletedOrder(orderData);
+        if (onCheckoutSuccess) {
+          onCheckoutSuccess({ ...user, ...res.user, isLoggedIn: true });
+        }
+      };
+
+      // Free coupon redemption: skip Razorpay entirely
+      if (calculateTotal() === 0 && finalDiscountCode) {
+        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle);
+        handleSuccessResult(result);
+        setIsLoading(false);
+        return;
+      }
+
+      const order = await createPaymentOrder(selectedPlan, finalDiscountCode, null, billingCycle);
+
+      // Free redemption response from backend (fallback)
+      if (order.freeRedemption) {
+        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle);
+        handleSuccessResult(result);
+        setIsLoading(false);
+        return;
+      }
 
       // Dev/staging mode: mock payment flow when using test Razorpay keys
       if (order.id && order.id.startsWith('order_mock_')) {
@@ -74,12 +129,11 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
           razorpay_payment_id: 'pay_mock_' + Date.now(),
           razorpay_signature: 'mock_signature',
           plan: selectedPlan,
-          discountCode: finalDiscountCode
+          discountCode: finalDiscountCode,
+          billingCycle
         };
         const verifyRes = await verifyPayment(verificationData);
-        if (onCheckoutSuccess) {
-          onCheckoutSuccess({ ...user, ...verifyRes.user, isLoggedIn: true });
-        }
+        handleSuccessResult(verifyRes);
         setIsLoading(false);
         return;
       }
@@ -101,12 +155,11 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               plan: selectedPlan,
-              discountCode: finalDiscountCode
+              discountCode: finalDiscountCode,
+              billingCycle
             };
             const verifyRes = await verifyPayment(verificationData);
-            if (onCheckoutSuccess) {
-              onCheckoutSuccess({ ...user, ...verifyRes.user, isLoggedIn: true });
-            }
+            handleSuccessResult(verifyRes);
           } catch (err) {
             setError('Payment verification failed. Please contact support.');
           } finally {
@@ -144,6 +197,82 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
       navigate('/pricing');
     }
   };
+
+  if (completedOrder) {
+    const isInst = isInstitutePlan(completedOrder?.plan || selectedPlan);
+    const planTitle = formatPlanTitle(completedOrder?.plan || selectedPlan);
+
+    return (
+      <div className="min-h-screen bg-surface py-10 px-4">
+        <div className="max-w-3xl mx-auto bg-surface-container rounded-3xl p-6 md:p-10 shadow-lg border border-outline-variant/30 text-on-surface">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+              <IconCheck size={36} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-2">Payment Successful!</h1>
+            <p className="text-on-surface-variant text-sm md:text-base max-w-md mx-auto">
+              Your subscription is now active. A copy of your payment receipt has been emailed to <strong className="text-on-surface">{user?.email}</strong>.
+            </p>
+          </div>
+
+          {/* Receipt Card */}
+          <div className="bg-surface-container-high/60 rounded-2xl p-6 border border-outline-variant/30 mb-8 space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-outline-variant/20">
+              <span className="text-xs uppercase font-bold text-on-surface-variant tracking-wider">Plan Name</span>
+              <span className="font-bold text-primary">{planTitle}</span>
+            </div>
+            <div className="flex justify-between items-center pb-4 border-b border-outline-variant/20">
+              <span className="text-xs uppercase font-bold text-on-surface-variant tracking-wider">Order ID</span>
+              <span className="font-semibold text-xs md:text-sm text-on-surface font-mono">{completedOrder.razorpayOrderId || completedOrder._id}</span>
+            </div>
+            <div className="flex justify-between items-center pb-4 border-b border-outline-variant/20">
+              <span className="text-xs uppercase font-bold text-on-surface-variant tracking-wider">Billing Cycle</span>
+              <span className="font-semibold text-on-surface uppercase text-xs px-2.5 py-1 rounded-md bg-surface border border-outline-variant/30">{completedOrder.billingCycle || billingCycle}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-sm font-bold text-on-surface">Amount Paid</span>
+              <span className="text-2xl font-extrabold text-emerald-500">₹{(completedOrder.amount ? completedOrder.amount / 100 : calculateTotal()).toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          {/* Institute Onboarding Notice Box */}
+          {isInst && (
+            <div className="bg-amber-500/10 border-l-4 border-amber-500 p-5 rounded-xl mb-8">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-extrabold text-base mb-2">
+                <IconBuilding size={22} /> Institute Batch Onboarding Notice
+              </div>
+              <p className="text-on-surface text-sm leading-relaxed mb-4">
+                Thank you for enrolling your institute batch with NeetBand! <strong>Our team will contact you shortly</strong> to configure your institute portal credentials, set up student accounts, and complete batch onboarding.
+              </p>
+              <div className="bg-surface/80 rounded-lg p-3 text-xs text-on-surface space-y-1.5 border border-outline-variant/20">
+                <div className="font-bold text-on-surface-variant uppercase tracking-wider mb-1">Need Immediate Assistance? Contact Us:</div>
+                <div className="flex items-center gap-2"><IconMail size={14} className="text-primary" /> Email: <a href="mailto:support@neetband.com" className="text-primary font-bold hover:underline">support@neetband.com</a></div>
+                <div className="flex items-center gap-2"><IconPhone size={14} className="text-primary" /> Phone: <span className="font-bold">+91 98765 43210</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => printReceipt(completedOrder, user)}
+              className="flex-1 py-3.5 px-6 rounded-xl font-bold bg-surface-container-high border border-outline-variant/40 text-on-surface hover:bg-surface-variant transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <IconDownload size={20} /> Download Receipt (PDF / Print)
+            </button>
+
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-3.5 px-6 rounded-xl font-bold bg-primary text-on-primary hover:opacity-95 transition-opacity flex items-center justify-center gap-2 shadow-md"
+            >
+              Go to Dashboard <IconArrowRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface py-6 md:py-8 px-4">
@@ -213,7 +342,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
                 ) : (
                   <>
                     <IconCreditCard size={20} />
-                    Pay ₹{calculateTotal()} via Razorpay
+                    {calculateTotal() === 0 ? 'Activate Free Premium' : `Pay ₹${calculateTotal()} via Razorpay`}
                   </>
                 )}
               </button>
@@ -236,6 +365,10 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
               <div className="flex justify-between items-center">
                 <span className="text-on-surface-variant">Plan:</span>
                 <span className="font-semibold text-on-surface text-right">{planDisplayName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-on-surface-variant">Billing:</span>
+                <span className="font-semibold text-on-surface text-right">{billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}</span>
               </div>
               <div className="flex justify-between items-center border-t border-outline-variant/30 pt-5 mt-2">
                 <span className="text-on-surface-variant">Subtotal:</span>

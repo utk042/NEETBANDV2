@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, Check, Image as ImageIcon, Loader2, RefreshCw, FolderOpen, AlertCircle } from 'lucide-react';
+import { apiFetch } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -53,7 +54,7 @@ export default function MediaLibraryModal({
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${API_URL}/upload/files?fileType=image`, { headers });
+      const res = await apiFetch(`${API_URL}/upload/files?fileType=image`, { headers });
       if (!res.ok) {
         throw new Error(`Failed to fetch media files (${res.status})`);
       }

@@ -15,6 +15,7 @@ import ManageBookOrders from './ManageBookOrders';
 import ManageEyeCheckups from './ManageEyeCheckups';
 import ManageCoupons from './ManageCoupons';
 import AdSettings from './AdSettings';
+import ManageInstitutePurchases from './ManageInstitutePurchases';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -368,6 +369,16 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           >
             <IconEye size={20} stroke={2.5} /> Eye Checkups
           </button>
+          <button
+            onClick={() => changeTab('institute-purchases')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'institute-purchases' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconSchool size={20} stroke={2.5} /> Institute Purchases
+          </button>
         </nav>
 
         {/* Logout Section */}
@@ -673,6 +684,12 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <ManageEyeCheckups />
               </div>
+            </div>
+          )}
+
+          {activeTab === 'institute-purchases' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <ManageInstitutePurchases />
             </div>
           )}
 

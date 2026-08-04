@@ -1,24 +1,30 @@
 import React from 'react';
 import { 
   IconCheck, IconX, IconShieldCheck, IconLock, 
-  IconHeadset, IconAward, IconSparkles, IconCreditCard
+  IconHeadset
 } from '@tabler/icons-react';
 import Pricing from './Pricing';
+import PartnerScroller from './PartnerScroller';
 import FAQ from './FAQ';
 
 export default function PricingPage({ user, navigate }) {
-  const handleSelectPlan = (planId) => {
+  const handleSelectPlan = (planId, isYearly = true) => {
+    const billing = isYearly ? 'yearly' : 'monthly';
     if (!user || !user.isLoggedIn) {
-      navigate('/login', { state: { from: { pathname: `/checkout?plan=${planId}` } } });
+      navigate('/login', { state: { from: { pathname: `/checkout?plan=${planId}&billing=${billing}` } } });
       return;
     }
-    navigate(`/checkout?plan=${planId}`);
+    navigate(`/checkout?plan=${planId}&billing=${billing}`);
   };
 
   const faqItems = [
     {
       question: "What is included in the Premium Scholar plan?",
-      answer: "Premium Scholar gives you unlimited access to our entire library of 2000+ academic audio study tracks across subjects. It includes high-quality offline downloads, interactive MCQ quizzes, ad-free listening, free eye checkup vouchers, and physical book discount coupons."
+      answer: "Premium Scholar gives you unlimited access to our entire library of NEET audio study songs across subjects. It includes offline PWA downloads, 100% ad-free listening, free eye checkup vouchers, and physical textbook discount coupons."
+    },
+    {
+      question: "How do Institute & Coaching plans work?",
+      answer: "Our Institute plans are structured for coaching batches of 20 seats (5% discount) or 50 seats (10% discount). Every enrolled student gets full Premium Scholar access to all study tracks and benefits."
     },
     {
       question: "Can I download tracks and listen offline?",
@@ -31,24 +37,19 @@ export default function PricingPage({ user, navigate }) {
     {
       question: "Can I cancel my subscription anytime?",
       answer: "Absolutely. You can cancel your subscription at any time with a single click in your dashboard. You will continue to have full access until the end of your billing cycle."
-    },
-    {
-      question: "Is there a refund policy?",
-      answer: "Yes, we offer a 7-day money-back satisfaction guarantee under our standard refund policy if you face technical issues or are dissatisfied with the service."
     }
   ];
 
   const comparisonFeatures = [
-    { name: "Audio Study Songs & Mnemonics", free: "Sample Preview Tracks", premium: "2000+ Full Audio Track Library" },
-    { name: "Syllabus & Subject Coverage", free: "Preview Chapters Only", premium: "Comprehensive Academic Library" },
+    { name: "Audio Study Songs & Mnemonics", free: "Free Sample Tracks", premium: "Full Library Access" },
+    { name: "Syllabus & Subject Coverage", free: "Preview Subject Tracks", premium: "Complete NEET Syllabus" },
     { name: "Offline Playback & PWA Downloads", free: false, premium: "Unlimited Downloads" },
-    { name: "Synced Lyrics & High Quality Audio", free: "Basic Player", premium: "HD Lossless + Synced Lyrics" },
-    { name: "Interactive Chapter MCQ Quizzes", free: false, premium: true },
-    { name: "Ad-Free Uninterrupted Listening", free: false, premium: true },
-    { name: "Biannual Eye Check-up Voucher", free: false, premium: "Complimentary Clinic Check-up" },
-    { name: "Academic Prep Books Order Discount", free: false, premium: "25% Off Books Voucher" },
-    { name: "Student Learning Hub & Notes", free: "Basic Summaries", premium: "Full Unlimited Access" },
-    { name: "Community Forum & Discussion Feed", free: false, premium: true },
+    { name: "Synced Lyrics & Audio Player Controls", free: "Standard Player", premium: "Synced Lyrics & Speed Control" },
+    { name: "100% Ad-Free Listening", free: false, premium: true },
+    { name: "Biannual Eye Check-up Voucher", free: false, premium: "Complimentary Clinic Voucher" },
+    { name: "Academic Books Discount Coupon", free: false, premium: "25% Off Books Voucher" },
+    { name: "Student Learning Hub & Notes", free: "Basic Summaries", premium: "Full Access" },
+    { name: "Community Forum & Feed", free: "Read Only", premium: "Full Access & Discussions" },
   ];
 
   return (
@@ -58,7 +59,7 @@ export default function PricingPage({ user, navigate }) {
         {/* Page Header Hero */}
         <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
           <h1 className="text-3xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-5 text-balance">
-            Choose the Perfect Plan for Your Academic Success
+            Choose the Perfect Plan for Your Success
           </h1>
           <p className="text-base md:text-lg text-on-surface-variant leading-relaxed">
             Replace tedious screen reading with science-backed auditory learning. Master complex formulas, biological pathways, and mnemonics anywhere.
@@ -71,14 +72,17 @@ export default function PricingPage({ user, navigate }) {
           onSelectPlan={handleSelectPlan}
         />
 
+        {/* Partner & Client Scroller */}
+        <PartnerScroller />
+
         {/* Feature Comparison Matrix */}
-        <div className="mt-20 md:mt-28">
+        <div id="compare-plans-table" className="mt-20 md:mt-28">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-on-surface mb-3">
               Detailed Feature Comparison
             </h2>
             <p className="text-on-surface-variant text-sm md:text-base">
-              See how our plans stack up side-by-side to make the right choice for your study journey.
+              See how our Free and Premium plans stack up side-by-side.
             </p>
           </div>
 
@@ -87,7 +91,7 @@ export default function PricingPage({ user, navigate }) {
               <thead>
                 <tr className="border-b border-outline-variant/30 bg-surface-container-high/60">
                   <th className="py-5 px-6 font-bold text-base text-on-surface w-1/2">Features</th>
-                  <th className="py-5 px-4 font-bold text-sm text-center text-on-surface-variant w-1/4">Basic (Free)</th>
+                  <th className="py-5 px-4 font-bold text-sm text-center text-on-surface-variant w-1/4">Free Plan (₹0)</th>
                   <th className="py-5 px-4 font-bold text-sm text-center text-primary w-1/4">Premium Scholar (₹299/mo)</th>
                 </tr>
               </thead>
@@ -138,7 +142,7 @@ export default function PricingPage({ user, navigate }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-5 rounded-2xl bg-surface-container border border-outline-variant/20">
+          <div className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/10 text-amber-500 shrink-0 border border-outline-variant/20">
             <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
               <IconHeadset size={24} />
             </div>
@@ -149,7 +153,7 @@ export default function PricingPage({ user, navigate }) {
           </div>
         </div>
 
-        {/* Pricing FAQs Section (Using Homepage FAQ component & styling) */}
+        {/* Pricing FAQs Section */}
         <FAQ 
           items={faqItems} 
           title="Frequently Asked Questions" 

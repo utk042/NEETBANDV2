@@ -7,9 +7,10 @@ import {
   IconCheck, IconChevronRight, IconBook, IconSchool,
   IconAward, IconPlayerPlayFilled, IconBookmark, IconTrendingUp,
   IconCertificate, IconX, IconPencil, IconCrown, IconEye, IconShoppingCart,
-  IconTag, IconLock, IconGift, IconMessageCircle, IconLayoutDashboard
+  IconTag, IconLock, IconGift, IconMessageCircle, IconLayoutDashboard, IconDownload
 } from '@tabler/icons-react';
-import { getUserProfile, uploadFile, updateUserProfile } from '../services/api';
+import { getUserProfile, uploadFile, updateUserProfile, getUserOrders } from '../services/api';
+import { printReceipt } from '../utils/receiptGenerator';
 import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
 import Button from './ui/Button';
@@ -651,9 +652,39 @@ export default function Dashboard({
                       Upgrade to Premium
                     </Button>
                   ) : (
-                    <div className="text-left md:text-right">
-                      <p className="text-sm font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Membership Plan</p>
-                      <p className="text-3xl font-extrabold text-on-surface capitalize">{user?.membershipPlan?.replace('_', ' ') || 'Premium'}</p>
+                    <div className="text-left md:text-right space-y-3">
+                      <div>
+                        <p className="text-sm font-bold text-on-surface-variant mb-1 uppercase tracking-widest">Membership Plan</p>
+                        <p className="text-3xl font-extrabold text-on-surface capitalize">{user?.membershipPlan?.replace('_', ' ') || 'Premium'}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const orders = await getUserOrders();
+                            if (orders && orders.length > 0) {
+                              printReceipt(orders[0], user);
+                            } else {
+                              // Fallback order object if none in list
+                              printReceipt({
+                                plan: user?.membershipPlan || 'premium_scholar',
+                                amount: 29900,
+                                billingCycle: 'yearly',
+                                paidAt: new Date()
+                              }, user);
+                            }
+                          } catch (err) {
+                            printReceipt({
+                              plan: user?.membershipPlan || 'premium_scholar',
+                              amount: 29900,
+                              billingCycle: 'yearly',
+                              paidAt: new Date()
+                            }, user);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl bg-surface-container-high border border-outline-variant/30 text-primary hover:bg-surface-variant transition-colors shadow-sm"
+                      >
+                        <IconDownload size={16} /> Download Receipt
+                      </button>
                     </div>
                   )}
                 </div>

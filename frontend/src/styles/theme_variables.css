@@ -187,3 +187,19 @@
   --color-info: 167 139 250; /* #a855f7 */
   --color-success: 52 211 153; /* #34d399 */
 }
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+

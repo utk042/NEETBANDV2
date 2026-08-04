@@ -76,7 +76,8 @@ const userSchema = new mongoose.Schema({
   },
   activeTokens: {
     type: [String],
-    default: []
+    default: [],
+    select: false
   }
 }, { timestamps: true });
 

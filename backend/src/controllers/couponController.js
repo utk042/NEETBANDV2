@@ -118,3 +118,63 @@ export const toggleCouponStatus = async (req, res) => {
     res.status(500).json({ message: error.message || 'Error toggling coupon status' });
   }
 };
+
+// @desc    Bulk create coupons with same settings but unique codes
+// @route   POST /api/admin/coupons/bulk
+// @access  Private (Admin/Owner)
+export const bulkCreateCoupons = async (req, res) => {
+  try {
+    const { count, template } = req.body;
+
+    if (!count || count < 1 || count > 500) {
+      return res.status(400).json({ message: 'Count must be between 1 and 500' });
+    }
+
+    if (!template) {
+      return res.status(400).json({ message: 'Coupon template is required' });
+    }
+
+    const generateCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < 10; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    const createdCoupons = [];
+    const errors = [];
+
+    for (let i = 0; i < count; i++) {
+      let code;
+      let attempts = 0;
+      do {
+        code = generateCode();
+        attempts++;
+      } while (await Coupon.findOne({ code }) && attempts < 10);
+
+      if (attempts >= 10) {
+        errors.push(`Failed to generate unique code for coupon #${i + 1}`);
+        continue;
+      }
+
+      try {
+        const coupon = new Coupon({ ...template, code });
+        await coupon.save();
+        createdCoupons.push(coupon);
+      } catch (err) {
+        errors.push(`Failed to create coupon #${i + 1}: ${err.message}`);
+      }
+    }
+
+    res.status(201).json({
+      created: createdCoupons.length,
+      errors: errors.length,
+      errorMessages: errors,
+      coupons: createdCoupons
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error bulk creating coupons' });
+  }
+};

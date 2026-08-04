@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { IconCircleCheckFilled, IconMail, IconPhone, IconMapPin, IconClock, IconHeartFilled, IconShieldCheck } from '@tabler/icons-react';
+import { 
+  IconCircleCheckFilled, 
+  IconMail, 
+  IconPhone, 
+  IconMapPin, 
+  IconClock, 
+  IconHeartFilled, 
+  IconShieldCheck,
+  IconBrandFacebookFilled,
+  IconBrandInstagram,
+  IconBrandYoutubeFilled,
+  IconBrandWhatsapp
+} from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import { subscribeNewsletter } from '../services/api';
 
@@ -84,10 +96,10 @@ export default function Footer({ navigate }) {
         </div>
 
         {/* Middle Section: Columns Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-10 md:gap-8 border-b border-[var(--border-nav-layout)] pb-12 mb-12">
+        <div className="flex flex-wrap gap-10 border-b border-[var(--border-nav-layout)] pb-12 mb-12">
           
           {/* Brand Info */}
-          <div className="md:col-span-4 flex flex-col items-start gap-4">
+          <div className="flex flex-col items-start gap-4 min-w-[200px] flex-[2]">
             <img alt="NeetBand Logo" className="h-12 w-auto object-contain" src={logoImg} width={512} height={236}/>
             <p className="font-body-md text-sm text-on-surface-variant/80 max-w-[300px] leading-relaxed">
               Premium curriculum-aligned study songs designed to boost active recall and reduce screen fatigue. Turn textbooks into sound.
@@ -95,7 +107,7 @@ export default function Footer({ navigate }) {
           </div>
 
           {/* Platform Links */}
-          <div className="md:col-span-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[140px] flex-1">
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Platform</h4>
             <nav className="flex flex-col gap-3">
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/pricing'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block font-semibold">Pricing Plans</a>
@@ -107,18 +119,76 @@ export default function Footer({ navigate }) {
           </div>
 
           {/* Legal Links */}
-          <div className="md:col-span-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[140px] flex-1">
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Legal</h4>
             <nav className="flex flex-col gap-3">
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Terms & Conditions</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Terms &amp; Conditions</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Privacy Policy</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/refund'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Refund Policy</a>
             </nav>
           </div>
 
+          {/* Company Links */}
+          <div className="flex flex-col gap-4 min-w-[140px] flex-1">
+            <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Company</h4>
+            <nav className="flex flex-col gap-3">
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/careers'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Careers</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/advertise'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Advertise</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/partner'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Partner With Us</a>
+            </nav>
+          </div>
+
+          {/* Follow Us */}
+          <div className="flex flex-col gap-3 min-w-[130px] flex-1">
+            <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">
+              FOLLOW US
+            </h4>
+            <p className="font-body-md text-xs text-on-surface-variant/75 leading-relaxed">
+              Stay connected with us.
+            </p>
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://facebook.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                aria-label="Facebook"
+                className="w-8 h-8 rounded-full bg-surface-container-high/80 border border-outline/20 text-on-surface-variant/90 hover:text-on-surface hover:border-outline/40 hover:scale-105 transition-all duration-200 flex items-center justify-center shrink-0"
+              >
+                <IconBrandFacebookFilled size={16} />
+              </a>
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                aria-label="Instagram"
+                className="w-8 h-8 rounded-full bg-surface-container-high/80 border border-outline/20 text-on-surface-variant/90 hover:text-on-surface hover:border-outline/40 hover:scale-105 transition-all duration-200 flex items-center justify-center shrink-0"
+              >
+                <IconBrandInstagram size={16} />
+              </a>
+              <a 
+                href="https://youtube.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                aria-label="YouTube"
+                className="w-8 h-8 rounded-full bg-surface-container-high/80 border border-outline/20 text-on-surface-variant/90 hover:text-on-surface hover:border-outline/40 hover:scale-105 transition-all duration-200 flex items-center justify-center shrink-0"
+              >
+                <IconBrandYoutubeFilled size={16} />
+              </a>
+              <a 
+                href="https://whatsapp.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                aria-label="WhatsApp"
+                className="w-8 h-8 rounded-full bg-surface-container-high/80 border border-outline/20 text-on-surface-variant/90 hover:text-on-surface hover:border-outline/40 hover:scale-105 transition-all duration-200 flex items-center justify-center shrink-0"
+              >
+                <IconBrandWhatsapp size={16} />
+              </a>
+            </div>
+          </div>
+
           {/* Support & Contact */}
-          <div className="md:col-span-4 flex flex-col gap-4">
-            <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Contact & Support</h4>
+          <div className="flex flex-col gap-4 min-w-[200px] flex-[2]">
+            <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Contact &amp; Support</h4>
             <ul className="flex flex-col gap-3.5 text-sm text-on-surface-variant/80 font-body-md">
               <li className="flex items-start gap-2.5">
                 <IconMail size={18} className="text-primary mt-0.5 flex-shrink-0" />
