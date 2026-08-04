@@ -138,7 +138,11 @@ export function useLyrics(lyricsUrl, currentTime = 0) {
       ? lyricsUrl
       : `${API_URL}${lyricsUrl.startsWith('/') ? '' : '/'}${lyricsUrl}`;
 
-    fetch(fullLyricsUrl)
+    // AbortController: cancels the in-flight fetch when lyricsUrl changes or
+    // the component unmounts, preventing stale setLyrics calls and memory leaks.
+    const controller = new AbortController();
+
+    fetch(fullLyricsUrl, { signal: controller.signal })
       .then(res => {
         if (!res.ok) throw new Error(`Lyrics file not found (status ${res.status})`);
         return res.text();
@@ -153,9 +157,15 @@ export function useLyrics(lyricsUrl, currentTime = 0) {
         setLyrics(parsed);
       })
       .catch(err => {
+        // AbortError is expected on cleanup — not a real failure, suppress it.
+        if (err.name === 'AbortError') return;
         console.warn('Failed to load lyrics:', err.message || err);
         setLyrics([]);
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [lyricsUrl]);
 
   const activeLyricIndex = lyrics.findIndex(l => currentTime >= l.begin && currentTime <= l.end);

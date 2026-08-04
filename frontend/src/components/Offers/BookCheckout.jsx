@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { IconBook, IconChevronLeft, IconCreditCard } from '@tabler/icons-react';
+import { IconBook, IconChevronLeft, IconCreditCard, IconTag } from '@tabler/icons-react';
 import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { createPaymentOrder, verifyPayment } from '../../services/api';
+import { createPaymentOrder, verifyPayment, verifyPromo } from '../../services/api';
 import { useUserAuth } from '../../contexts/UserAuthContext';
 import { loadRazorpayScript } from '../../utils/razorpayUtils';
 
@@ -20,12 +20,54 @@ export default function BookCheckout() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Discount / Voucher code state
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
+
+  const basePrice = 499; // Book standard discounted price
+
   useEffect(() => {
     if (user) {
       if (user.name) setFullName(user.name);
       if (user.email) setEmail(user.email);
     }
   }, [user]);
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    try {
+      setPromoMessage({ text: 'Verifying...', type: 'info' });
+      const res = await verifyPromo(promoCode.trim(), 'book_order');
+      if (res.valid) {
+        setAppliedPromo({
+          code: res.code || promoCode.trim(),
+          type: res.discountType,
+          value: res.discountValue
+        });
+        setPromoMessage({ text: 'Discount code applied successfully!', type: 'success' });
+      } else {
+        setAppliedPromo(null);
+        setPromoMessage({ text: res.message || 'Invalid or inactive promo code', type: 'error' });
+      }
+    } catch (err) {
+      setAppliedPromo(null);
+      setPromoMessage({ text: 'Error verifying promo code', type: 'error' });
+    }
+  };
+
+  const calculateTotal = () => {
+    let total = basePrice;
+    if (appliedPromo) {
+      if (appliedPromo.type === 'percentage') {
+        const totalPaise = Math.round((basePrice * 100) * (1 - appliedPromo.value / 100));
+        total = totalPaise / 100;
+      } else {
+        total = Math.max(0, total - appliedPromo.value);
+      }
+    }
+    return Number(total.toFixed(2));
+  };
 
   const handlePurchase = async (e) => {
     e.preventDefault();
@@ -58,7 +100,8 @@ export default function BookCheckout() {
         bookTitle: 'NeetBand Mastery Guide'
       };
 
-      const order = await createPaymentOrder('book_order', null, shippingDetails);
+      const finalDiscountCode = appliedPromo ? appliedPromo.code : '';
+      const order = await createPaymentOrder('book_order', finalDiscountCode, shippingDetails);
 
       // Handle mock mode fallback when using dummy key
       if (order.id && order.id.startsWith('order_mock_')) {
@@ -69,7 +112,8 @@ export default function BookCheckout() {
           plan: 'book_order',
           address: shippingDetails,
           phone,
-          bookTitle: 'NeetBand Mastery Guide'
+          bookTitle: 'NeetBand Mastery Guide',
+          discountCode: finalDiscountCode
         };
         const verifyRes = await verifyPayment(verificationData);
         if (verifyRes.user && login) {
@@ -102,7 +146,8 @@ export default function BookCheckout() {
               plan: 'book_order',
               address: shippingDetails,
               phone,
-              bookTitle: 'NeetBand Mastery Guide'
+              bookTitle: 'NeetBand Mastery Guide',
+              discountCode: finalDiscountCode
             };
             const verifyRes = await verifyPayment(verificationData);
             if (verifyRes.user && login) {
@@ -243,6 +288,34 @@ export default function BookCheckout() {
                 </div>
               </div>
 
+              {/* Voucher / Coupon Code */}
+              <div className="pt-2">
+                <label className="flex items-center gap-2 font-bold text-sm text-on-surface mb-2">
+                  <IconTag size={16} /> Have a Voucher or Promo Code?
+                </label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input 
+                    type="text" 
+                    placeholder="Enter voucher code"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-surface border border-outline/20 text-on-surface focus:outline-none focus:border-amber-500/50 text-sm"
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleApplyPromo}
+                    className="px-5 py-2.5 bg-surface border border-outline/20 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap text-sm"
+                  >
+                    Apply
+                  </button>
+                </div>
+                {promoMessage.text && (
+                  <p className={`text-xs mt-2 font-medium ${promoMessage.type === 'error' ? 'text-error' : promoMessage.type === 'success' ? 'text-emerald-500' : 'text-on-surface-variant'}`}>
+                    {promoMessage.text}
+                  </p>
+                )}
+              </div>
+
               <div className="p-4 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm rounded-xl flex items-start gap-3">
                 <IconBook size={20} className="shrink-0 mt-0.5" />
                 <p>Secure online payment powered by Razorpay. Your order will be processed immediately upon completion.</p>
@@ -258,7 +331,7 @@ export default function BookCheckout() {
                   ) : (
                     <>
                       <IconCreditCard size={20} />
-                      Pay ₹499 via Razorpay
+                      Pay ₹{calculateTotal()} via Razorpay
                     </>
                   )}
                 </Button>
@@ -273,13 +346,21 @@ export default function BookCheckout() {
                 <span className="text-on-surface-variant text-sm">NeetBand Mastery Guide</span>
                 <span className="text-on-surface font-bold text-sm">₹999</span>
               </div>
-              <div className="flex justify-between items-center mb-4 text-amber-500">
-                <span className="text-sm font-bold">Special Discount (50%)</span>
+              <div className="flex justify-between items-center mb-3 text-amber-500">
+                <span className="text-sm font-bold">Special Offer</span>
                 <span className="font-bold text-sm">-₹500</span>
               </div>
+              {appliedPromo && (
+                <div className="flex justify-between items-center mb-3 text-emerald-500">
+                  <span className="text-sm font-bold">Extra Discount ({appliedPromo.code})</span>
+                  <span className="font-bold text-sm">
+                    -₹{basePrice - calculateTotal()}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-4 border-t border-outline/10">
                 <span className="font-bold text-on-surface">Total to Pay</span>
-                <span className="text-2xl font-extrabold text-on-surface">₹499</span>
+                <span className="text-2xl font-extrabold text-on-surface">₹{calculateTotal()}</span>
               </div>
             </div>
           </div>

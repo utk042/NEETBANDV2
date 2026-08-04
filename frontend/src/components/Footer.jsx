@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconCircleCheckFilled, IconMail, IconPhone, IconMapPin, IconClock, IconHeartFilled } from '@tabler/icons-react';
+import { IconCircleCheckFilled, IconMail, IconPhone, IconMapPin, IconClock, IconHeartFilled, IconShieldCheck } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import { subscribeNewsletter } from '../services/api';
 
@@ -39,10 +39,10 @@ export default function Footer({ navigate }) {
           {/* Newsletter text info */}
           <div className="flex flex-col gap-2 max-w-xl w-full text-left">
             <h3 className="font-headline-md text-lg text-on-surface font-extrabold tracking-tight">
-              Stay Ahead in Your NEET Prep
+              Stay Ahead in Your Studies
             </h3>
             <p className="font-body-md text-sm text-on-surface-variant/80 leading-relaxed">
-              Weekly mnemonics, hand-picked biology tracks, and revision hacks delivered straight to your inbox.
+              Weekly mnemonics, hand-picked study tracks, and revision hacks delivered straight to your inbox.
             </p>
           </div>
 
@@ -98,6 +98,7 @@ export default function Footer({ navigate }) {
           <div className="md:col-span-2 flex flex-col gap-4">
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Platform</h4>
             <nav className="flex flex-col gap-3">
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/pricing'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block font-semibold">Pricing Plans</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Syllabus Library</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/student-hub'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Student Hub</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights</a>
@@ -157,11 +158,10 @@ export default function Footer({ navigate }) {
 
           {/* Right: Startup Badge & Trust Badges */}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {/* Made In India label */}
-            <div className="flex items-center gap-1 font-body-md text-xs text-on-surface-variant/70">
-              <span>Made with</span>
-              <IconHeartFilled size={14} className="text-red-500" />
-              <span>in India</span>
+            {/* Startup India Recognition label */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high/80 border border-outline/15 text-xs text-on-surface-variant/90 shadow-xs transition-colors hover:border-primary/30">
+              <IconShieldCheck size={16} className="text-emerald-500 shrink-0" />
+              <span className="font-semibold tracking-tight">DPIIT-Recognised · Startup India</span>
             </div>
 
           </div>

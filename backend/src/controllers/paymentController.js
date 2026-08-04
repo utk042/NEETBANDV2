@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Affiliate from '../models/Affiliate.js';
 import BookClaim from '../models/BookClaim.js';
 import Order from '../models/Order.js';
+import Coupon from '../models/Coupon.js';
 
 const getRazorpayInstance = () => {
   return new Razorpay({
@@ -27,6 +28,105 @@ const safeCompare = (a, b) => {
   const bufB = Buffer.from(b, 'utf-8');
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
+};
+
+// Helper function to validate LMS coupon or Affiliate promo code
+export const validateDiscountCode = async (code, plan = null, userId = null) => {
+  if (!code || !code.trim()) {
+    return { valid: false, message: 'Discount code is required' };
+  }
+  const normalizedCode = code.trim().toUpperCase();
+
+  // 1. Check LMS Coupon model
+  const coupon = await Coupon.findOne({ code: normalizedCode });
+  if (coupon) {
+    if (!coupon.isActive) {
+      return { valid: false, message: 'This discount coupon is inactive' };
+    }
+
+    const now = new Date();
+    // Schedule start check
+    if (coupon.scheduleStartEnabled && coupon.startDate && new Date(coupon.startDate) > now) {
+      return { valid: false, message: 'This discount coupon is not active yet' };
+    }
+
+    // Expiration check
+    if (coupon.expireEnabled && coupon.expireDate && new Date(coupon.expireDate) < now) {
+      return { valid: false, message: 'This discount coupon has expired' };
+    }
+
+    // Total usage count check
+    if (coupon.usageCountMax !== null && coupon.usageCountMax !== undefined && coupon.usedCount >= coupon.usageCountMax) {
+      return { valid: false, message: 'This discount coupon usage limit has been reached' };
+    }
+
+    // Per-user limit check
+    if (userId && coupon.usageLimitPerUser !== null && coupon.usageLimitPerUser !== undefined) {
+      let userHistory = (coupon.usageHistory || []).filter(h => h.userId && h.userId.toString() === userId.toString());
+      if (coupon.usageLimitPerUserTimeframe && coupon.usageLimitPerUserTimeframe !== 'Lifetime') {
+        const timeframeMs = {
+          '1 Day': 24 * 60 * 60 * 1000,
+          '1 Week': 7 * 24 * 60 * 60 * 1000,
+          '1 Month': 30 * 24 * 60 * 60 * 1000,
+          '1 Year': 365 * 24 * 60 * 60 * 1000
+        }[coupon.usageLimitPerUserTimeframe];
+
+        if (timeframeMs) {
+          const cutoff = new Date(now.getTime() - timeframeMs);
+          userHistory = userHistory.filter(h => new Date(h.usedAt) >= cutoff);
+        }
+      }
+      if (userHistory.length >= coupon.usageLimitPerUser) {
+        return { valid: false, message: 'You have reached the usage limit for this discount coupon' };
+      }
+    }
+
+    // Plan applicability check
+    if (plan && coupon.isMembershipSpecific && coupon.applicableMemberships && coupon.applicableMemberships.length > 0) {
+      const normalizedPlan = plan.toLowerCase();
+      const isApplicable = coupon.applicableMemberships.some(m => 
+        m.toLowerCase() === normalizedPlan || m.toLowerCase() === 'all'
+      );
+      if (!isApplicable) {
+        return { valid: false, message: 'This coupon is not applicable for the selected plan' };
+      }
+    }
+
+    return {
+      valid: true,
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      isCoupon: true,
+      couponDoc: coupon
+    };
+  }
+
+  // 2. Check Affiliate Promo Code
+  const affiliate = await Affiliate.findOne({ promoCode: normalizedCode, isActive: true });
+  if (affiliate && affiliate.discountEnabled) {
+    return {
+      valid: true,
+      code: affiliate.promoCode,
+      discountType: 'percentage',
+      discountValue: affiliate.discountValue || 10,
+      isAffiliate: true,
+      affiliateDoc: affiliate
+    };
+  }
+
+  // 3. Legacy Fallback
+  if (normalizedCode === 'HALFPRICE') {
+    return {
+      valid: true,
+      code: 'HALFPRICE',
+      discountType: 'percentage',
+      discountValue: 50,
+      isLegacy: true
+    };
+  }
+
+  return { valid: false, message: 'Invalid or inactive discount code' };
 };
 
 // Internal idempotent order fulfillment helper
@@ -176,59 +276,74 @@ export const fulfillOrderInternal = async ({
     user.membershipExpiry = expiry;
   }
 
-  // Handle Affiliate Tagging & Commission for both Subscription and Book Orders
+  // Handle Coupon / Affiliate Tagging & Commission for both Subscription and Book Orders
   const activeDiscountCode = (discountCode || order.discountCode)?.trim().toUpperCase();
-  if (activeDiscountCode && activeDiscountCode !== 'HALFPRICE') {
-    const affiliate = await Affiliate.findOne({ promoCode: activeDiscountCode, isActive: true });
-    if (affiliate) {
-      // Prevent self-referral
-      const isSelfReferral = affiliate.email.toLowerCase() === (user.email || '').toLowerCase() || 
-                             affiliate._id.toString() === user._id.toString();
+  if (activeDiscountCode) {
+    const discountRes = await validateDiscountCode(activeDiscountCode, order.plan, user._id);
+    if (discountRes.valid && discountRes.isCoupon && discountRes.couponDoc) {
+      // Record LMS Coupon usage
+      await Coupon.findByIdAndUpdate(discountRes.couponDoc._id, {
+        $inc: { usedCount: 1 },
+        $push: {
+          usageHistory: {
+            userId: user._id,
+            usedAt: new Date(),
+            orderId: order._id
+          }
+        }
+      });
+    } else if (activeDiscountCode !== 'HALFPRICE') {
+      const affiliate = await Affiliate.findOne({ promoCode: activeDiscountCode, isActive: true });
+      if (affiliate) {
+        // Prevent self-referral
+        const isSelfReferral = affiliate.email.toLowerCase() === (user.email || '').toLowerCase() || 
+                               affiliate._id.toString() === user._id.toString();
 
-      if (!isSelfReferral && !user.affiliatePartner) {
-        // Atomically tag user
-        const updatedUser = await User.findOneAndUpdate(
-          { _id: user._id, affiliatePartner: { $exists: false } },
-          { $set: { affiliatePartner: affiliate._id } },
-          { returnDocument: 'after' }
-        );
-
-        if (updatedUser) {
-          user.affiliatePartner = affiliate._id;
-
-          // Ensure single commission entry per user purchase
-          const alreadyCommissioned = affiliate.walletTransactions.some(
-            tx => tx.sourceUserId && tx.sourceUserId.toString() === user._id.toString()
+        if (!isSelfReferral && !user.affiliatePartner) {
+          // Atomically tag user
+          const updatedUser = await User.findOneAndUpdate(
+            { _id: user._id, affiliatePartner: { $exists: false } },
+            { $set: { affiliatePartner: affiliate._id } },
+            { returnDocument: 'after' }
           );
 
-          if (!alreadyCommissioned) {
-            affiliate.affiliatedUsers.push({
-              userId: user._id,
-              plan: order.plan || 'premium_scholar',
-              joinedAt: new Date()
-            });
-            
-            // Actual amount paid by buyer in INR (order.amount is stored in paise)
-            const amountPaid = order.amount / 100;
+          if (updatedUser) {
+            user.affiliatePartner = affiliate._id;
 
-            let commissionAmount = 0;
-            if (affiliate.commissionType === 'percentage') {
-              commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
-            } else {
-              commissionAmount = affiliate.commissionValue || 0;
-            }
+            // Ensure single commission entry per user purchase
+            const alreadyCommissioned = affiliate.walletTransactions.some(
+              tx => tx.sourceUserId && tx.sourceUserId.toString() === user._id.toString()
+            );
 
-            if (commissionAmount > 0) {
-              affiliate.walletTransactions.push({
-                type: 'commission',
-                amount: Math.round(commissionAmount),
-                sourceUserId: user._id,
-                date: new Date(),
-                notes: `Commission for referring user ${user.name || user.email} (Plan: ${order.plan})`
+            if (!alreadyCommissioned) {
+              affiliate.affiliatedUsers.push({
+                userId: user._id,
+                plan: order.plan || 'premium_scholar',
+                joinedAt: new Date()
               });
-            }
+              
+              // Actual amount paid by buyer in INR (order.amount is stored in paise)
+              const amountPaid = order.amount / 100;
 
-            await affiliate.save();
+              let commissionAmount = 0;
+              if (affiliate.commissionType === 'percentage') {
+                commissionAmount = (amountPaid * (affiliate.commissionValue || 0)) / 100;
+              } else {
+                commissionAmount = affiliate.commissionValue || 0;
+              }
+
+              if (commissionAmount > 0) {
+                affiliate.walletTransactions.push({
+                  type: 'commission',
+                  amount: Math.round(commissionAmount),
+                  sourceUserId: user._id,
+                  date: new Date(),
+                  notes: `Commission for referring user ${user.name || user.email} (Plan: ${order.plan})`
+                });
+              }
+
+              await affiliate.save();
+            }
           }
         }
       }
@@ -258,16 +373,18 @@ export const createOrder = async (req, res) => {
       amount = 49900; // ₹499
     }
 
-    // Apply Coupon/Discount Logic (case-insensitive)
+    // Apply Coupon/Discount Logic
     const normalizedCode = discountCode ? discountCode.trim().toUpperCase() : null;
 
-    if (normalizedCode === 'HALFPRICE') {
-      amount = Math.round(amount / 2);
-    } else if (normalizedCode) {
-      const affiliate = await Affiliate.findOne({ promoCode: normalizedCode, isActive: true });
-      if (affiliate && affiliate.discountEnabled) {
-        const discountVal = affiliate.discountValue || 10;
-        amount = Math.round(amount * (1 - discountVal / 100));
+    if (normalizedCode) {
+      const discountRes = await validateDiscountCode(normalizedCode, validatedPlan, req.user._id);
+      if (discountRes.valid) {
+        if (discountRes.discountType === 'percentage') {
+          amount = Math.round(amount * (1 - discountRes.discountValue / 100));
+        } else if (discountRes.discountType === 'fixed') {
+          const fixedPaise = discountRes.discountValue * 100;
+          amount = Math.max(0, amount - fixedPaise);
+        }
       }
     }
 
@@ -374,23 +491,14 @@ export const verifyPayment = async (req, res) => {
 // @access  Private
 export const verifyPromo = async (req, res) => {
   try {
-    const { discountCode } = req.body;
+    const { discountCode, plan } = req.body;
     if (!discountCode) {
-      return res.json({ valid: false });
+      return res.json({ valid: false, message: 'Discount code is required' });
     }
     
-    const normalizedCode = discountCode.trim().toUpperCase();
-
-    if (normalizedCode === 'HALFPRICE') {
-      return res.json({ valid: true, discountType: 'percentage', discountValue: 50 });
-    }
-
-    const affiliate = await Affiliate.findOne({ promoCode: normalizedCode, isActive: true });
-    if (affiliate && affiliate.discountEnabled) {
-      return res.json({ valid: true, discountType: 'percentage', discountValue: affiliate.discountValue || 10 });
-    }
-    
-    return res.json({ valid: false });
+    const userId = req.user ? req.user._id : null;
+    const result = await validateDiscountCode(discountCode, plan, userId);
+    return res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -463,4 +571,3 @@ export const razorpayWebhook = async (req, res) => {
     res.status(500).json({ message: 'Webhook processing error', error: error.message });
   }
 };
-

@@ -125,4 +125,74 @@ router.delete('/', async (req, res) => {
   }
 });
 
+router.get('/files', async (req, res) => {
+  try {
+    const { fileType, search } = req.query;
+    const uploadsDir = path.join(__dirname, '../../uploads');
+
+    if (!fs.existsSync(uploadsDir)) {
+      return res.json({ success: true, files: [] });
+    }
+
+    const getAllFiles = (dirPath) => {
+      let results = [];
+      if (!fs.existsSync(dirPath)) return results;
+      const list = fs.readdirSync(dirPath, { withFileTypes: true });
+
+      for (const item of list) {
+        const fullPath = path.join(dirPath, item.name);
+        if (item.isDirectory()) {
+          results = results.concat(getAllFiles(fullPath));
+        } else if (item.isFile()) {
+          results.push(fullPath);
+        }
+      }
+      return results;
+    };
+
+    const allFilePaths = getAllFiles(uploadsDir);
+
+    const imageExts = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
+
+    let files = allFilePaths.map((filePath) => {
+      const relPath = path.relative(uploadsDir, filePath).replace(/\\/g, '/');
+      const filename = path.basename(filePath);
+      const ext = path.extname(filename).toLowerCase();
+      const parts = relPath.split('/');
+      const category = parts.length > 1 ? parts[0] : 'others';
+      const stats = fs.statSync(filePath);
+
+      return {
+        url: `/uploads/${relPath}`,
+        filename,
+        size: stats.size,
+        mtime: stats.mtime.toISOString(),
+        category,
+        ext
+      };
+    });
+
+    if (fileType === 'image') {
+      files = files.filter(f => imageExts.has(f.ext));
+    }
+
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const searchLower = search.trim().toLowerCase();
+      files = files.filter(f => f.filename.toLowerCase().includes(searchLower));
+    }
+
+    files.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+
+    const resultFiles = files.map(({ ext, ...file }) => file);
+
+    return res.json({
+      success: true,
+      files: resultFiles
+    });
+  } catch (error) {
+    console.error('Error fetching upload files:', error);
+    return res.status(500).json({ error: 'Failed to fetch upload files' });
+  }
+});
+
 export default router;

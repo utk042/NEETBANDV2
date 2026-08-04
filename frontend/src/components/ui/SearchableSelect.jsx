@@ -75,10 +75,10 @@ export default function SearchableSelect({ options, value, onChange, placeholder
     <div className="relative" ref={wrapperRef}>
       {/* Trigger */}
       <div
-        className={`${className} cursor-pointer flex justify-between items-center`}
+        className={`${className} cursor-pointer flex justify-between items-center min-w-0`}
         onClick={handleToggle}
       >
-        <span className={selectedOption ? 'text-on-surface' : 'text-on-surface-variant/40 line-clamp-1'}>
+        <span className={selectedOption ? 'text-on-surface truncate min-w-0 flex-1' : 'text-on-surface-variant/40 truncate min-w-0 flex-1'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <svg
@@ -94,7 +94,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
         <div
           ref={dropdownRef}
           style={dropdownStyle}
-          className="bg-surface border border-outline-variant/40 rounded-xl shadow-2xl flex flex-col overflow-hidden"
+          className="bg-surface border border-outline-variant/40 rounded-xl shadow-2xl flex flex-col overflow-hidden max-w-[calc(100vw-16px)]"
         >
           {/* Search */}
           <div className="p-2 border-b border-outline-variant/20 bg-surface">

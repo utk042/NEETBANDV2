@@ -136,12 +136,12 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
             >
               <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-ping"></span>
               {activeRollType === 'guestAd' 
-                ? 'Guest Roll Playing' 
+                ? 'Log in to continue listening' 
                 : (adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.')}
             </div>
           ) : (
-            <p className="text-sm font-medium text-primary/95 italic truncate max-w-sm min-h-[1.25rem] pr-2.5 inline-block">
-              {activeLyric}
+            <p className="text-base font-medium text-primary/95 italic truncate max-w-sm min-h-[1.5rem] pr-2.5 inline-block">
+              {activeLyric || '\u00A0'}
             </p>
           )}
         </div>

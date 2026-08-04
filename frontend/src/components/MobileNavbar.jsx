@@ -1,12 +1,12 @@
 import React from 'react';
-import { IconHome, IconPlaylist, IconLayoutDashboard, IconBook2, IconUsers } from '@tabler/icons-react';
+import { IconHome, IconPlaylist, IconLayoutDashboard, IconBook2, IconGift } from '@tabler/icons-react';
 
 export default function MobileNavbar({ currentPage, navigate, user = { isLoggedIn: false } }) {
   const items = [
     { id: 'home',      label: 'Home',      icon: IconHome },
     { id: 'library',   label: 'Study Songs',   icon: IconPlaylist },
     { id: 'course',    label: 'Course',    icon: IconBook2 },
-    { id: 'feed',      label: 'Feed',      icon: IconUsers },
+    { id: 'benefits',  label: 'Members Benefit', icon: IconGift },
     { id: 'dashboard', label: 'Dashboard', icon: IconLayoutDashboard },
   ];
 
@@ -18,7 +18,7 @@ export default function MobileNavbar({ currentPage, navigate, user = { isLoggedI
           <button
             key={id}
             onClick={() => {
-              if ((id === 'dashboard' || id === 'feed' || id === 'course') && !user.isLoggedIn) {
+              if ((id === 'dashboard' || id === 'benefits' || id === 'course') && !user.isLoggedIn) {
                 // If they want to access protected sections but aren't logged in, redirect to login
                 // But for now, allow routing to let App handle it, or just route to login.
                 // Assuming App handles dashboard rendering, but actually App hides dashboard if not logged in.

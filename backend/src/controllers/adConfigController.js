@@ -44,7 +44,12 @@ export const updateAdConfig = async (req, res) => {
       }
       updateDoc.$set.audioRollPositions = Array.from(new Set(audioRollPositions)).sort((a, b) => a - b);
     }
-    if (audioRollUrl !== undefined) updateDoc.$set.audioRollUrl = audioRollUrl;
+    if (audioRollUrl !== undefined) {
+      if (typeof audioRollUrl !== 'string') {
+        return res.status(400).json({ error: 'audioRollUrl must be a string.' });
+      }
+      updateDoc.$set.audioRollUrl = audioRollUrl.trim();
+    }
 
     if (popupPositions !== undefined) {
       if (!validatePositions(popupPositions)) {
@@ -53,7 +58,12 @@ export const updateAdConfig = async (req, res) => {
       updateDoc.$set.popupPositions = Array.from(new Set(popupPositions)).sort((a, b) => a - b);
     }
     if (popupHtml !== undefined) updateDoc.$set.popupHtml = popupHtml;
-    if (guestAdUrl !== undefined) updateDoc.$set.guestAdUrl = guestAdUrl;
+    if (guestAdUrl !== undefined) {
+      if (typeof guestAdUrl !== 'string') {
+        return res.status(400).json({ error: 'guestAdUrl must be a string.' });
+      }
+      updateDoc.$set.guestAdUrl = guestAdUrl.trim();
+    }
     if (audioRollsEnabled !== undefined) updateDoc.$set.audioRollsEnabled = audioRollsEnabled;
     if (popupsEnabled !== undefined) updateDoc.$set.popupsEnabled = popupsEnabled;
     if (adBannerText !== undefined) updateDoc.$set.adBannerText = adBannerText;

@@ -1,20 +1,61 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { 
   IconUser, IconHeart, IconBrain, IconBell, 
   IconFlame, IconClock, IconLogout, IconArrowRight, 
   IconCheck, IconChevronRight, IconBook, IconSchool,
   IconAward, IconPlayerPlayFilled, IconBookmark, IconTrendingUp,
-  IconCertificate, IconX, IconPencil, IconCrown, IconEye, IconShoppingCart
+  IconCertificate, IconX, IconPencil, IconCrown, IconEye, IconShoppingCart,
+  IconTag, IconLock, IconGift, IconMessageCircle, IconLayoutDashboard
 } from '@tabler/icons-react';
 import { getUserProfile, uploadFile, updateUserProfile } from '../services/api';
 import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
 import Button from './ui/Button';
 import HeartButton from './Common/HeartButton';
+import CommunityForum from './CommunityForum';
 
-
-
+const DASHBOARD_BENEFITS = [
+  {
+    _id: 'benefit-eye-checkup',
+    title: 'Biannual Eye Check-up',
+    provider: 'Partner Vision Clinics',
+    category: 'Health',
+    offerType: 'Free Service',
+    timing: 'Biannual',
+    description: 'Complimentary biannual comprehensive eye examination and vision health check-up for enrolled members.',
+    memberValue: 'Free',
+    link: '/offers/eye-checkup',
+    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800',
+    isComingSoon: false
+  },
+  {
+    _id: 'benefit-book-discount',
+    title: 'Book Discount',
+    provider: 'NEET Study Store & Publishers',
+    category: 'Learning',
+    offerType: '25% Discount',
+    timing: 'Ongoing',
+    description: 'Exclusive 25% discount on medical textbooks, reference guides, practice question banks and prep material.',
+    memberValue: '25% off',
+    link: '/offers/book',
+    imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=800',
+    isComingSoon: false
+  },
+  {
+    _id: 'benefit-wellness-growth',
+    title: 'Student Growth & Wellness Offers',
+    provider: 'Wellness & Mentorship Partners',
+    category: 'Lifestyle',
+    offerType: 'Special Perk Pack',
+    timing: 'Coming Soon',
+    description: 'Curated mental health & student wellness sessions, fitness perks, and 1-on-1 expert mentorship benefits launching soon.',
+    memberValue: 'Coming Soon',
+    imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800',
+    isComingSoon: true
+  }
+];
 
 export default function Dashboard({ 
   navigate, 
@@ -64,6 +105,28 @@ export default function Dashboard({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
+  // Tab navigation state (Overview vs Community Feed)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(activeTabParam === 'feed' ? 'feed' : 'overview');
+
+  useEffect(() => {
+    if (activeTabParam === 'feed') {
+      setActiveTab('feed');
+    } else {
+      setActiveTab('overview');
+    }
+  }, [activeTabParam]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'feed') {
+      setSearchParams({ tab: 'feed' }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
+
   // Modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -209,6 +272,8 @@ export default function Dashboard({
   // Get recently played tracks data
   const recentTracksList = (recentlyPlayedTrackIds || []).map(id => tracks.find(t => t.id === id)).filter(Boolean);
 
+  const isPremiumUser = user?.isLoggedIn && (user?.isPremium || user?.role === 'admin' || user?.role === 'owner');
+
   // Generate a nice avatar URL based on the user's name using Dicebear
   const avatarUrl = user?.profilePicture 
     ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`)
@@ -243,6 +308,66 @@ export default function Dashboard({
             </Button>
           </div>
 
+          {/* Dashboard Navigation Tabs */}
+          <div className="flex items-center gap-3 mb-10 border-b border-outline/10 pb-4">
+            <button
+              onClick={() => handleTabChange('overview')}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                activeTab === 'overview'
+                  ? 'bg-primary text-on-primary shadow-md'
+                  : 'bg-surface-container/60 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <IconLayoutDashboard size={20} /> Overview
+            </button>
+
+            <button
+              onClick={() => handleTabChange('feed')}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                activeTab === 'feed'
+                  ? 'bg-primary text-on-primary shadow-md'
+                  : 'bg-surface-container/60 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <IconMessageCircle size={20} /> Community Feed
+              {!isPremiumUser && (
+                <span className="flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                  <IconLock size={12} /> PRO
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === 'feed' ? (
+            <div className="animate-in fade-in duration-300">
+              {isPremiumUser ? (
+                <CommunityForum user={user} />
+              ) : (
+                <div className="bg-surface-container-lowest rounded-3xl p-8 sm:p-12 text-center border border-outline/10 max-w-2xl mx-auto my-8 shadow-xl">
+                  <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-6">
+                    <IconCrown size={32} />
+                  </div>
+                  <h2 className="text-2xl font-extrabold text-on-surface mb-3">
+                    Premium Access Required
+                  </h2>
+                  <p className="text-on-surface-variant text-base leading-relaxed mb-8 max-w-lg mx-auto">
+                    The Community Feed is exclusively available to NEET Band Premium members. Upgrade your plan to join discussions, ask questions, and connect with fellow medical aspirants.
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (onUpgradeClick) onUpgradeClick();
+                      else navigate('/pricing');
+                    }}
+                    className="px-8 py-3.5 bg-primary hover:opacity-90 text-on-primary rounded-xl font-extrabold text-base transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 mx-auto cursor-pointer"
+                  >
+                    <IconCrown size={20} /> Upgrade to Premium
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+
           <div className="grid grid-cols-1 md:grid-cols-3 mb-24 border-t border-b border-outline/10 divide-y md:divide-y-0 md:divide-x divide-outline/10">
             <div className="flex flex-col gap-4 py-12 md:py-16 md:px-12 first:md:pl-0 last:md:pr-0">
               <span className="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase flex items-center gap-2">
@@ -271,73 +396,125 @@ export default function Dashboard({
 
           {/* PREMIUM OFFERS */}
           <div className="mb-16">
-            <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-6 flex items-center gap-2">
-              <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* Book Offer */}
-              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
-                <CardBody className="p-6 flex flex-col flex-1">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 shadow-inner border border-amber-500/20">
-                    <IconBook size={24} strokeWidth={1.5} />
-                  </div>
-                  <div className="mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border border-amber-500/30 rounded-full bg-amber-500/10 text-amber-600 mb-3 inline-block">
-                      50% OFF
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-bold text-on-surface mb-2">NeetBand Mastery Guide</h3>
-                  <p className="text-sm text-on-surface-variant mb-6 flex-1">
-                    Get the ultimate study guide written by our top authors. Claim your 50% discount and master the syllabus faster.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      if (!user?.isPremium) {
-                        if (onUpgradeClick) onUpgradeClick();
-                        else navigate('/checkout');
-                      } else {
-                        navigate('/offers/book');
-                      }
-                    }} 
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 text-sm"
-                  >
-                    <IconShoppingCart size={18} className="mr-2" /> Claim Offer
-                  </Button>
-                </CardBody>
-              </Card>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-on-surface flex items-center gap-2">
+                <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
+              </h2>
+              {navigate && (
+                <button 
+                  onClick={() => navigate('/benefits')} 
+                  className="text-sm font-semibold text-primary hover:text-primary/70 transition-colors flex items-center gap-1"
+                >
+                  View All <IconArrowRight size={16} />
+                </button>
+              )}
+            </div>
 
-              {/* Eye Checkup Offer */}
-              <Card className="flex flex-col h-full group hover:-translate-y-1 transition-all duration-300">
-                <CardBody className="p-6 flex flex-col flex-1">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 shadow-inner border border-emerald-500/20">
-                    <IconEye size={24} strokeWidth={1.5} />
-                  </div>
-                  <div className="mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border border-emerald-500/30 rounded-full bg-emerald-500/10 text-emerald-600 mb-3 inline-block">
-                      FREE
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-bold text-on-surface mb-2">Free Eye Checkup</h3>
-                  <p className="text-sm text-on-surface-variant mb-6 flex-1">
-                    Protect your vision while studying. Premium members can book a free comprehensive eye checkup at our partner clinics.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      if (!user?.isPremium) {
-                        if (onUpgradeClick) onUpgradeClick();
-                        else navigate('/checkout');
-                      } else {
-                        navigate('/offers/eye-checkup');
-                      }
-                    }} 
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 text-sm"
-                  >
-                    <IconCheck size={18} className="mr-2" /> Book Now
-                  </Button>
-                </CardBody>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {DASHBOARD_BENEFITS.map((benefit) => (
+                <div
+                  key={benefit._id}
+                  className={`bg-surface-container-lowest rounded-2xl border border-outline/10 hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden shadow-sm hover:shadow-xl group ${
+                    benefit.isComingSoon ? 'opacity-90' : ''
+                  }`}
+                >
+                  {/* Image Container with Floating Badges */}
+                  <div className="h-32 sm:h-36 bg-surface-container relative overflow-hidden">
+                    <img
+                      src={benefit.imageUrl}
+                      alt={benefit.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
 
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
+
+                    {/* Category Badge */}
+                    <div className="absolute top-2.5 left-2.5 bg-[#0F1B33]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold text-on-surface shadow-md border border-white/10 flex items-center gap-1">
+                      {benefit.category}
+                    </div>
+
+                    {/* Coming Soon Badge overlay */}
+                    {benefit.isComingSoon && (
+                      <div className="absolute top-2.5 right-2.5 bg-amber-500/20 border border-amber-500/40 text-amber-400 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-md flex items-center gap-1">
+                        <IconClock size={12} /> Coming Soon
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content Area */}
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      {/* Meta Tags Row */}
+                      <div className="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant mb-1.5">
+                        <span className="inline-flex items-center gap-1 text-amber-400 font-bold">
+                          <IconTag size={13} /> {benefit.offerType}
+                        </span>
+                        <span className="opacity-40">•</span>
+                        <span className="inline-flex items-center gap-1">
+                          <IconClock size={13} /> {benefit.timing}
+                        </span>
+                      </div>
+
+                      {/* Title & Provider */}
+                      <h3 className="text-base font-bold text-on-surface mb-0.5 leading-snug group-hover:text-primary transition-colors">
+                        {benefit.title}
+                      </h3>
+                      <p className="text-[11px] text-on-surface-variant font-medium mb-2">
+                        by <span className="text-on-surface font-semibold">{benefit.provider}</span>
+                      </p>
+
+                      {/* Description */}
+                      <p className="text-xs text-on-surface-variant/80 leading-snug line-clamp-2">
+                        {benefit.description}
+                      </p>
+                    </div>
+
+                    {/* Footer Row (Benefit Value + Action Button) */}
+                    <div className="pt-3 border-t border-outline/10 flex items-center justify-between mt-auto">
+                      <div>
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-0.5">
+                          BENEFIT VALUE
+                        </div>
+                        <div className="text-sm font-extrabold text-on-surface">
+                          {benefit.memberValue}
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      {benefit.isComingSoon ? (
+                        <button
+                          disabled
+                          className="px-3 py-1.5 bg-surface-container-high/50 border border-outline/10 text-on-surface-variant/50 rounded-xl text-[11px] font-bold cursor-not-allowed flex items-center gap-1 opacity-80"
+                        >
+                          <IconClock size={13} /> Coming Soon...
+                        </button>
+                      ) : user?.isPremium ? (
+                        <button
+                          onClick={() => {
+                            if (benefit.link.startsWith('/')) navigate(benefit.link);
+                            else window.open(benefit.link, '_blank');
+                          }}
+                          className="px-3.5 py-1.5 bg-primary text-on-primary rounded-xl text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1 cursor-pointer"
+                        >
+                          <IconGift size={13} /> Redeem
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (onUpgradeClick) onUpgradeClick();
+                            else navigate('/pricing');
+                          }}
+                          className="px-3.5 py-1.5 bg-surface-container/80 border border-outline/20 text-on-surface hover:border-primary/40 hover:text-primary rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <IconLock size={13} className="text-amber-400" /> Unlock
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -348,7 +525,7 @@ export default function Dashboard({
             </h2>
             
             {((profileData?.progress || user?.progress || []).filter(p => p.courseId && typeof p.courseId === 'object')).length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {(profileData?.progress || user?.progress || []).filter(p => p.courseId && typeof p.courseId === 'object').map((prog, index) => {
                   const course = prog.courseId;
                   
@@ -376,37 +553,66 @@ export default function Dashboard({
                   }
 
                   return (
-                    <Card key={course._id || index} onClick={() => navigate(`/course/${course._id}`)} className="flex flex-col justify-between group h-full hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <CardBody className="p-6 md:p-8">
-                        <div className="flex justify-between items-start mb-6">
-                          <span className="text-xs font-bold text-on-surface uppercase tracking-widest px-3 py-1.5 border border-outline/20 rounded-full bg-surface-container-high/50">
-                            {course.subject || 'Course'}
-                          </span>
-                          <span className="text-2xl font-extrabold text-on-surface">{percentage}%</span>
+                    <div 
+                      key={course._id || index} 
+                      onClick={() => navigate(`/course/${course._id}`)} 
+                      className="bg-surface-container-lowest rounded-2xl border border-outline/10 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
+                    >
+                      {/* Top Header / Banner Area */}
+                      <div className="h-28 sm:h-32 bg-[#081021] relative flex items-center justify-center p-4 border-b border-outline/10">
+                        {/* Live / Status Badge */}
+                        <div className="absolute top-2.5 right-2.5 bg-emerald-500 text-white font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> Live
                         </div>
-                        <h3 className="text-3xl md:text-4xl font-extrabold text-on-surface mb-4 leading-tight">{course.title}</h3>
-                        <p className="text-lg font-medium text-on-surface-variant line-clamp-2">
-                          {course.summary || 'Continue learning this course.'}
-                        </p>
-                      </CardBody>
-                      <div className="px-6 md:px-8 pb-6 md:pb-8 pt-2">
-                        <div className="w-full h-2 bg-surface-container-high overflow-hidden rounded-full border border-outline/10">
-                          <div 
-                            className="h-full bg-primary expand-width-anim" 
-                            style={{ 
-                              '--target-width': `${percentage}%`,
-                              width: `${percentage}%` 
-                            }} 
-                          />
+
+                        {/* Center Thumbnail / Logo */}
+                        <img 
+                          src={course.thumbnail || course.image || logoImg} 
+                          alt={course.title} 
+                          className="max-h-14 max-w-[75%] object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300" 
+                        />
+                      </div>
+
+                      {/* Content Body */}
+                      <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                        <div>
+                          {/* Subject Tag */}
+                          <div className="text-[11px] font-extrabold uppercase tracking-widest text-amber-400 mb-1">
+                            {course.subject || 'CHEMISTRY'}
+                          </div>
+
+                          {/* Title */}
+                          <h3 className="text-base font-bold text-on-surface mb-0.5 group-hover:text-primary transition-colors leading-snug">
+                            {course.title}
+                          </h3>
+
+                          {/* Subtitle / Class */}
+                          <p className="text-[11px] text-on-surface-variant font-medium">
+                            {course.classLevel || course.category || 'Class 11'}
+                          </p>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-3 pt-2.5 border-t border-outline/10 flex flex-col gap-1">
+                          <div className="flex justify-between items-center text-[11px] font-semibold text-on-surface-variant">
+                            <span>Progress</span>
+                            <span className="font-extrabold text-on-surface">{percentage}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-surface-container-high overflow-hidden rounded-full border border-outline/10">
+                            <div 
+                              className="h-full bg-primary transition-all duration-500 rounded-full" 
+                              style={{ width: `${percentage}%` }} 
+                            />
+                          </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="bg-surface-container-low rounded-[32px] p-8 text-center border border-outline/10">
-                <p className="text-on-surface-variant">no enrolled courses</p>
+              <div className="bg-surface-container-lowest rounded-3xl p-8 text-center border border-outline/10">
+                <p className="text-on-surface-variant text-sm font-medium">No enrolled courses yet</p>
               </div>
             )}
           </div>
@@ -441,7 +647,7 @@ export default function Dashboard({
                 
                 <div className="shrink-0 flex flex-col items-start md:items-end gap-4 px-8 pb-8 md:p-12">
                   {!user?.isPremium ? (
-                    <Button onClick={() => navigate('/checkout')} size="lg" className="w-full md:w-auto whitespace-nowrap">
+                    <Button onClick={() => navigate('/pricing')} size="lg" className="w-full md:w-auto whitespace-nowrap">
                       Upgrade to Premium
                     </Button>
                   ) : (
@@ -657,14 +863,16 @@ export default function Dashboard({
           
           {/* Logout Button at the bottom */}
           <div className="flex justify-center mt-16 mb-8">
-            <Button
-              variant="secondary"
+            <button
+              type="button"
               onClick={handleLogout}
-              className="text-red-500 border border-red-500/10 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+              className="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center cursor-pointer"
             >
               <IconLogout size={20} strokeWidth={1.5} className="mr-2" /> Log Out
-            </Button>
+            </button>
           </div>
+          </>
+          )}
 
         </div>
       </div>

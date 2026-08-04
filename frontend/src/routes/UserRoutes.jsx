@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Features from '../components/Features';
 import StatsSection from '../components/StatsSection';
+import WhatIsNeetBand from '../components/WhatIsNeetBand';
 import Pricing from '../components/Pricing';
 import Footer from '../components/Footer';
 import StickyPlayer from '../components/StickyPlayer';
@@ -42,6 +43,9 @@ import RefundPolicy from '../components/RefundPolicy';
 const BookOfferPreview = lazyWithRetry(() => import('../components/Offers/BookOfferPreview'));
 const BookCheckout = lazyWithRetry(() => import('../components/Offers/BookCheckout'));
 const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
+const MemberBenefits = lazyWithRetry(() => import('../components/MemberBenefits'));
+const PricingPage = lazyWithRetry(() => import('../components/PricingPage'));
+import VideoReviewsGallery from '../components/VideoReviewsGallery';
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -57,10 +61,10 @@ function FeedGuard({ user, isAuthLoading, setPostLoginRedirect }) {
         setPostLoginRedirect('feed');
         navigate('/login', { replace: true });
       } else if (!user.isPremium && user.role !== 'admin' && user.role !== 'owner') {
-        dialogAlert("Premium Required", "Premium access required. Redirecting to checkout...").then(() => {
-          navigate('/checkout', { replace: true });
+        dialogAlert("Premium Required", "Premium access required. Redirecting to pricing plans...").then(() => {
+          navigate('/pricing', { replace: true });
         }).catch(() => {
-          navigate('/checkout', { replace: true });
+          navigate('/pricing', { replace: true });
         });
       }
     }
@@ -135,12 +139,7 @@ export default function UserRoutes() {
   };
 
   const handleUpgradeClick = () => {
-    if (!user || !user.isLoggedIn) {
-      setPostLoginRedirect('checkout');
-      navigate('/login');
-    } else {
-      navigate('/checkout');
-    }
+    navigate('/pricing');
   };
 
   // Track selection & toggle (playback behavior is managed by PlayerContext according to user tier & songType)
@@ -182,10 +181,14 @@ export default function UserRoutes() {
               <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
               <CourseCarousel lmsCourses={lmsCourses} />
               <Features />
+              <VideoReviewsGallery />
               <StatsSection appReady={!isLoading} />
-              <Pricing onUpgrade={handleUpgradeClick} user={user} />
+              <WhatIsNeetBand />
+              <Pricing onUpgrade={handleUpgradeClick} onSelectPlan={(planId) => navigate(`/checkout?plan=${planId}`)} user={user} />
               <FAQ />
             </>} />
+
+            <Route path="/pricing" element={<PricingPage user={user} navigate={navigate} />} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Dashboard" loginRoute="/login">
@@ -232,8 +235,9 @@ export default function UserRoutes() {
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
             <Route path="/hub" element={<div className="pt-36 md:pt-44 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
+            <Route path="/benefits" element={<MemberBenefits user={user} onUpgradeClick={handleUpgradeClick} />} />
             <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
-            <Route path="/feed" element={<FeedGuard user={user} isAuthLoading={isAuthLoading} setPostLoginRedirect={setPostLoginRedirect} />} />
+            <Route path="/feed" element={<Navigate to="/dashboard?tab=feed" replace />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />
             <Route path="/about" element={<AboutUs />} />
@@ -272,7 +276,7 @@ export default function UserRoutes() {
         </React.Suspense>
       </main>
 
-      {['home', 'blog', 'about', 'contact', 'terms', 'privacy', 'refund'].includes(currentPage) && (
+      {['home', 'pricing', 'blog', 'about', 'contact', 'terms', 'privacy', 'refund', 'benefits'].includes(currentPage) && (
         <div className={currentPage !== 'home' ? 'hidden md:block' : ''}>
           <Footer navigate={navigate} />
         </div>

@@ -24,7 +24,11 @@ const FAQ_ITEMS = [
   }
 ];
 
-export default function FAQ() {
+export default function FAQ({ 
+  items = FAQ_ITEMS, 
+  title = "Frequently Asked Questions", 
+  subtitle = "Got questions? We’ve got answers." 
+}) {
   const [activeIndex, setActiveIndex] = useState(null);
 
   const toggleFAQ = (index) => {
@@ -35,16 +39,14 @@ export default function FAQ() {
     <section className="py-32 px-gutter bg-transparent relative overflow-hidden transition-colors duration-300">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-outline/10 to-transparent"></div>
       
-
-      
       <div className="max-w-3xl mx-auto relative z-10 px-4 md:px-0">
         <div className="text-center mb-16" data-gsap="heading">
-          <h2 className="font-headline-lg font-bold text-headline-lg-mobile md:text-4xl text-on-surface mb-5 text-balance">Frequently Asked Questions</h2>
-          <p className="font-body-md font-normal text-xl text-on-surface-variant opacity-80">Got questions? We’ve got answers.</p>
+          <h2 className="font-headline-lg font-bold text-headline-lg-mobile md:text-4xl text-on-surface mb-5 text-balance">{title}</h2>
+          <p className="font-body-md font-normal text-xl text-on-surface-variant opacity-80">{subtitle}</p>
         </div>
         
         <div className="space-y-4" data-gsap="faq-list">
-          {FAQ_ITEMS.map((item, idx) => {
+          {items.map((item, idx) => {
             const isOpen = activeIndex === idx;
             return (
               <div 

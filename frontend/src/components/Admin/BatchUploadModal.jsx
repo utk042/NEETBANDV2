@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { uploadFile, createSong } from '../../services/api';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
@@ -17,9 +18,11 @@ import {
   IconTrash,
   IconFileMusic,
   IconArrowRight,
+  IconPhoto,
 } from '@tabler/icons-react';
 
 import DragDropWrapper from '../ui/DragDropWrapper';
+import MediaLibraryModal from './MediaLibraryModal';
 
 const AUDIO_EXTS = [
   'mp3', 'mpeg', 'mpga', 'wav', 'flac', 'aac', 'ogg', 'm4a',
@@ -76,12 +79,12 @@ const STATUS = {
 };
 
 // ─── Per-song settings panel ────────────────────────────────────────────────
-function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters, hideTitle = false }) {
+function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses, availableSubjects, availableChapters, hideTitle = false, onOpenMediaLibrary }) {
   const [lyricsProgress, setLyricsProgress] = useState(null);
   const [thumbnailProgress, setThumbnailProgress] = useState(null);
 
   const inputClass =
-    'w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm';
+    'w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm max-w-full box-border';
   const labelClass = 'text-[11px] font-bold text-on-surface-variant mb-1 ml-0.5 uppercase tracking-wide block';
 
   const handleLyricsUpload = async (eOrFile) => {
@@ -251,7 +254,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
                 <input
                   type="url"
                   placeholder="https://..."
-                  className={`${inputClass} pr-28`}
+                  className={`${inputClass} pr-[140px] sm:pr-48`}
                   value={song.thumbnailUrl || ''}
                   onChange={(e) => onChange({ thumbnailUrl: e.target.value })}
                 />
@@ -263,15 +266,27 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
                     </div>
                   </div>
                 ) : (
-                  <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                    <IconUpload size={12} stroke={2.5} /> Upload
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => handleThumbnailUpload(e)}
-                    />
-                  </label>
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {onOpenMediaLibrary && (
+                      <button
+                        type="button"
+                        onClick={onOpenMediaLibrary}
+                        className="text-[10px] uppercase font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-1"
+                        title="Select from Media Library"
+                      >
+                        <IconPhoto size={12} stroke={2.5} /> Library
+                      </button>
+                    )}
+                    <label className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                      <IconUpload size={12} stroke={2.5} /> Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleThumbnailUpload(e)}
+                      />
+                    </label>
+                  </div>
                 )}
               </div>
             </DragDropWrapper>
@@ -286,7 +301,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
                 <input
                   type="url"
                   placeholder="https://..."
-                  className={`${inputClass} pr-28`}
+                  className={`${inputClass} pr-24 sm:pr-28`}
                   value={song.lyricsUrl || ''}
                   onChange={(e) => onChange({ lyricsUrl: e.target.value })}
                 />
@@ -314,7 +329,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
         </>
       )}
 
-      <div className={`sm:col-span-2 flex items-center gap-6 pt-1 transition-opacity ${song.songType === 'Normal' ? 'opacity-40 pointer-events-none' : ''}`}>
+      <div className={`sm:col-span-2 flex flex-wrap items-center gap-4 sm:gap-6 pt-1 transition-opacity ${song.songType === 'Normal' ? 'opacity-40 pointer-events-none' : ''}`}>
         <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-on-surface-variant">
           <span>Audio Ads</span>
           <div className="relative">
@@ -356,7 +371,7 @@ function SongSettingsPanel({ song, onChange, courses, adConfig, existingClasses,
 }
 
 // ─── Single song row in the batch list ──────────────────────────────────────
-function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters, isExpanded, onToggleExpand }) {
+function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, existingClasses, existingSubjects, existingChapters, classToSubjects, subjectToChapters, isExpanded, onToggleExpand, onOpenMediaLibrary }) {
   const availableSubjects =
     item.settings.class && classToSubjects[item.settings.class]
       ? classToSubjects[item.settings.class]
@@ -394,11 +409,11 @@ function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, 
     }`}>
       {/* Row header */}
       <div
-        className="flex items-center gap-3 p-3 cursor-pointer select-none"
+        className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 p-2.5 sm:p-3 cursor-pointer select-none min-w-0"
         onClick={() => isActive && onToggleExpand()}
       >
         {/* Track icon / spinner */}
-        <div className={`w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold ${
           item.status === STATUS.DONE ? 'bg-emerald-500/20 text-emerald-500' :
           item.status === STATUS.ERROR ? 'bg-red-500/20 text-red-500' :
           item.status === STATUS.UPLOADING || item.status === STATUS.PROCESSING
@@ -414,21 +429,21 @@ function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, 
         </div>
 
         {/* Name & meta */}
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-on-surface text-sm truncate">
+        <div className="flex-1 min-w-[120px]">
+          <div className="font-semibold text-on-surface text-xs sm:text-sm truncate">
             {item.settings.title || cleanSongTitle(item.file.name)}
           </div>
-          <div className="text-xs text-on-surface-variant/70 flex items-center gap-2 mt-0.5">
+          <div className="text-[11px] sm:text-xs text-on-surface-variant/70 flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5">
             <span>{formatBytes(item.file.size)}</span>
             {item.duration && <><span>·</span><span>{formatSeconds(item.duration)}</span></>}
             {item.status === STATUS.ERROR && item.error && (
-              <span className="text-red-500 truncate max-w-[200px]" title={item.error}>— {item.error}</span>
+              <span className="text-red-500 truncate max-w-[140px] sm:max-w-[200px]" title={item.error}>— {item.error}</span>
             )}
           </div>
         </div>
 
         {/* Status badge & Retry button */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
           {item.status === STATUS.ERROR && (
             <button
               type="button"
@@ -478,6 +493,7 @@ function SongRow({ item, index, onChange, onRemove, onRetry, courses, adConfig, 
           <SongSettingsPanel
             song={item.settings}
             onChange={(patch) => onChange({ settings: { ...item.settings, ...patch } })}
+            onOpenMediaLibrary={onOpenMediaLibrary}
             courses={courses}
             adConfig={adConfig}
             existingClasses={existingClasses}
@@ -499,6 +515,8 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
   const [appliedToast, setAppliedToast] = useState(false);
   const [dropActive, setDropActive] = useState(false);
   const [dropCounter, setDropCounter] = useState(0);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [activeTargetId, setActiveTargetId] = useState(null);
   const fileInputRef = useRef(null);
 
   const itemsRef = useRef(items);
@@ -797,9 +815,9 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 md:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200 overflow-y-auto"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -833,65 +851,66 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         }}
       />
 
-      <div className="bg-surface w-full max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[92vh] min-h-0 animate-in zoom-in-95 duration-200">
+      <div className="bg-surface w-full max-w-[calc(100vw-16px)] sm:max-w-3xl rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh] sm:max-h-[92vh] min-h-0 animate-in zoom-in-95 duration-200 overflow-hidden box-border">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-outline-variant/20">
-          <div>
-            <h3 className="text-lg font-bold tracking-tight text-on-surface flex items-center gap-2">
-              <IconUpload size={20} className="text-primary" />
-              Batch Upload Songs
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-outline-variant/20 gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-bold tracking-tight text-on-surface flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <IconUpload size={20} className="text-primary shrink-0" />
+              <span>Batch Upload Songs</span>
               {items.length > 0 && (
-                <span className="text-sm font-semibold text-on-surface-variant/70 ml-1">
+                <span className="text-xs sm:text-sm font-semibold text-on-surface-variant/70">
                   ({doneCount}/{items.length} done)
                 </span>
               )}
             </h3>
-            <p className="text-xs text-on-surface-variant mt-0.5">
+            <p className="text-[11px] sm:text-xs text-on-surface-variant mt-0.5 leading-relaxed">
               Drag & drop multiple audio files or click to browse. Configure each song individually or use shared settings.
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors disabled:opacity-40 shrink-0"
           >
             <IconX size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-w-0">
           {/* Drop zone (shown when empty) */}
           {items.length === 0 ? (
             <div
-              className={`m-5 rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center py-16 cursor-pointer gap-4 ${
+              className={`m-3 sm:m-5 rounded-2xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center py-10 sm:py-16 px-4 cursor-pointer gap-3 sm:gap-4 ${
                 dropActive
                   ? 'border-primary bg-primary/10 scale-[1.01]'
                   : 'border-outline-variant/40 bg-surface-container-low hover:border-primary/50 hover:bg-primary/5'
               }`}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${
                 dropActive ? 'bg-primary text-on-primary scale-110' : 'bg-primary/10 text-primary'
               }`}>
-                <IconMusic size={32} />
+                <IconMusic size={28} className="sm:hidden" />
+                <IconMusic size={32} className="hidden sm:block" />
               </div>
-              <div className="text-center">
-                <p className="font-bold text-on-surface text-base">Drop audio files here</p>
-                <p className="text-on-surface-variant text-sm mt-1">or <span className="text-primary font-semibold underline underline-offset-2">click to browse</span></p>
-                <p className="text-on-surface-variant/60 text-xs mt-2">MP3, MPEG, WAV, FLAC, AAC, OGG, M4A, WEBM, WMA, OPUS • Multiple files at once</p>
+              <div className="text-center max-w-full px-2">
+                <p className="font-bold text-on-surface text-sm sm:text-base">Drop audio files here</p>
+                <p className="text-on-surface-variant text-xs sm:text-sm mt-1">or <span className="text-primary font-semibold underline underline-offset-2">click to browse</span></p>
+                <p className="text-on-surface-variant/60 text-[11px] sm:text-xs mt-2 break-words leading-relaxed">MP3, MPEG, WAV, FLAC, AAC, OGG, M4A, WEBM, WMA, OPUS • Multiple files at once</p>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 p-5">
+            <div className="flex flex-col gap-3 sm:gap-4 p-3 sm:p-5 min-w-0">
               {/* Add more files button */}
               {!allDone && (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-outline-variant/50 text-on-surface-variant hover:border-primary/50 hover:text-primary hover:bg-primary/5 text-sm font-medium transition-all disabled:opacity-40"
+                    className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl border border-dashed border-outline-variant/50 text-on-surface-variant hover:border-primary/50 hover:text-primary hover:bg-primary/5 text-xs sm:text-sm font-medium transition-all disabled:opacity-40"
                   >
                     <IconUpload size={16} />
                     Add more files
@@ -963,6 +982,10 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                     onChange={(patch) => updateItem(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
                     onRetry={() => retrySingleItem(item.id)}
+                    onOpenMediaLibrary={() => {
+                      setActiveTargetId(item.id);
+                      setIsMediaModalOpen(true);
+                    }}
                     courses={courses}
                     adConfig={adConfig}
                     existingClasses={existingClasses}
@@ -989,18 +1012,18 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-5 py-4 border-t border-outline-variant/20 bg-surface-container-lowest/50 rounded-b-2xl flex items-center justify-between gap-3">
-          <div className="text-xs text-on-surface-variant/60">
+        <div className="flex-shrink-0 px-4 sm:px-5 py-3 sm:py-4 border-t border-outline-variant/20 bg-surface-container-lowest/50 rounded-b-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="text-xs text-on-surface-variant/60 text-center sm:text-left">
             {items.length > 0 && !allDone && (
               <span>{pendingCount} song{pendingCount !== 1 ? 's' : ''} ready to upload</span>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={allDone ? onDone : onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors text-sm disabled:opacity-40"
+              className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors text-sm disabled:opacity-40 text-center"
             >
               {allDone ? 'Close' : 'Cancel'}
             </button>
@@ -1009,7 +1032,7 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || pendingCount === 0}
-                className="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="flex-1 sm:flex-initial justify-center bg-primary text-on-primary px-5 sm:px-6 py-2.5 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
               >
                 {isSubmitting ? (
                   <><IconLoader2 size={17} className="animate-spin" /> Uploading...</>
@@ -1021,7 +1044,27 @@ export default function BatchUploadModal({ isOpen, onClose, onDone, adConfig, co
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Media Library Picker Modal */}
+      <MediaLibraryModal
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => {
+          if (activeTargetId) {
+            const currentItem = items.find((i) => i.id === activeTargetId);
+            if (currentItem) {
+              updateItem(activeTargetId, {
+                settings: {
+                  ...currentItem.settings,
+                  thumbnailUrl: url,
+                },
+              });
+            }
+          }
+        }}
+      />
+    </div>,
+    document.body
   );
 }
 

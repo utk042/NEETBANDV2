@@ -2,9 +2,9 @@ import express from 'express';
 import {
   createSong, getSongs, getSongById, updateSong, deleteSong,
   recordPlay, recordCompletion, recordShare, recordRepeat, recordDropOff,
-  getSongAnalytics, getAllSongAnalytics
+  getSongAnalytics, getAllSongAnalytics, getSongStreamUrl
 } from '../controllers/songController.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { protect, authorize, optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -12,13 +12,16 @@ const router = express.Router();
 router.get('/analytics', protect, authorize('admin', 'owner'), getAllSongAnalytics);
 
 router.route('/')
-  .get(getSongs)
+  .get(optionalAuth, getSongs)
   .post(protect, authorize('admin', 'owner'), createSong);
 
 router.route('/:id')
-  .get(getSongById)
+  .get(optionalAuth, getSongById)
   .put(protect, authorize('admin', 'owner'), updateSong)
   .delete(protect, authorize('admin', 'owner'), deleteSong);
+
+// Protected: returns the audioUrl for authenticated users only (used for just-in-time playback)
+router.get('/:id/stream', protect, getSongStreamUrl);
 
 // Analytics per-song
 router.get('/:id/analytics', protect, authorize('admin', 'owner'), getSongAnalytics);

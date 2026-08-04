@@ -490,11 +490,58 @@ export const verifyPayment = async (verificationData) => {
   return res.json();
 };
 
-export const verifyPromo = async (discountCode) => {
+export const verifyPromo = async (discountCode, plan = null) => {
   const res = await apiFetch(`${API_URL}/payments/verify-promo`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ discountCode }),
+    body: JSON.stringify({ discountCode, plan }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+// --- COUPONS ---
+export const getCoupons = async () => {
+  const res = await apiFetch(`${API_URL}/admin/coupons`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const createCoupon = async (couponData) => {
+  const res = await apiFetch(`${API_URL}/admin/coupons`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(couponData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const updateCoupon = async (id, couponData) => {
+  const res = await apiFetch(`${API_URL}/admin/coupons/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(couponData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const deleteCoupon = async (id) => {
+  const res = await apiFetch(`${API_URL}/admin/coupons/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const toggleCouponStatus = async (id) => {
+  const res = await apiFetch(`${API_URL}/admin/coupons/${id}/toggle`, {
+    method: 'PATCH',
+    headers: getHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -847,6 +894,57 @@ export const updateNewsletterSubscriber = async (id, email) => {
 export const deleteNewsletterSubscriber = async (id) => {
   const res = await apiFetch(`${API_URL}/newsletter/subscribers/${id}`, {
     method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+// --- MEMBER BENEFITS ---
+export const getBenefits = async () => {
+  const res = await apiFetch(`${API_URL}/benefits`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getAdminBenefits = async () => {
+  const res = await apiFetch(`${API_URL}/benefits/admin/all`, { headers: getLmsHeaders() });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const createBenefit = async (benefitData) => {
+  const res = await apiFetch(`${API_URL}/benefits`, {
+    method: 'POST',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(benefitData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const updateBenefit = async (id, benefitData) => {
+  const res = await apiFetch(`${API_URL}/benefits/${id}`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(benefitData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const deleteBenefit = async (id) => {
+  const res = await apiFetch(`${API_URL}/benefits/${id}`, {
+    method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const toggleBenefitAvailability = async (id) => {
+  const res = await apiFetch(`${API_URL}/benefits/${id}/toggle`, {
+    method: 'PATCH',
     headers: getLmsHeaders(),
   });
   if (!res.ok) throw new Error(await res.text());

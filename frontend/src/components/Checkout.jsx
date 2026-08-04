@@ -28,17 +28,17 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
     if (!promoCode.trim()) return;
     try {
       setPromoMessage({ text: 'Verifying...', type: 'info' });
-      const res = await verifyPromo(promoCode.trim());
+      const res = await verifyPromo(promoCode.trim(), selectedPlan);
       if (res.valid) {
         setAppliedPromo({
-          code: promoCode.trim(),
+          code: res.code || promoCode.trim(),
           type: res.discountType,
           value: res.discountValue
         });
-        setPromoMessage({ text: 'Promo code applied successfully!', type: 'success' });
+        setPromoMessage({ text: 'Discount code applied successfully!', type: 'success' });
       } else {
         setAppliedPromo(null);
-        setPromoMessage({ text: 'Invalid or inactive promo code', type: 'error' });
+        setPromoMessage({ text: res.message || 'Invalid or inactive promo code', type: 'error' });
       }
     } catch (err) {
       setAppliedPromo(null);
@@ -138,21 +138,28 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
   };
 
   const handleBack = () => {
-    navigate('/');
+    if (window.history.length > 1 && window.history.state?.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/pricing');
+    }
   };
 
   return (
     <div className="min-h-screen bg-surface py-6 md:py-8 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header / Back */}
-        <div className="mb-8 flex items-center gap-4">
-          <button 
-            onClick={handleBack}
-            className="w-10 h-10 bg-surface-container text-on-surface rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors border border-outline-variant/30 shadow-sm"
-          >
-            <IconChevronLeft size={24} />
-          </button>
-          <h1 className="text-2xl font-bold text-on-surface">Checkout</h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="w-10 h-10 bg-surface-container text-on-surface rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors border border-outline-variant/30 shadow-sm"
+              title="Go back"
+            >
+              <IconChevronLeft size={24} />
+            </button>
+            <h1 className="text-2xl font-bold text-on-surface">Checkout</h1>
+          </div>
         </div>
 
         {error && (
@@ -215,7 +222,15 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
 
           {/* Right Column: Order Summary */}
           <div className="w-full lg:w-[45%] max-w-2xl bg-surface-container rounded-3xl p-6 lg:p-10 shadow-sm border border-outline-variant/30 lg:mt-0">
-            <h2 className="text-xl lg:text-2xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-6">Order Summary</h2>
+            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-6 mb-6">
+              <h2 className="text-xl lg:text-2xl font-bold text-on-surface">Order Summary</h2>
+              <button 
+                onClick={() => navigate('/pricing')}
+                className="text-xs font-bold text-primary hover:underline"
+              >
+                Change Plan
+              </button>
+            </div>
             
             <div className="flex flex-col gap-5 text-base mb-8">
               <div className="flex justify-between items-center">

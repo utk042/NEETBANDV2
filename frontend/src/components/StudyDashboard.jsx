@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconBolt, IconBrain, IconMusic, IconUsers, IconTrophy } from '@tabler/icons-react';
+import { IconEye, IconBrain, IconMusic, IconListCheck } from '@tabler/icons-react';
 
 export default function StudyDashboard() {
   const handleMouseMove = (e) => {
@@ -13,7 +13,7 @@ export default function StudyDashboard() {
   return (
     <div className="relative w-full max-w-[360px] h-[400px] mx-auto md:mr-0 z-10 select-none">
 
-      {/* Floating Card 1: Speed */}
+      {/* Floating Card 1: Eye-Friendly */}
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
@@ -30,16 +30,16 @@ export default function StudyDashboard() {
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconBolt size={20} />
+            <IconEye size={20} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">4.8x</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Faster Learning</div>
+            <div data-gsap="stat-number" className="font-headline-md text-base text-on-surface font-extrabold leading-none">Eye-Friendly</div>
+            <div className="text-[11px] text-on-surface-variant mt-1">Reduce Screen Strain</div>
           </div>
         </div>
       </div>
 
-      {/* Floating Card 2: Retention */}
+      {/* Floating Card 2: Active Recall */}
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
@@ -65,7 +65,7 @@ export default function StudyDashboard() {
         </div>
       </div>
 
-      {/* Floating Card 3: Library */}
+      {/* Floating Card 3: 2000+ Study Songs */}
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
@@ -86,11 +86,12 @@ export default function StudyDashboard() {
           </div>
           <div>
             <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">2000+</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Study Songs</div>
+            <div className="text-[11px] text-on-surface-variant mt-1">Study Songs & Notes</div>
           </div>
         </div>
       </div>
-      {/* Floating Card 4: Users */}
+
+      {/* Floating Card 4: Test Yourself */}
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
@@ -107,11 +108,11 @@ export default function StudyDashboard() {
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconTrophy size={20} />
+            <IconListCheck size={20} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">#1</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Study Platform</div>
+            <div data-gsap="stat-number" className="font-headline-md text-base text-on-surface font-extrabold leading-none">Test Yourself</div>
+            <div className="text-[11px] text-on-surface-variant mt-1">Q&As and MCQs</div>
           </div>
         </div>
       </div>

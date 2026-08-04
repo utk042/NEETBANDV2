@@ -89,7 +89,8 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     if (!onSeek) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect || rect.width <= 0) return;
-    const clickX = e.clientX - rect.left;
+    const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0));
+    const clickX = clientX - rect.left;
     const width = rect.width;
     const newPercent = clickX / width;
     if (isNaN(newPercent) || !isFinite(newPercent)) return;
@@ -98,18 +99,25 @@ export default function FullPlayerModal({ isOpen, onClose }) {
     onSeek(Math.max(0, Math.min(newTime, totalSeconds)));
   };
 
-  // Generate deterministic wave data
+  const formatPaddedTime = (seconds) => {
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '00:00';
+    const totalSecs = Math.floor(seconds);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    const minsStr = mins < 10 ? `0${mins}` : `${mins}`;
+    const secsStr = secs < 10 ? `0${secs}` : `${secs}`;
+    return `${minsStr}:${secsStr}`;
+  };
+
+  // Generate realistic audio waveform data matching reference image
   const waveData = useMemo(() => {
-    const numBars = 70;
-    return Array.from({ length: numBars }).map((_, i) => {
-      const t = i / numBars;
-      // Composite of 3 sine waves at different frequencies for organic look
-      const a = Math.sin(t * Math.PI * 4) * 30;
-      const b = Math.sin(t * Math.PI * 8 + 1.2) * 20;
-      const c = Math.cos(t * Math.PI * 2 + 0.5) * 15;
-      const raw = Math.abs(a + b + c);
-      return Math.max(15, Math.min(100, raw + 22));
-    });
+    return [
+      15, 22, 35, 60, 40, 75, 90, 55, 95, 75, 40, 65, 80, 45, 85, 95,
+      55, 35, 70, 80, 90, 45, 65, 85, 60, 95, 75, 50, 80, 90, 65, 40,
+      55, 75, 95, 70, 85, 50, 65, 80, 98, 100, 90, 75, 55, 70, 90, 80,
+      95, 85, 65, 75, 90, 98, 80, 70, 85, 95, 90, 75, 60, 80, 90, 70,
+      55, 75, 85, 65, 50, 40, 25, 18
+    ];
   }, []);
 
   if (!isOpen) return null;
@@ -117,9 +125,6 @@ export default function FullPlayerModal({ isOpen, onClose }) {
   if (!displayTrack) {
     return (
       <div 
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={modalStyle}
         className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar"
       >
@@ -143,34 +148,17 @@ export default function FullPlayerModal({ isOpen, onClose }) {
 
   return (
     <div 
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       style={modalStyle}
       className="fixed inset-0 z-modal flex flex-col bg-surface/[0.98] transition-all duration-300 overflow-y-auto overflow-x-hidden no-scrollbar"
     >
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes waveRise {
-          0%   { transform: scaleY(0.4) translateY(0); }
-          25%  { transform: scaleY(1.0) translateY(0); }
-          50%  { transform: scaleY(0.6) translateY(0); }
-          75%  { transform: scaleY(0.9) translateY(0); }
-          100% { transform: scaleY(0.5) translateY(0); }
-        }
-        @keyframes waveFall {
-          0%   { transform: scaleY(0.9) translateY(0); }
-          50%  { transform: scaleY(0.5) translateY(0); }
-          100% { transform: scaleY(0.8) translateY(0); }
-        }
-        .wave-bar-active {
-          animation: waveRise var(--dur, 0.8s) ease-in-out infinite alternate;
-          animation-delay: var(--delay, 0s);
-          transform-origin: center;
-        }
-        .wave-bar-paused {
-      ` }} />
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 md:px-8 shrink-0 relative">
+
+      {/* Header (Swipeable area) */}
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="flex justify-between items-center p-4 md:px-8 shrink-0 relative cursor-grab active:cursor-grabbing"
+      >
         <div className="flex-1 flex justify-start z-10">
           <button onClick={onClose} className="p-2 text-on-surface hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-full">
             <IconChevronDown size={32} />
@@ -312,44 +300,40 @@ export default function FullPlayerModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Wavy Progress Bar */}
-          <div className="mb-8">
+          {/* Simple Waveform Timeline (Matching Reference Image) */}
+          <div className="mb-8 flex items-center gap-4">
+            {/* Left Time Readout */}
+            <span className="text-2xl md:text-3xl font-black tracking-tight text-on-surface flex-shrink-0 select-none font-mono">
+              {formatPaddedTime(currentSeconds)}
+            </span>
+
+            {/* Waveform Scrubber */}
             <div 
-              className="w-full h-12 flex items-center justify-between gap-[2px] cursor-pointer group"
+              className="flex-1 h-12 flex items-center justify-between gap-[2px] cursor-pointer group"
               onClick={handleScrub}
+              role="slider"
+              aria-label="Progress Timeline"
+              aria-valuenow={currentSeconds}
+              aria-valuemin={0}
+              aria-valuemax={totalSeconds}
             >
               {waveData.map((height, i) => {
                 const isPlayed = (i / waveData.length) * 100 <= progressPercent;
-                // Staggered timing — each bar gets a slightly different phase
-                const dur = `${0.5 + (i % 5) * 0.08}s`;
-                const delay = `${-((i * 0.07) % 0.8)}s`;
-                const staticScale = (height / 100) * 0.9 + 0.1;
 
                 return (
                   <div
                     key={i}
-                    className={`flex-1 rounded-full transition-colors duration-300 ${
+                    className={`flex-1 rounded-full pointer-events-none transition-colors duration-150 ${
                       isPlayed
-                        ? 'bg-primary shadow-[0_0_6px_rgba(201,162,39,0.4)]'
-                        : 'bg-surface-container-highest/70 group-hover:bg-surface-container-highest'
-                    } ${
-                      isAnyAudioActive
-                        ? 'wave-bar-active'
-                        : 'wave-bar-paused'
+                        ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                        : 'bg-white shadow-sm'
                     }`}
                     style={{
                       height: `${height}%`,
-                      '--dur': dur,
-                      '--delay': delay,
-                      '--static-scale': staticScale,
                     }}
                   />
                 );
               })}
-            </div>
-            <div className="flex justify-between text-xs font-semibold text-on-surface-variant mt-3">
-              <span>{formatTime(currentSeconds)}</span>
-              <span>{displayTrack.duration || formatTime(totalSeconds)}</span>
             </div>
           </div>
 
@@ -368,8 +352,8 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                 <IconPlayerSkipBackFilled size={36} />
               </button>
               <button 
-                onClick={playbackError ? retryPlayback : togglePlay}
-                className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200"
+                onClick={(e) => { e.stopPropagation(); playbackError ? retryPlayback?.() : togglePlay(); }}
+                className="w-[84px] h-[84px] rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(201,162,39,0.3)] hover:scale-105 active:scale-95 transition-all shrink-0 duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 aria-label={playbackError ? 'Retry' : isAnyAudioActive ? 'Pause' : 'Play'}
                 title={playbackError ? 'Retry Playback' : isAnyAudioActive ? 'Pause' : 'Play'}
               >

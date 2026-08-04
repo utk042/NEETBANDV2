@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconArrowRight } from '@tabler/icons-react';
+import { IconArrowRight, IconHeadphones, IconBook } from '@tabler/icons-react';
 import StudyDashboard from './StudyDashboard';
 import Button from './ui/Button';
 import heroVideo from '../assets/vid1.mp4';
@@ -36,10 +36,12 @@ export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeCli
           </p>
           
           <div className="pt-4 flex flex-col sm:flex-row gap-4">
-            <Button size="lg" className="group" onClick={() => navigate('/library')}>
+            <Button size="lg" className="group bg-primary text-on-primary hover:bg-primary/90 shadow-lg shadow-primary/20" onClick={() => navigate('/library')}>
+              <IconHeadphones size={22} className="mr-1" />
               Start Listening <IconArrowRight size={20} className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
             </Button>
-            <Button size="lg" variant="secondary" className="group" onClick={() => navigate('/course')}>
+            <Button size="lg" variant="secondary" className="group bg-secondary text-on-secondary hover:bg-secondary/90 shadow-lg shadow-secondary/20 border-0" onClick={() => navigate('/course')}>
+              <IconBook size={22} className="mr-1 text-on-secondary" />
               Explore Courses
             </Button>
           </div>

@@ -13,7 +13,7 @@ export function Button({
   
   const variants = {
     primary: "bg-primary hover:bg-primary-fixed text-on-primary hover:text-on-primary-fixed shadow-sm hover:shadow-md hover:-translate-y-0.5 focus-visible:ring-primary/50",
-    secondary: "bg-surface-variant hover:bg-surface-variant-hover text-on-surface shadow-sm focus-visible:ring-surface-variant/50",
+    secondary: "bg-secondary hover:bg-secondary/90 text-on-secondary shadow-sm hover:shadow-md focus-visible:ring-secondary/50",
     outline: "border-2 border-primary text-primary hover:bg-primary/5 focus-visible:ring-primary/50",
     ghost: "bg-transparent hover:bg-white/10 text-on-surface focus-visible:ring-white/20"
   };

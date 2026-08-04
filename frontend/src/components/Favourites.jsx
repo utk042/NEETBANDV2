@@ -112,7 +112,7 @@ export default function Favourites({ tracks, favoritedTrackIds, onToggleFavorite
                           }
                         } else {
                           customAlert('Premium Feature', 'This feature is for Premium users only. Please upgrade your plan.').then(() => {
-                            navigate('/checkout');
+                            navigate('/pricing');
                           });
                         }
                       }} className="hover:text-primary transition-colors p-1 md:p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl hidden sm:flex items-center justify-center" aria-label="Download track"><IconDownload size={20} className="block" /></button>

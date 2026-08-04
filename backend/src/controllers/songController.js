@@ -121,6 +121,18 @@ export const getSongs = async (req, res) => {
     }
 
     const songs = await Song.find(query).sort(sortOption).populate('courseId', 'title');
+
+    // Strip audioUrl for unauthenticated callers so direct API access from
+    // DevTools cannot harvest premium MP3 links. Authenticated users receive
+    // the full document unchanged.
+    if (!req.user) {
+      return res.json(songs.map(s => {
+        const obj = s.toObject();
+        delete obj.audioUrl;
+        return obj;
+      }));
+    }
+
     res.json(songs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -129,15 +141,34 @@ export const getSongs = async (req, res) => {
 
 // @desc    Get song by ID
 // @route   GET /api/songs/:id
-// @access  Public
+// @access  Public (audioUrl stripped for unauthenticated callers)
 export const getSongById = async (req, res) => {
   try {
     const song = await Song.findById(req.params.id).populate('courseId', 'title summary');
     if (song) {
+      if (!req.user) {
+        const obj = song.toObject();
+        delete obj.audioUrl;
+        return res.json(obj);
+      }
       res.json(song);
     } else {
       res.status(404).json({ message: 'Song not found' });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get only the audioUrl for a song (authenticated users only)
+// @route   GET /api/songs/:id/stream
+// @access  Private
+export const getSongStreamUrl = async (req, res) => {
+  try {
+    const song = await Song.findById(req.params.id).select('audioUrl');
+    if (!song) return res.status(404).json({ message: 'Song not found' });
+    if (!song.audioUrl) return res.status(404).json({ message: 'Audio URL not available' });
+    res.json({ audioUrl: song.audioUrl });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

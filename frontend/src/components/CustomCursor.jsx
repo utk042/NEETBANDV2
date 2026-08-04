@@ -49,7 +49,7 @@ export default function CustomCursor() {
         left: 0,
         width: '6px',
         height: '6px',
-        backgroundColor: '#ff0000',
+        backgroundColor: 'rgb(var(--color-secondary, 59 130 246))',
         borderRadius: '50%',
         pointerEvents: 'none',
         zIndex: 99999,

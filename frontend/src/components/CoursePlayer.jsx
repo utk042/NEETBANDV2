@@ -32,11 +32,14 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
   const [course, setCourse] = useState(null);
   const [courseLoading, setCourseLoading] = useState(true);
+  const [courseError, setCourseError] = useState(false);
+  const [courseRetryCount, setCourseRetryCount] = useState(0);
   const [completedItems, setCompletedItems] = useState([]);
 
   useEffect(() => {
     if (!courseId) return;
     setCourseLoading(true);
+    setCourseError(false);
     getCourseById(courseId)
       .then(data => {
         setCourse(data);
@@ -46,9 +49,12 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
           }).catch(err => console.error("Failed to load progress:", err));
         }
       })
-      .catch(err => console.error("Failed to fetch course:", err))
+      .catch(err => {
+        console.error("Failed to fetch course:", err);
+        setCourseError(true);
+      })
       .finally(() => setCourseLoading(false));
-  }, [courseId, user]);
+  }, [courseId, user, courseRetryCount]);
 
   const parseParamIdx = (val) => {
     if (val === undefined || val === null) return null;
@@ -146,6 +152,8 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, courseId]);
 
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState(false);
+  const [detailsRetryCount, setDetailsRetryCount] = useState(0);
   const [activeDetails, setActiveDetails] = useState(null);
 
   const activeSubject = course?.subjects?.[selectedSubjectIdx];
@@ -168,6 +176,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
     let isMounted = true;
     setDocumentError(false);
+    setDetailsError(false);
     const loadDetails = async () => {
       setDetailsLoading(true);
       try {
@@ -189,7 +198,10 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
         if (isMounted) setActiveDetails(resData);
       } catch (err) {
         console.error("Failed to load item details:", err);
-        if (isMounted) setActiveDetails(null);
+        if (isMounted) {
+          setActiveDetails(null);
+          setDetailsError(true);
+        }
       } finally {
         if (isMounted) setDetailsLoading(false);
       }
@@ -199,7 +211,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     return () => {
       isMounted = false;
     };
-  }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, activeItem?._id, activeItem?.type, user, course]);
+  }, [selectedSubjectIdx, selectedChapterIdx, selectedItemIdx, activeItem?._id, activeItem?.type, user, course, detailsRetryCount]);
 
 
 
@@ -266,6 +278,21 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
 
   const prevItem = getPreviousItem();
   const nextItem = getNextItem();
+
+  if (courseError) {
+    return (
+      <div className="min-h-[60vh] w-full flex flex-col items-center justify-center gap-4 bg-surface text-on-surface">
+        <p className="text-lg font-semibold">Failed to load course</p>
+        <p className="text-sm text-on-surface-variant">Check your connection and try again.</p>
+        <button
+          onClick={() => setCourseRetryCount(c => c + 1)}
+          className="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (courseLoading || !course) {
     return (
@@ -694,6 +721,17 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <IconLoader2 className="animate-spin text-primary mb-3" size={32} />
                 <p className="text-sm text-on-surface-variant">Loading content details...</p>
+              </div>
+            ) : detailsError ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                <p className="text-sm font-semibold text-on-surface">Failed to load content</p>
+                <p className="text-xs text-on-surface-variant">Check your connection and try again.</p>
+                <button
+                  onClick={() => setDetailsRetryCount(c => c + 1)}
+                  className="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : (
               <>

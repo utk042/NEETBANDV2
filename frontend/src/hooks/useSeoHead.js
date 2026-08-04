@@ -77,6 +77,11 @@ const ROUTE_META = {
     description: 'Manage your NEET study progress, active courses, and audio playlists.',
     public: false,
   },
+  '/pricing': {
+    title: 'Pricing & Plans | NeetBand Premium',
+    description: 'Explore NeetBand membership plans. Unlock 2000+ biology audio study tracks, unlimited offline downloads, MCQ quizzes, and exclusive member perks.',
+    public: true,
+  },
   '/checkout': {
     title: 'Premium Upgrade & Checkout | NeetBand',
     description: 'Unlock unlimited NEET audio courses, summaries, and offline listening.',

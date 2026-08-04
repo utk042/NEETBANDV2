@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconCheck, IconTarget, IconUsers, IconX, IconMusic, IconDeviceMobile, IconHeadphones } from '@tabler/icons-react';
+import { IconCheck, IconTarget, IconUsers, IconX, IconMusic, IconDeviceMobile, IconHeadphones, IconShieldCheck } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 
 export default function AboutUs() {
@@ -87,8 +87,8 @@ export default function AboutUs() {
 
         {/* DPIIT Recognition Banner */}
         <div className="bg-primary/8 border border-primary/25 p-6 rounded-2xl mb-16 flex items-center gap-6">
-          <div className="w-16 h-16 rounded-full bg-surface shadow-sm border border-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl font-bold text-primary">₹</span>
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 shadow-sm border border-primary/20 flex items-center justify-center flex-shrink-0">
+            <IconShieldCheck className="text-primary" size={28} />
           </div>
           <div>
             <h3 className="font-headline-md text-lg font-bold text-on-surface mb-1">Recognized EdTech Innovator</h3>

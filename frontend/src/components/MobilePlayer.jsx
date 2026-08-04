@@ -22,7 +22,7 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
   const totalSeconds = (currentTrack && duration > 0) ? duration : (displayTrack.durationSeconds || 0);
   const progressPercent = totalSeconds > 0 ? Math.min((currentSeconds / totalSeconds) * 100, 100) : 0;
 
-  const { activeLyric } = useLyrics(displayTrack?.lyricsUrl, currentSeconds);
+  const { lyrics, activeLyric } = useLyrics(displayTrack?.lyricsUrl, currentSeconds);
 
   const handleWrapperKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -71,7 +71,6 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
             <img alt={displayTrack.title} className={`w-full h-full ${(!displayTrack.cover || displayTrack.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} src={displayTrack.cover || logoImg} width={40} height={40} onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }} />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
             <span 
               className={`font-label-sm text-[10px] truncate ${playbackError ? 'text-red-500 font-medium' : isAudioRollActive ? 'text-amber-600 dark:text-amber-400 font-bold animate-pulse' : 'text-on-surface-variant opacity-70'}`}
               style={isAudioRollActive && adConfig?.adTextColor ? { color: adConfig.adTextColor } : undefined}
@@ -83,12 +82,13 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
                 </span>
               ) : isAudioRollActive ? (
                 activeRollType === 'guestAd' 
-                  ? 'Guest Roll Playing' 
+                  ? 'Log in to continue listening' 
                   : (adConfig?.adBannerText || 'Study without interruptions. Upgrade to Premium for an ad-free experience.')
-              ) : activeLyric ? (
-                <span className="text-primary/95 italic font-medium truncate pr-2.5 inline-block">{activeLyric}</span>
+              ) : (lyrics && lyrics.length > 0) ? (
+                <span className="text-base leading-tight text-primary/95 italic font-medium truncate pr-2.5 inline-block">{activeLyric || '\u00A0'}</span>
               ) : displayTrack.chapter}
             </span>
+            <span className="font-headline-md text-label-md text-on-surface truncate">{displayTrack.title}</span>
           </div>
         </div>
         

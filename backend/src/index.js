@@ -20,6 +20,8 @@ import adConfigRoutes from './routes/adConfigRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import { startBackgroundCleanup } from './utils/cleanup.js';
 
+import benefitRoutes from './routes/benefits.js';
+
 dotenv.config();
 
 const app = express();
@@ -77,10 +79,12 @@ app.use('/forums', forumRoutes);
 app.use('/affiliates', affiliateRoutes);
 app.use('/contact', contactRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/newsletter', newsletterRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
 app.use('/categories', categoryRoutes);
+app.use('/benefits', benefitRoutes);
 
 // Base route
 app.get('/', (req, res) => {

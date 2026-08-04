@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { getSongs, createSong, updateSong, deleteSong, uploadFile, deleteUploadedFile, getCourses } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
-  IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, 
+  IconPlus, IconMusic, IconCrown, IconLink, IconEdit, IconTrash, IconUpload, IconPhoto,
   IconStack2, IconLoader2, IconSearch, IconX, IconSortAscending, IconSortDescending, 
   IconFilter, IconChevronLeft, IconChevronRight, IconArrowsSort 
 } from '@tabler/icons-react';
 import logoImg from '../../assets/logo.png';
 import BatchUploadModal from './BatchUploadModal';
+import MediaLibraryModal from './MediaLibraryModal';
 import { cleanSongTitle } from '../../utils/songTitleUtils';
 
 const getFullUrl = (url) => {
@@ -367,6 +368,7 @@ export default function ManageSongs() {
   }, [formData.audioUrl]);
   const [isAddSongModalOpen, setIsAddSongModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
   const handleOpenAddModal = () => {
     setAudioUrlValid(null);
@@ -1191,7 +1193,7 @@ export default function ManageSongs() {
                         <label className={labelClass}>Thumbnail Image URL <span className="opacity-60 lowercase font-normal">(optional)</span></label>
                         <DragDropWrapper onFileDrop={(file) => handleFileUpload(file, 'thumbnailUrl', 'songs/thumbnails')}>
                           <div className="relative">
-                            <input type="url" placeholder="https://..." className={`${inputClass} pr-28`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
+                            <input type="url" placeholder="https://..." className={`${inputClass} pr-48`} value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})} />
                             {uploadProgress.thumbnailUrl !== undefined ? (
                               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded flex items-center gap-2 min-w-[70px] justify-center">
                                 <span>{uploadProgress.thumbnailUrl}%</span>
@@ -1200,10 +1202,20 @@ export default function ManageSongs() {
                                 </div>
                               </div>
                             ) : (
-                              <label className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
-                                <IconUpload size={12} stroke={2.5} /> Upload
-                                <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
-                              </label>
+                              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsMediaModalOpen(true)}
+                                  className="text-[10px] uppercase font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-1"
+                                  title="Select from Media Library"
+                                >
+                                  <IconPhoto size={12} stroke={2.5} /> Library
+                                </button>
+                                <label className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1">
+                                  <IconUpload size={12} stroke={2.5} /> Upload
+                                  <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl', 'songs/thumbnails')} />
+                                </label>
+                              </div>
                             )}
                           </div>
                         </DragDropWrapper>
@@ -1495,6 +1507,13 @@ export default function ManageSongs() {
         adConfig={adConfig}
         courses={courses}
         songs={songs}
+      />
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => setFormData(prev => ({ ...prev, thumbnailUrl: url }))}
       />
     </div>
   );

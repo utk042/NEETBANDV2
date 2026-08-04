@@ -13,10 +13,12 @@ import SongAnalyticsDashboard from './SongAnalyticsDashboard';
 import ManageNewsletter from './ManageNewsletter';
 import ManageBookOrders from './ManageBookOrders';
 import ManageEyeCheckups from './ManageEyeCheckups';
+import ManageCoupons from './ManageCoupons';
 import AdSettings from './AdSettings';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
+  IconTag,
   IconMusic, 
   IconBook, 
   IconLayoutDashboard, 
@@ -44,7 +46,8 @@ import {
   IconMail,
   IconChartBar,
   IconMailOpened,
-  IconEye
+  IconEye,
+  IconGift
 } from '@tabler/icons-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -285,6 +288,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconAffiliate size={20} stroke={2.5} /> Affiliates
+          </button>
+
+          <button
+            onClick={() => changeTab('coupons')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'coupons' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconTag size={20} stroke={2.5} /> Discount Codes
           </button>
 
           {user?.role === 'owner' && (
@@ -600,6 +614,14 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             <div className="max-w-6xl mx-auto pb-8">
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <AdminAffiliates />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'coupons' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageCoupons />
               </div>
             </div>
           )}

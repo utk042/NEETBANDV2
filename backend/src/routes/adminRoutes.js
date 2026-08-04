@@ -22,6 +22,14 @@ import {
   getBookClaims, updateBookClaimStatus, createBookClaim, deleteBookClaim,
   getEyeCheckupClaims, updateEyeCheckupStatus, createEyeCheckupClaim, deleteEyeCheckupClaim 
 } from '../controllers/offerAdminController.js';
+import {
+  getCoupons,
+  getCouponById,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon,
+  toggleCouponStatus
+} from '../controllers/couponController.js';
 
 const router = express.Router();
 
@@ -59,5 +67,13 @@ router.get('/offers/eye-checkup', protect, authorize('admin', 'owner'), getEyeCh
 router.post('/offers/eye-checkup', protect, authorize('admin', 'owner'), createEyeCheckupClaim);
 router.put('/offers/eye-checkup/:id', protect, authorize('admin', 'owner'), updateEyeCheckupStatus);
 router.delete('/offers/eye-checkup/:id', protect, authorize('admin', 'owner'), deleteEyeCheckupClaim);
+
+// Coupon / Discount Code routes
+router.get('/coupons', protect, authorize('admin', 'owner'), getCoupons);
+router.get('/coupons/:id', protect, authorize('admin', 'owner'), getCouponById);
+router.post('/coupons', protect, authorize('admin', 'owner'), createCoupon);
+router.put('/coupons/:id', protect, authorize('admin', 'owner'), updateCoupon);
+router.delete('/coupons/:id', protect, authorize('admin', 'owner'), deleteCoupon);
+router.patch('/coupons/:id/toggle', protect, authorize('admin', 'owner'), toggleCouponStatus);
 
 export default router;
