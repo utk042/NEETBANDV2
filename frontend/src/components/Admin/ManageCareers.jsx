@@ -506,7 +506,7 @@ export default function ManageCareers() {
       {/* POSITION CREATION / EDIT MODAL */}
       {isPositionModalOpen && (
         <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#121212] text-on-surface border border-outline-variant/40 rounded-2xl p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+          <div className="bg-surface text-on-surface border border-outline-variant/40 rounded-2xl p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
             <button
               onClick={() => setIsPositionModalOpen(false)}
               className="absolute top-5 right-5 text-on-surface-variant hover:text-on-surface p-1.5 rounded-full hover:bg-surface-variant/50"
@@ -529,7 +529,7 @@ export default function ManageCareers() {
                   value={positionForm.title}
                   onChange={(e) => setPositionForm({ ...positionForm, title: e.target.value })}
                   placeholder="e.g. Video Editor Job in Kanpur | Reels & Social Media"
-                  className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                  className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>
 
@@ -541,7 +541,7 @@ export default function ManageCareers() {
                   <select
                     value={positionForm.jobType}
                     onChange={(e) => setPositionForm({ ...positionForm, jobType: e.target.value })}
-                    className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                   >
                     <option value="FULL-TIME">FULL-TIME</option>
                     <option value="PART-TIME">PART-TIME</option>
@@ -557,7 +557,7 @@ export default function ManageCareers() {
                   <select
                     value={positionForm.status}
                     onChange={(e) => setPositionForm({ ...positionForm, status: e.target.value })}
-                    className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                   >
                     <option value="active">Active (Visible on Careers)</option>
                     <option value="inactive">Inactive (Hidden)</option>
@@ -577,7 +577,7 @@ export default function ManageCareers() {
                     value={positionForm.location}
                     onChange={(e) => setPositionForm({ ...positionForm, location: e.target.value })}
                     placeholder="e.g. Kanpur (Work from Office)"
-                    className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -591,7 +591,7 @@ export default function ManageCareers() {
                     value={positionForm.experience}
                     onChange={(e) => setPositionForm({ ...positionForm, experience: e.target.value })}
                     placeholder="e.g. 1-2 Years (Freshers can apply)"
-                    className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -606,7 +606,7 @@ export default function ManageCareers() {
                   value={positionForm.salary}
                   onChange={(e) => setPositionForm({ ...positionForm, salary: e.target.value })}
                   placeholder="e.g. ₹10,000 - ₹25,000 + Incentives"
-                  className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+                  className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>
 
@@ -620,7 +620,7 @@ export default function ManageCareers() {
                   value={positionForm.description}
                   onChange={(e) => setPositionForm({ ...positionForm, description: e.target.value })}
                   placeholder="Write a clear job description..."
-                  className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary resize-y"
+                  className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary resize-y"
                 />
               </div>
 
@@ -647,7 +647,7 @@ export default function ManageCareers() {
       {/* APPLICATION DETAIL MODAL */}
       {selectedAppDetail && (
         <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#121212] text-on-surface border border-outline-variant/40 rounded-2xl p-6 md:p-8 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+          <div className="bg-surface text-on-surface border border-outline-variant/40 rounded-2xl p-6 md:p-8 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
             <button
               onClick={() => setSelectedAppDetail(null)}
               className="absolute top-5 right-5 text-on-surface-variant hover:text-on-surface p-1.5 rounded-full hover:bg-surface-variant/50"
@@ -663,7 +663,7 @@ export default function ManageCareers() {
             </p>
 
             <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 bg-[#1c1c1c] p-4 rounded-xl border border-outline-variant/30">
+              <div className="grid grid-cols-2 gap-4 bg-surface-container/60 p-4 rounded-xl border border-outline-variant/30">
                 <div>
                   <span className="text-on-surface-variant/70 block mb-0.5">Email</span>
                   <span className="font-semibold text-on-surface">{selectedAppDetail.email}</span>
@@ -693,7 +693,7 @@ export default function ManageCareers() {
                 <span className="text-on-surface-variant/70 block mb-1 font-semibold uppercase tracking-wider">
                   Cover Letter
                 </span>
-                <div className="bg-[#1c1c1c] p-4 rounded-xl border border-outline-variant/30 whitespace-pre-wrap text-on-surface leading-relaxed">
+                <div className="bg-surface-container/60 p-4 rounded-xl border border-outline-variant/30 whitespace-pre-wrap text-on-surface leading-relaxed">
                   {selectedAppDetail.coverLetter || 'No cover letter provided.'}
                 </div>
               </div>
@@ -707,7 +707,7 @@ export default function ManageCareers() {
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Add notes about candidate interview, rating, etc..."
-                  className="w-full bg-[#1c1c1c] border border-outline-variant/40 rounded-xl px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-y"
+                  className="w-full bg-surface-container/60 border border-outline-variant/40 rounded-xl px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-y"
                 />
                 <div className="flex justify-end mt-2">
                   <button

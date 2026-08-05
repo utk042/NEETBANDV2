@@ -42,7 +42,7 @@ export default function Careers() {
           </p>
         </header>
 
-        {/* Dynamic Open Positions Section (Featured) */}
+        {/* Dynamic Open Positions Section */}
         <div id="open-positions" className="mb-20 scroll-mt-24">
           <div className="text-center mb-12">
             <h2 className="font-headline-lg font-bold text-3xl md:text-4xl text-on-surface mb-3 tracking-tight">
@@ -63,7 +63,7 @@ export default function Careers() {
               {positions.map((pos) => (
                 <div
                   key={pos._id}
-                  className="bg-[#121212] border border-outline-variant/30 rounded-2xl p-6 flex flex-col justify-between hover:border-outline-variant/60 transition-all duration-200 shadow-lg group"
+                  className="bg-surface-container-lowest border border-[var(--border-floating-card)] rounded-3xl p-6 md:p-7 flex flex-col justify-between hover:border-primary/50 transition-all duration-300 shadow-[var(--shadow-floating-card)] group"
                 >
                   <div>
                     {/* Header: Title & Job Type Badge */}
@@ -71,7 +71,7 @@ export default function Careers() {
                       <h3 className="font-bold text-on-surface text-lg leading-snug group-hover:text-primary transition-colors">
                         {pos.title}
                       </h3>
-                      <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md flex-shrink-0">
+                      <span className="bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md flex-shrink-0">
                         {pos.jobType || 'FULL-TIME'}
                       </span>
                     </div>
@@ -84,15 +84,15 @@ export default function Careers() {
                     {/* Key Details List */}
                     <div className="flex flex-col gap-3 text-xs text-on-surface-variant/90 mb-6">
                       <div className="flex items-start gap-2.5">
-                        <IconMapPin size={16} className="text-on-surface-variant/60 mt-0.5 flex-shrink-0" />
+                        <IconMapPin size={16} className="text-primary/70 mt-0.5 flex-shrink-0" />
                         <span>{pos.location}</span>
                       </div>
                       <div className="flex items-start gap-2.5">
-                        <IconBriefcase size={16} className="text-on-surface-variant/60 mt-0.5 flex-shrink-0" />
+                        <IconBriefcase size={16} className="text-primary/70 mt-0.5 flex-shrink-0" />
                         <span>{pos.experience}</span>
                       </div>
                       <div className="flex items-start gap-2.5">
-                        <IconCreditCard size={16} className="text-on-surface-variant/60 mt-0.5 flex-shrink-0" />
+                        <IconCreditCard size={16} className="text-primary/70 mt-0.5 flex-shrink-0" />
                         <span>{pos.salary}</span>
                       </div>
                     </div>
@@ -101,7 +101,7 @@ export default function Careers() {
                   {/* Apply Button */}
                   <button
                     onClick={() => setSelectedPosition(pos)}
-                    className="w-full bg-[#1c1c1c] hover:bg-[#252525] text-on-surface font-bold py-3 px-4 rounded-xl border border-outline-variant/30 text-xs tracking-wider uppercase transition-all duration-150 active:scale-[0.98] cursor-pointer hover:border-primary/50 text-center"
+                    className="w-full bg-surface-container/80 hover:bg-primary text-on-surface hover:text-on-primary font-bold py-3.5 px-4 rounded-xl border border-outline-variant/30 text-xs tracking-wider uppercase transition-all duration-200 active:scale-[0.98] cursor-pointer text-center shadow-sm"
                   >
                     APPLY NOW
                   </button>
@@ -109,13 +109,13 @@ export default function Careers() {
               ))}
             </div>
           ) : (
-            <div className="bg-[#121212] border border-outline-variant/30 rounded-2xl p-8 text-center max-w-xl mx-auto">
+            <div className="bg-surface-container-lowest border border-[var(--border-floating-card)] rounded-3xl p-8 text-center max-w-xl mx-auto shadow-[var(--shadow-floating-card)]">
               <p className="text-on-surface-variant text-sm mb-4">
                 We currently don't have any specific open positions published, but we are always looking for passionate talent!
               </p>
               <button
                 onClick={() => navigate('/contact')}
-                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs transition-all hover:opacity-90 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs transition-all hover:opacity-90 cursor-pointer shadow-md shadow-primary/20"
               >
                 Reach Out to Us →
               </button>
@@ -208,7 +208,7 @@ export default function Careers() {
             </p>
             <button
               onClick={() => navigate('/contact')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-label-md text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-label-md text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 shadow-md shadow-primary/20"
             >
               Go to Contact Page →
             </button>
