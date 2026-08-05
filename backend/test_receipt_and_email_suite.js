@@ -75,7 +75,6 @@ const runReceiptSuite = async () => {
     // 1. Verify formatPlanName & isInstitutePlan helpers
     const passHelpers = isInstitutePlan('inst_20') && 
                         isInstitutePlan('inst_50') && 
-                        isInstitutePlan('scale_plan') && 
                         !isInstitutePlan('premium_scholar') &&
                         formatPlanName('inst_20') === '20-User Institute Batch Access';
     console.log(`[${passHelpers ? 'PASS' : 'FAIL'}] Plan helper utilities format & recognize institute plans`);

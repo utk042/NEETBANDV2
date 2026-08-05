@@ -16,7 +16,8 @@ import {
   processWithdrawalRequest,
   getNewsScrollSettings,
   updateNewsScrollSettings,
-  getInstitutePurchases
+  getInstitutePurchases,
+  recordPurchase
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { 
@@ -44,6 +45,7 @@ router.delete('/students/:id', protect, authorize('admin', 'owner'), deleteStude
 
 // Institute Purchases
 router.get('/institute-purchases', protect, authorize('admin', 'owner'), getInstitutePurchases);
+router.post('/record-purchase', protect, authorize('admin', 'owner'), recordPurchase);
 
 // Affiliate routes
 router.get('/affiliates', protect, authorize('admin', 'owner'), getAffiliates);

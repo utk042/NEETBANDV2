@@ -20,8 +20,12 @@ const orderSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['premium_scholar', 'scale_plan', 'book_order', 'inst_20', 'inst_50', 'premium'],
+    enum: ['premium_scholar', 'book_order', 'inst_20', 'inst_50', 'premium', 'custom'],
     required: true
+  },
+  customUserCount: {
+    type: Number,
+    default: null
   },
   amount: {
     type: Number,
@@ -46,7 +50,9 @@ const orderSchema = new mongoose.Schema({
     address: String,
     state: String,
     pinCode: String,
-    bookTitle: String
+    bookTitle: String,
+    gstin: String,
+    businessName: String
   },
   status: {
     type: String,

@@ -4,10 +4,12 @@ import {
 } from '@tabler/icons-react';
 import { Card, CardBody } from './ui/Card';
 import Button from './ui/Button';
+import { useNavigate } from 'react-router-dom';
 
 export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
   const [planScope, setPlanScope] = useState('individual'); // 'individual' | 'institutional'
   const [isYearly, setIsYearly] = useState(true);
+  const navigate = useNavigate();
 
   const handlePlanClick = (plan) => {
     if (plan.customPrice || plan.id === 'inst_custom') {
@@ -392,10 +394,16 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
         {/* Compare Plans Button */}
         <div className="text-center">
           <button
-            onClick={scrollToCompare}
+            onClick={() => {
+              if (window.location.pathname === '/pricing') {
+                scrollToCompare();
+              } else {
+                navigate('/pricing');
+              }
+            }}
             className="inline-flex items-center gap-2 text-xs font-semibold text-on-surface hover:text-primary transition-all py-2 px-5 rounded-full border border-outline-variant/30 hover:border-primary/50 bg-surface-container/30 shadow-sm"
           >
-            Compare detailed features <IconArrowRight size={15} />
+            View more details <IconArrowRight size={15} />
           </button>
         </div>
       </div>

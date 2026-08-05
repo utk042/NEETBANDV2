@@ -393,7 +393,6 @@ export default function AdminAffiliates() {
                   <input type="email" placeholder="Email" required value={referralData.email} onChange={e => setReferralData({...referralData, email: e.target.value})} className="px-3 py-2 rounded-lg bg-surface-container border border-[var(--border-floating-card)] text-sm text-on-surface" />
                   <select value={referralData.plan} onChange={e => setReferralData({...referralData, plan: e.target.value})} className="px-3 py-2 rounded-lg bg-surface-container border border-[var(--border-floating-card)] text-sm text-on-surface">
                     <option value="none">No Plan (Free Registration)</option>
-                    <option value="scale_plan">Scale Plan</option>
                     <option value="premium_scholar">Premium Scholar</option>
                   </select>
                   

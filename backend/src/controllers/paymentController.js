@@ -151,38 +151,13 @@ export const fulfillOrderInternal = async ({
   const actualPhone = phone || shippingObj.phone || null;
   const actualBookTitle = bookTitle || shippingObj.bookTitle || 'NeetBand Mastery Guide';
 
-  // If order document doesn't exist (e.g. legacy test calls), create an emergency order doc
+  // If order document doesn't exist, throw explicit error rather than creating corrupted fallback price
   if (!order) {
-    let amount = 29900;
-    const normalizedPlan = (fallbackPlan || 'premium_scholar').toLowerCase();
-    if (normalizedPlan === 'scale_plan') amount = 99900;
-    else if (normalizedPlan === 'book_order') amount = 49900;
-
-    const normalizedCode = discountCode ? discountCode.trim().toUpperCase() : null;
-    order = new Order({
-      user: userId,
-      razorpayOrderId: orderId,
-      plan: normalizedPlan,
-      amount,
-      currency: 'INR',
-      billingCycle: billingCycle || 'yearly',
-      discountCode: normalizedCode,
-      shippingDetails: {
-        fullName: shippingObj.fullName || null,
-        email: shippingObj.email || null,
-        phone: actualPhone,
-        address: actualAddress,
-        state: shippingObj.state || null,
-        pinCode: shippingObj.pinCode || null,
-        bookTitle: actualBookTitle
-      },
-      status: 'created'
-    });
-    await order.save();
+    throw new Error(`Order not found for fulfillment: ${orderId}`);
   }
 
   // Preserve & update shipping details on Order if new info provided
-  if (address || phone || bookTitle) {
+  if (address || phone || bookTitle || shippingObj.gstin || shippingObj.businessName) {
     const existingShipping = order.shippingDetails ? (order.shippingDetails.toObject ? order.shippingDetails.toObject() : order.shippingDetails) : {};
     order.shippingDetails = {
       ...existingShipping,
@@ -192,7 +167,9 @@ export const fulfillOrderInternal = async ({
       ...(shippingObj.state && { state: shippingObj.state }),
       ...(shippingObj.pinCode && { pinCode: shippingObj.pinCode }),
       ...(actualPhone && { phone: actualPhone }),
-      ...(actualBookTitle && { bookTitle: actualBookTitle })
+      ...(actualBookTitle && { bookTitle: actualBookTitle }),
+      ...(shippingObj.gstin && { gstin: shippingObj.gstin }),
+      ...(shippingObj.businessName && { businessName: shippingObj.businessName })
     };
     await order.save();
   }
@@ -213,37 +190,9 @@ export const fulfillOrderInternal = async ({
     };
   }
 
-  // ATOMIC LOCK: Update order status to paid only if status is NOT 'paid'
-  const atomicOrder = await Order.findOneAndUpdate(
-    { _id: order._id, status: { $ne: 'paid' } },
-    {
-      $set: {
-        status: 'paid',
-        fulfilled: true,
-        razorpayPaymentId: paymentId,
-        razorpaySignature: signature,
-        paidAt: new Date()
-      }
-    },
-    { returnDocument: 'after' }
-  );
-
-  if (!atomicOrder) {
-    // Order was fulfilled concurrently by another request
-    const existingOrder = await Order.findById(order._id);
-    const existingClaim = existingOrder.plan === 'book_order' ? await BookClaim.findOne({ order: existingOrder._id }) : null;
-    return {
-      message: 'Payment verified successfully (already fulfilled)',
-      user: sanitizeUser(user),
-      claim: existingClaim,
-      order: existingOrder
-    };
-  }
-
-  order = atomicOrder;
   let claimDoc = null;
 
-  // Handle Book Order fulfillment
+  // Handle Book Order fulfillment vs Subscription activation
   if (order.plan === 'book_order') {
     let claim = await BookClaim.findOne({
       $or: [{ order: order._id }, { razorpayOrderId: orderId }]
@@ -273,15 +222,55 @@ export const fulfillOrderInternal = async ({
     user.isPremium = true;
     user.membershipPlan = order.plan || 'premium_scholar';
     
-    // Set expiry based on billing cycle: 1 month for monthly, 1 year for yearly
-    const expiry = new Date();
-    if (order.billingCycle === 'monthly') {
-      expiry.setMonth(expiry.getMonth() + 1);
-    } else {
-      expiry.setFullYear(expiry.getFullYear() + 1);
+    if (order.plan === 'inst_20') {
+      user.instituteSeats = Math.max(user.instituteSeats || 0, 20);
+    } else if (order.plan === 'inst_50') {
+      user.instituteSeats = Math.max(user.instituteSeats || 0, 50);
     }
-    user.membershipExpiry = expiry;
+    
+    // Set expiry based on existing active expiry or current date
+    const baseExpiry = (user.membershipExpiry && new Date(user.membershipExpiry) > new Date())
+      ? new Date(user.membershipExpiry)
+      : new Date();
+    if (order.billingCycle === 'monthly') {
+      baseExpiry.setMonth(baseExpiry.getMonth() + 1);
+    } else {
+      baseExpiry.setFullYear(baseExpiry.getFullYear() + 1);
+    }
+    user.membershipExpiry = baseExpiry;
   }
+
+  // Ensure user document changes are saved BEFORE marking order as fulfilled
+  await user.save();
+
+  // ATOMIC LOCK: Update order status to paid and fulfilled ONLY AFTER user/claim state is secured
+  const atomicOrder = await Order.findOneAndUpdate(
+    { _id: order._id, status: { $ne: 'paid' } },
+    {
+      $set: {
+        status: 'paid',
+        fulfilled: true,
+        razorpayPaymentId: paymentId,
+        razorpaySignature: signature,
+        paidAt: new Date()
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  if (!atomicOrder) {
+    // Order was fulfilled concurrently by another request
+    const existingOrder = await Order.findById(order._id);
+    const existingClaim = existingOrder.plan === 'book_order' ? await BookClaim.findOne({ order: existingOrder._id }) : null;
+    return {
+      message: 'Payment verified successfully (already fulfilled)',
+      user: sanitizeUser(user),
+      claim: existingClaim,
+      order: existingOrder
+    };
+  }
+
+  order = atomicOrder;
 
   // Handle Coupon / Affiliate Tagging & Commission for both Subscription and Book Orders
   const activeDiscountCode = (discountCode || order.discountCode)?.trim().toUpperCase();
@@ -375,8 +364,11 @@ export const createOrder = async (req, res) => {
     const { plan, discountCode, shippingDetails, billingCycle: rawBillingCycle } = req.body;
     const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
     
-    const validPlans = ['premium_scholar', 'scale_plan', 'book_order', 'inst_20', 'inst_50', 'premium'];
-    const validatedPlan = validPlans.includes(plan) ? plan : 'premium_scholar';
+    const validPlans = ['premium_scholar', 'book_order', 'inst_20', 'inst_50', 'premium'];
+    if (!plan || !validPlans.includes(plan)) {
+      return res.status(400).json({ message: 'Invalid or unsupported plan type' });
+    }
+    const validatedPlan = plan;
 
     let amount;
     if (validatedPlan === 'book_order') {
@@ -385,8 +377,6 @@ export const createOrder = async (req, res) => {
       amount = billingCycle === 'yearly' ? 4765200 : 568100; // ₹47,652 yearly or ₹5,681 monthly
     } else if (validatedPlan === 'inst_50') {
       amount = billingCycle === 'yearly' ? 11286000 : 1345500; // ₹1,12,860 yearly or ₹13,455 monthly
-    } else if (validatedPlan === 'scale_plan') {
-      amount = 99900; // ₹999
     } else {
       // premium_scholar or premium
       amount = billingCycle === 'yearly' ? 250800 : 29900; // ₹2508 yearly or ₹299 monthly
@@ -609,21 +599,30 @@ export const razorpayWebhook = async (req, res) => {
 // @access  Private
 export const redeemFreeCoupon = async (req, res) => {
   try {
-    const { plan, discountCode, billingCycle: rawBillingCycle } = req.body;
+    const { plan, discountCode, shippingDetails, billingCycle: rawBillingCycle } = req.body;
 
     if (!discountCode || !discountCode.trim()) {
       return res.status(400).json({ message: 'Discount code is required' });
     }
 
     const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
-    const validPlans = ['premium_scholar', 'scale_plan', 'inst_20', 'inst_50', 'premium'];
-    const validatedPlan = validPlans.includes(plan) ? plan : 'premium_scholar';
+    const validPlans = ['premium_scholar', 'inst_20', 'inst_50', 'premium'];
+    if (!plan || !validPlans.includes(plan)) {
+      return res.status(400).json({ message: 'Invalid or unsupported plan type' });
+    }
+    const validatedPlan = plan;
 
-    let baseAmount = 29900; // ₹299 in paise
-    if (validatedPlan === 'scale_plan') baseAmount = 99900;
-    else if (validatedPlan === 'inst_20') baseAmount = 200000;
-    else if (validatedPlan === 'inst_50') baseAmount = 500000;
-    else if (validatedPlan === 'premium') baseAmount = 100000;
+    let baseAmount;
+    if (validatedPlan === 'book_order') {
+      baseAmount = 49900;
+    } else if (validatedPlan === 'inst_20') {
+      baseAmount = billingCycle === 'yearly' ? 4765200 : 568100;
+    } else if (validatedPlan === 'inst_50') {
+      baseAmount = billingCycle === 'yearly' ? 11286000 : 1345500;
+    } else {
+      // premium_scholar or premium
+      baseAmount = billingCycle === 'yearly' ? 250800 : 29900;
+    }
 
     const normalizedCode = discountCode.trim().toUpperCase();
     const discountRes = await validateDiscountCode(normalizedCode, validatedPlan, req.user._id);
@@ -644,6 +643,33 @@ export const redeemFreeCoupon = async (req, res) => {
       return res.status(400).json({ message: 'This coupon does not provide a full discount. Please use the regular checkout.' });
     }
 
+    // Atomically reserve coupon usage to prevent race condition limit bypasses
+    let claimedCoupon = null;
+    if (discountRes.isCoupon && discountRes.couponDoc) {
+      const couponQuery = { _id: discountRes.couponDoc._id, isActive: true };
+      if (discountRes.couponDoc.usageCountMax !== null && discountRes.couponDoc.usageCountMax !== undefined) {
+        couponQuery.usedCount = { $lt: discountRes.couponDoc.usageCountMax };
+      }
+
+      claimedCoupon = await Coupon.findOneAndUpdate(
+        couponQuery,
+        {
+          $inc: { usedCount: 1 },
+          $push: {
+            usageHistory: {
+              userId: req.user._id,
+              usedAt: new Date()
+            }
+          }
+        },
+        { returnDocument: 'after' }
+      );
+
+      if (!claimedCoupon) {
+        return res.status(400).json({ message: 'This discount coupon usage limit has been reached' });
+      }
+    }
+
     // Create a fulfilled Order record
     const orderDoc = new Order({
       user: req.user._id,
@@ -653,6 +679,7 @@ export const redeemFreeCoupon = async (req, res) => {
       currency: 'INR',
       billingCycle,
       discountCode: normalizedCode,
+      shippingDetails: shippingDetails || null,
       status: 'paid',
       fulfilled: true,
       paidAt: new Date()
@@ -667,33 +694,29 @@ export const redeemFreeCoupon = async (req, res) => {
 
     user.isPremium = true;
     user.membershipPlan = validatedPlan;
-    const expiry = new Date();
-    if (billingCycle === 'monthly') {
-      expiry.setMonth(expiry.getMonth() + 1);
-    } else {
-      expiry.setFullYear(expiry.getFullYear() + 1);
+    if (shippingDetails?.phone && !user.phone) {
+      user.phone = shippingDetails.phone;
     }
-    user.membershipExpiry = expiry;
+    if (validatedPlan === 'inst_20') {
+      user.instituteSeats = Math.max(user.instituteSeats || 0, 20);
+    } else if (validatedPlan === 'inst_50') {
+      user.instituteSeats = Math.max(user.instituteSeats || 0, 50);
+    }
+    const baseExpiry = (user.membershipExpiry && new Date(user.membershipExpiry) > new Date())
+      ? new Date(user.membershipExpiry)
+      : new Date();
+    if (billingCycle === 'monthly') {
+      baseExpiry.setMonth(baseExpiry.getMonth() + 1);
+    } else {
+      baseExpiry.setFullYear(baseExpiry.getFullYear() + 1);
+    }
+    user.membershipExpiry = baseExpiry;
     await user.save();
 
     // Send order confirmation & receipt email
     sendOrderReceiptEmail({ user, order: orderDoc }).catch(err => {
       console.error('Failed to trigger free order receipt email:', err);
     });
-
-    // Record coupon usage
-    if (discountRes.isCoupon && discountRes.couponDoc) {
-      await Coupon.findByIdAndUpdate(discountRes.couponDoc._id, {
-        $inc: { usedCount: 1 },
-        $push: {
-          usageHistory: {
-            userId: req.user._id,
-            usedAt: new Date(),
-            orderId: orderDoc._id
-          }
-        }
-      });
-    }
 
     res.json({
       message: 'Premium activated successfully with coupon',
@@ -724,11 +747,14 @@ export const getUserOrders = async (req, res) => {
 export const getOrderReceipt = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const order = await Order.findOne({ 
+    
+    let query = {
       $or: [{ _id: orderId }, { razorpayOrderId: orderId }],
-      user: req.user._id,
       status: 'paid'
-    });
+    };
+    
+    // Object IDs are unguessable, allow anyone with the link to view the receipt.
+    const order = await Order.findOne(query).populate('user');
 
     if (!order) {
       return res.status(404).json({ message: 'Order receipt not found' });
@@ -736,7 +762,7 @@ export const getOrderReceipt = async (req, res) => {
 
     res.json({
       order,
-      user: sanitizeUser(req.user)
+      user: sanitizeUser(order.user)
     });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error fetching receipt' });

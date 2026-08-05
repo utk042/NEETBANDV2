@@ -432,19 +432,99 @@ export const updateNewsScrollSettings = async (req, res) => {
   }
 };
 
-// @desc    Get institute purchases
+// @desc    Get all purchases (normal and institute)
 // @route   GET /api/admin/institute-purchases
 // @access  Private/Admin
 export const getInstitutePurchases = async (req, res) => {
   try {
     const orders = await Order.find({
-      status: 'paid',
-      plan: { $in: ['scale_plan', 'inst_20', 'inst_50'] }
+      status: 'paid'
     }).populate('user', 'name email phone').sort({ createdAt: -1 });
 
     res.json(orders);
   } catch (error) {
-    console.error('Error fetching institute purchases:', error);
+    console.error('Error fetching purchases:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Record a purchase manually
+// @route   POST /api/admin/record-purchase
+// @access  Private/Admin
+export const recordPurchase = async (req, res) => {
+  try {
+    const { 
+      email, 
+      name, 
+      phone, 
+      plan, 
+      amount, 
+      billingCycle, 
+      customUserCount, 
+      businessName, 
+      gstin, 
+      paymentReference 
+    } = req.body;
+
+    if (!email || !name || !plan || amount === undefined || amount === null) {
+      return res.status(400).json({ message: 'Email, name, plan, and amount are required' });
+    }
+
+    if (plan === 'custom') {
+      const userCountNum = Number(customUserCount);
+      if (isNaN(userCountNum) || userCountNum < 1) {
+        return res.status(400).json({ message: 'Custom plan requires a valid custom user count (at least 1)' });
+      }
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      const randomPassword = Math.random().toString(36).slice(-10) + 'A1!';
+      user = await User.create({
+        name,
+        email: email.toLowerCase().trim(),
+        phone: phone || '',
+        password: randomPassword,
+        role: 'student',
+        isPremium: true,
+        membershipPlan: plan
+      });
+    } else {
+      user.isPremium = true;
+      user.membershipPlan = plan;
+      if (phone && !user.phone) user.phone = phone;
+      await user.save();
+    }
+
+    const manualOrderId = `MANUAL_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const paymentId = paymentReference ? paymentReference.trim() : `PAY_MANUAL_${Date.now()}`;
+
+    const order = await Order.create({
+      user: user._id,
+      razorpayOrderId: manualOrderId,
+      razorpayPaymentId: paymentId,
+      plan,
+      customUserCount: plan === 'custom' ? Number(customUserCount) : null,
+      amount: Number(amount),
+      currency: 'INR',
+      billingCycle: billingCycle || 'yearly',
+      shippingDetails: {
+        fullName: name,
+        email: email.toLowerCase().trim(),
+        phone: phone || '',
+        businessName: businessName || '',
+        gstin: gstin || ''
+      },
+      status: 'paid',
+      fulfilled: true,
+      paidAt: new Date()
+    });
+
+    const populatedOrder = await Order.findById(order._id).populate('user', 'name email phone');
+    res.status(201).json(populatedOrder);
+  } catch (error) {
+    console.error('Error recording purchase:', error);
+    res.status(500).json({ message: error.message || 'Failed to record purchase' });
   }
 };

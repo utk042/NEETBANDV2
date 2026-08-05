@@ -72,7 +72,6 @@ export default function ManageCoupons() {
   const availablePlans = [
     { id: 'all', label: 'All Memberships & Products' },
     { id: 'premium_scholar', label: 'Premium Scholar (₹299)' },
-    { id: 'scale_plan', label: 'Scale Plan (₹999)' },
     { id: 'book_order', label: 'Book Order (₹499)' }
   ];
 
@@ -123,6 +122,29 @@ export default function ManageCoupons() {
     setApplicableMemberships(['all']);
     setFormError('');
     setIsModalOpen(true);
+  };
+
+  const openBulkModal = () => {
+    setIsMembershipSpecific(true);
+    setDiscountValue(100);
+    setDiscountType('percentage');
+    setDiscountMode('Standard');
+    setHasUsageCountMax(true);
+    setUsageCountMax(1);
+    setHasUsageLimitPerUser(true);
+    setUsageLimitPerUser(1);
+    setUsageLimitPerUserTimeframe('Lifetime');
+    setAllowOnUpgradesDowngrades('No');
+    setAllowOnlyIfCustomerAlreadyUsed('Unset');
+    setScheduleStartEnabled(false);
+    setStartDate('');
+    setExpireEnabled(false);
+    setExpireDate('');
+    setApplicableMemberships(['premium_scholar']);
+    
+    setBulkResult(null);
+    setBulkCount(10);
+    setIsBulkModalOpen(true);
   };
 
   const openFreePremiumPreset = () => {
@@ -346,16 +368,20 @@ export default function ManageCoupons() {
       setBulkGenerating(true);
       setBulkResult(null);
       const template = {
-        isMembershipSpecific: true,
-        discountType: 'percentage',
-        discountValue: 100,
-        discountMode: 'Standard',
-        usageCountMax: 1,
-        usageLimitPerUser: 1,
-        usageLimitPerUserTimeframe: 'Lifetime',
-        allowOnUpgradesDowngrades: 'No',
-        allowOnlyIfCustomerAlreadyUsed: 'Unset',
-        applicableMemberships: ['premium_scholar'],
+        isMembershipSpecific,
+        discountType,
+        discountValue: Number(discountValue),
+        discountMode,
+        usageCountMax: hasUsageCountMax && usageCountMax !== '' ? Number(usageCountMax) : null,
+        usageLimitPerUser: hasUsageLimitPerUser && usageLimitPerUser !== '' ? Number(usageLimitPerUser) : null,
+        usageLimitPerUserTimeframe,
+        allowOnUpgradesDowngrades,
+        allowOnlyIfCustomerAlreadyUsed,
+        scheduleStartEnabled,
+        startDate: scheduleStartEnabled && startDate ? new Date(startDate) : null,
+        expireEnabled,
+        expireDate: expireEnabled && expireDate ? new Date(expireDate) : null,
+        applicableMemberships,
         isActive: true
       };
       const result = await bulkCreateCoupons(bulkCount, template);
@@ -381,6 +407,265 @@ export default function ManageCoupons() {
     }
   };
 
+  const renderCouponOptions = (idPrefix = '') => (
+    <div className="border border-outline-variant/30 rounded-2xl p-5 bg-surface-container-low/50 space-y-5">
+      <h4 className="font-bold text-base text-on-surface border-b border-outline-variant/20 pb-3">
+        Coupon Options
+      </h4>
+
+      {/* Membership Specific Discounts Checkbox */}
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id={`isMembershipSpecific${idPrefix}`}
+          checked={isMembershipSpecific}
+          onChange={(e) => setIsMembershipSpecific(e.target.checked)}
+          className="w-4 h-4 rounded border-outline-variant accent-primary focus:ring-primary"
+        />
+        <label htmlFor={`isMembershipSpecific${idPrefix}`} className="text-sm font-semibold text-on-surface cursor-pointer">
+          Membership Specific Discounts
+        </label>
+        <IconInfoCircle size={16} className="text-on-surface-variant/70" title="Limit discount to specific memberships" />
+      </div>
+
+      {/* Discount Value & Unit */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Discount <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min="0"
+              step="any"
+              required
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+            />
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value)}
+              className="bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm font-bold text-on-surface focus:outline-none focus:border-primary"
+            >
+              <option value="percentage">%</option>
+              <option value="fixed">Fixed (₹)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Discount Mode <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <select
+            value={discountMode}
+            onChange={(e) => setDiscountMode(e.target.value)}
+            className="w-full bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+          >
+            <option value="Standard">Standard</option>
+            <option value="First Payment Only">First Payment Only</option>
+            <option value="Recurring">Recurring</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Usage Count & Limit per user */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Usage Count (Max total limit) <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              placeholder="∞ (Unlimited)"
+              disabled={!hasUsageCountMax}
+              value={usageCountMax}
+              onChange={(e) => setUsageCountMax(e.target.value)}
+              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setHasUsageCountMax(!hasUsageCountMax);
+                if (!hasUsageCountMax && !usageCountMax) setUsageCountMax(100);
+              }}
+              className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
+                !hasUsageCountMax 
+                  ? 'bg-primary/10 border-primary/30 text-primary' 
+                  : 'bg-surface border-outline-variant/30 text-on-surface-variant'
+              }`}
+            >
+              <IconInfinity size={18} /> Unlimited
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Usage Limit Per User <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              placeholder="∞ (Unlimited)"
+              disabled={!hasUsageLimitPerUser}
+              value={usageLimitPerUser}
+              onChange={(e) => setUsageLimitPerUser(e.target.value)}
+              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setHasUsageLimitPerUser(!hasUsageLimitPerUser);
+                if (!hasUsageLimitPerUser && !usageLimitPerUser) setUsageLimitPerUser(1);
+              }}
+              className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
+                !hasUsageLimitPerUser 
+                  ? 'bg-primary/10 border-primary/30 text-primary' 
+                  : 'bg-surface border-outline-variant/30 text-on-surface-variant'
+              }`}
+            >
+              <IconInfinity size={18} /> Unlimited
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Dropdowns matching screenshot */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Usage limit per user in Timeframe <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <select
+            value={usageLimitPerUserTimeframe}
+            onChange={(e) => setUsageLimitPerUserTimeframe(e.target.value)}
+            className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+          >
+            <option value="Lifetime">Lifetime</option>
+            <option value="1 Day">1 Day</option>
+            <option value="1 Week">1 Week</option>
+            <option value="1 Month">1 Month</option>
+            <option value="1 Year">1 Year</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Allow on Upgrades / Downgrades <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <select
+            value={allowOnUpgradesDowngrades}
+            onChange={(e) => setAllowOnUpgradesDowngrades(e.target.value)}
+            className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+          >
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+            <option value="Unset">Unset</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
+            Allow usage only if customer already used <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          </label>
+          <select
+            value={allowOnlyIfCustomerAlreadyUsed}
+            onChange={(e) => setAllowOnlyIfCustomerAlreadyUsed(e.target.value)}
+            className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+          >
+            <option value="Unset">Unset</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Schedule & Expire Checkboxes & Pickers */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-outline-variant/20 pt-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <input
+              type="checkbox"
+              id={`scheduleStartEnabled${idPrefix}`}
+              checked={scheduleStartEnabled}
+              onChange={(e) => setScheduleStartEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-outline-variant accent-primary"
+            />
+            <label htmlFor={`scheduleStartEnabled${idPrefix}`} className="text-sm font-semibold text-on-surface cursor-pointer">
+              Schedule Coupon Start
+            </label>
+          </div>
+          {scheduleStartEnabled && (
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
+            />
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <input
+              type="checkbox"
+              id={`expireEnabled${idPrefix}`}
+              checked={expireEnabled}
+              onChange={(e) => setExpireEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-outline-variant accent-primary"
+            />
+            <label htmlFor={`expireEnabled${idPrefix}`} className="text-sm font-semibold text-on-surface cursor-pointer">
+              Expire Coupon
+            </label>
+          </div>
+          {expireEnabled && (
+            <input
+              type="datetime-local"
+              value={expireDate}
+              onChange={(e) => setExpireDate(e.target.value)}
+              className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Membership Applicability Selector */}
+      {isMembershipSpecific && (
+        <div className="border-t border-outline-variant/20 pt-4">
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-2">
+            Apply coupon to the following Memberships / Products: (required)
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-surface border border-outline-variant/40 rounded-xl">
+            {availablePlans.map((plan) => {
+              const selected = applicableMemberships.includes(plan.id);
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => handlePlanToggle(plan.id)}
+                  className={`p-2.5 rounded-lg text-left text-xs font-semibold flex items-center justify-between border transition-all ${
+                    selected 
+                      ? 'bg-primary/10 border-primary text-primary' 
+                      : 'bg-surface-variant/30 border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant/60'
+                  }`}
+                >
+                  <span>{plan.label}</span>
+                  {selected && <IconCheck size={16} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -395,7 +680,7 @@ export default function ManageCoupons() {
         </div>
         <div className="flex flex-wrap gap-3 self-start md:self-auto">
           <button
-            onClick={() => { setBulkResult(null); setBulkCount(10); setIsBulkModalOpen(true); }}
+            onClick={openBulkModal}
             className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
           >
             <IconStack2 size={20} /> Bulk Generate
@@ -674,262 +959,7 @@ export default function ManageCoupons() {
               </div>
 
               {/* MemberPress Style Section: Coupon Options */}
-              <div className="border border-outline-variant/30 rounded-2xl p-5 bg-surface-container-low/50 space-y-5">
-                <h4 className="font-bold text-base text-on-surface border-b border-outline-variant/20 pb-3">
-                  Coupon Options
-                </h4>
-
-                {/* Membership Specific Discounts Checkbox */}
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="isMembershipSpecific"
-                    checked={isMembershipSpecific}
-                    onChange={(e) => setIsMembershipSpecific(e.target.checked)}
-                    className="w-4 h-4 rounded border-outline-variant accent-primary focus:ring-primary"
-                  />
-                  <label htmlFor="isMembershipSpecific" className="text-sm font-semibold text-on-surface cursor-pointer">
-                    Membership Specific Discounts
-                  </label>
-                  <IconInfoCircle size={16} className="text-on-surface-variant/70" title="Limit discount to specific memberships" />
-                </div>
-
-                {/* Discount Value & Unit */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Discount <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        required
-                        value={discountValue}
-                        onChange={(e) => setDiscountValue(e.target.value)}
-                        className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                      <select
-                        value={discountType}
-                        onChange={(e) => setDiscountType(e.target.value)}
-                        className="bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm font-bold text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="percentage">%</option>
-                        <option value="fixed">Fixed (₹)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Discount Mode <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <select
-                      value={discountMode}
-                      onChange={(e) => setDiscountMode(e.target.value)}
-                      className="w-full bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
-                    >
-                      <option value="Standard">Standard</option>
-                      <option value="First Payment Only">First Payment Only</option>
-                      <option value="Recurring">Recurring</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Usage Count & Limit per user */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Usage Count (Max total limit) <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="∞ (Unlimited)"
-                        disabled={!hasUsageCountMax}
-                        value={usageCountMax}
-                        onChange={(e) => setUsageCountMax(e.target.value)}
-                        className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHasUsageCountMax(!hasUsageCountMax);
-                          if (!hasUsageCountMax && !usageCountMax) setUsageCountMax(100);
-                        }}
-                        className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
-                          !hasUsageCountMax 
-                            ? 'bg-primary/10 border-primary/30 text-primary' 
-                            : 'bg-surface border-outline-variant/30 text-on-surface-variant'
-                        }`}
-                      >
-                        <IconInfinity size={18} /> Unlimited
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Usage Limit Per User <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="∞ (Unlimited)"
-                        disabled={!hasUsageLimitPerUser}
-                        value={usageLimitPerUser}
-                        onChange={(e) => setUsageLimitPerUser(e.target.value)}
-                        className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHasUsageLimitPerUser(!hasUsageLimitPerUser);
-                          if (!hasUsageLimitPerUser && !usageLimitPerUser) setUsageLimitPerUser(1);
-                        }}
-                        className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
-                          !hasUsageLimitPerUser 
-                            ? 'bg-primary/10 border-primary/30 text-primary' 
-                            : 'bg-surface border-outline-variant/30 text-on-surface-variant'
-                        }`}
-                      >
-                        <IconInfinity size={18} /> Unlimited
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dropdowns matching screenshot */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Usage limit per user in Timeframe <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <select
-                      value={usageLimitPerUserTimeframe}
-                      onChange={(e) => setUsageLimitPerUserTimeframe(e.target.value)}
-                      className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
-                    >
-                      <option value="Lifetime">Lifetime</option>
-                      <option value="1 Day">1 Day</option>
-                      <option value="1 Week">1 Week</option>
-                      <option value="1 Month">1 Month</option>
-                      <option value="1 Year">1 Year</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Allow on Upgrades / Downgrades <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <select
-                      value={allowOnUpgradesDowngrades}
-                      onChange={(e) => setAllowOnUpgradesDowngrades(e.target.value)}
-                      className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
-                    >
-                      <option value="No">No</option>
-                      <option value="Yes">Yes</option>
-                      <option value="Unset">Unset</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-                      Allow usage only if customer already used <IconInfoCircle size={14} className="text-on-surface-variant/70" />
-                    </label>
-                    <select
-                      value={allowOnlyIfCustomerAlreadyUsed}
-                      onChange={(e) => setAllowOnlyIfCustomerAlreadyUsed(e.target.value)}
-                      className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
-                    >
-                      <option value="Unset">Unset</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Schedule & Expire Checkboxes & Pickers */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-outline-variant/20 pt-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <input
-                        type="checkbox"
-                        id="scheduleStartEnabled"
-                        checked={scheduleStartEnabled}
-                        onChange={(e) => setScheduleStartEnabled(e.target.checked)}
-                        className="w-4 h-4 rounded border-outline-variant accent-primary"
-                      />
-                      <label htmlFor="scheduleStartEnabled" className="text-sm font-semibold text-on-surface cursor-pointer">
-                        Schedule Coupon Start
-                      </label>
-                    </div>
-                    {scheduleStartEnabled && (
-                      <input
-                        type="datetime-local"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <input
-                        type="checkbox"
-                        id="expireEnabled"
-                        checked={expireEnabled}
-                        onChange={(e) => setExpireEnabled(e.target.checked)}
-                        className="w-4 h-4 rounded border-outline-variant accent-primary"
-                      />
-                      <label htmlFor="expireEnabled" className="text-sm font-semibold text-on-surface cursor-pointer">
-                        Expire Coupon
-                      </label>
-                    </div>
-                    {expireEnabled && (
-                      <input
-                        type="datetime-local"
-                        value={expireDate}
-                        onChange={(e) => setExpireDate(e.target.value)}
-                        className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Membership Applicability Selector */}
-                {isMembershipSpecific && (
-                  <div className="border-t border-outline-variant/20 pt-4">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase mb-2">
-                      Apply coupon to the following Memberships / Products: (required)
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-surface border border-outline-variant/40 rounded-xl">
-                      {availablePlans.map((plan) => {
-                        const selected = applicableMemberships.includes(plan.id);
-                        return (
-                          <button
-                            key={plan.id}
-                            type="button"
-                            onClick={() => handlePlanToggle(plan.id)}
-                            className={`p-2.5 rounded-lg text-left text-xs font-semibold flex items-center justify-between border transition-all ${
-                              selected 
-                                ? 'bg-primary/10 border-primary text-primary' 
-                                : 'bg-surface-variant/30 border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant/60'
-                            }`}
-                          >
-                            <span>{plan.label}</span>
-                            {selected && <IconCheck size={16} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {renderCouponOptions('_single')}
 
               {/* Modal Actions */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant/30">
@@ -976,9 +1006,9 @@ export default function ManageCoupons() {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
               <p className="text-sm text-on-surface-variant">
-                Generate multiple single-use 100% discount coupons for Premium Scholar. Each coupon gets a unique random code and can only be used once.
+                Generate multiple discount coupons at once. Each coupon gets a unique random code. Set the coupon properties below.
               </p>
 
               <div>
@@ -993,8 +1023,10 @@ export default function ManageCoupons() {
                   onChange={(e) => setBulkCount(Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))}
                   className="w-full bg-surface-container border border-outline-variant/40 rounded-xl px-4 py-3 text-lg font-bold text-on-surface focus:outline-none focus:border-primary transition-colors"
                 />
-                <p className="text-xs text-on-surface-variant mt-1">Max 500 per batch</p>
+                <p className="text-xs text-on-surface-variant mt-1 mb-4">Max 500 per batch</p>
               </div>
+
+              {renderCouponOptions('_bulk')}
 
               {/* Bulk Result */}
               {bulkResult && (

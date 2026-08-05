@@ -3,6 +3,7 @@ import { IconChevronLeft, IconTag, IconCreditCard } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import { createPaymentOrder, verifyPayment, verifyPromo, redeemFreeCoupon } from '../services/api';
 import { loadRazorpayScript } from '../utils/razorpayUtils';
+import { getRazorpayLogo } from '../utils/logoBase64';
 import { printReceipt, formatPlanTitle, isInstitutePlan } from '../utils/receiptGenerator';
 import { IconCheck, IconDownload, IconMail, IconPhone, IconBuilding, IconArrowRight } from '@tabler/icons-react';
 
@@ -11,9 +12,34 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
   const selectedPlan = planProp || searchParams.get('plan') || 'premium_scholar';
   const billingCycle = searchParams.get('billing') || 'yearly';
   
-  const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState(null);
-  const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
+  const [promoCode, setPromoCode] = useState(() => {
+    try {
+      return localStorage.getItem(`neetband_promo_${selectedPlan}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [appliedPromo, setAppliedPromo] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`neetband_applied_promo_${selectedPlan}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [promoMessage, setPromoMessage] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`neetband_applied_promo_${selectedPlan}`);
+      return saved ? { text: 'Discount code applied successfully!', type: 'success' } : { text: '', type: '' };
+    } catch {
+      return { text: '', type: '' };
+    }
+  });
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [gstin, setGstin] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -48,25 +74,46 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
     }
   }, [user, navigate]);
 
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim()) return;
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+
+  const saveAppliedPromo = (promoObj, codeStr = '') => {
+    setAppliedPromo(promoObj);
     try {
+      if (promoObj) {
+        localStorage.setItem(`neetband_applied_promo_${selectedPlan}`, JSON.stringify(promoObj));
+        localStorage.setItem(`neetband_promo_${selectedPlan}`, codeStr || promoObj.code || '');
+      } else {
+        localStorage.removeItem(`neetband_applied_promo_${selectedPlan}`);
+        localStorage.removeItem(`neetband_promo_${selectedPlan}`);
+      }
+    } catch (e) {
+      // Ignore localStorage restrictions
+    }
+  };
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim() || isApplyingPromo) return;
+    try {
+      setIsApplyingPromo(true);
       setPromoMessage({ text: 'Verifying...', type: 'info' });
       const res = await verifyPromo(promoCode.trim(), selectedPlan);
       if (res.valid) {
-        setAppliedPromo({
+        const promoObj = {
           code: res.code || promoCode.trim(),
           type: res.discountType,
           value: res.discountValue
-        });
+        };
+        saveAppliedPromo(promoObj, promoCode.trim());
         setPromoMessage({ text: 'Discount code applied successfully!', type: 'success' });
       } else {
-        setAppliedPromo(null);
+        saveAppliedPromo(null);
         setPromoMessage({ text: res.message || 'Invalid or inactive promo code', type: 'error' });
       }
     } catch (err) {
-      setAppliedPromo(null);
+      saveAppliedPromo(null);
       setPromoMessage({ text: 'Error verifying promo code', type: 'error' });
+    } finally {
+      setIsApplyingPromo(false);
     }
   };
 
@@ -87,6 +134,13 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
     try {
       setIsLoading(true);
       setError('');
+
+      const finalDiscountCode = appliedPromo?.code || null;
+      const shippingDetails = (phone.trim() || businessName.trim() || gstin.trim()) ? {
+        ...(phone.trim() && { phone: phone.trim() }),
+        ...(businessName.trim() && { businessName: businessName.trim() }),
+        ...(gstin.trim() && { gstin: gstin.trim() })
+      } : null;
       
       // Helper for completion
       const handleSuccessResult = (res) => {
@@ -106,17 +160,17 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
 
       // Free coupon redemption: skip Razorpay entirely
       if (calculateTotal() === 0 && finalDiscountCode) {
-        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle);
+        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle, shippingDetails);
         handleSuccessResult(result);
         setIsLoading(false);
         return;
       }
 
-      const order = await createPaymentOrder(selectedPlan, finalDiscountCode, null, billingCycle);
+      const order = await createPaymentOrder(selectedPlan, finalDiscountCode, shippingDetails, billingCycle);
 
       // Free redemption response from backend (fallback)
       if (order.freeRedemption) {
-        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle);
+        const result = await redeemFreeCoupon(selectedPlan, finalDiscountCode, billingCycle, shippingDetails);
         handleSuccessResult(result);
         setIsLoading(false);
         return;
@@ -145,8 +199,9 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
         key: order.key_id, 
         amount: order.amount,
         currency: order.currency,
-        name: 'NeetBand',
+        name: 'NEET Band',
         description: `${planDisplayName} Purchase`,
+        image: getRazorpayLogo(),
         order_id: order.id,
         handler: async function (response) {
           try {
@@ -161,7 +216,8 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
             const verifyRes = await verifyPayment(verificationData);
             handleSuccessResult(verifyRes);
           } catch (err) {
-            setError('Payment verification failed. Please contact support.');
+            const apiMessage = err.response?.data?.message || err.message;
+            setError(apiMessage ? `Verification error: ${apiMessage}` : 'Payment verification failed. Please contact support.');
           } finally {
             setIsLoading(false);
           }
@@ -314,13 +370,15 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
                   placeholder="Enter voucher code"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  className="flex-1 px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                  disabled={isApplyingPromo || isLoading}
+                  className="flex-1 px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary transition-colors disabled:opacity-60"
                 />
                 <button 
                   onClick={handleApplyPromo}
-                  className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap"
+                  disabled={isApplyingPromo || isLoading}
+                  className="px-6 py-3 bg-surface border border-outline-variant/30 rounded-xl font-bold hover:bg-surface-variant transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Apply
+                  {isApplyingPromo ? 'Verifying...' : 'Apply'}
                 </button>
               </div>
               {promoMessage.text && (
@@ -329,6 +387,43 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
                 </p>
               )}
             </div>
+
+            {/* Institute Tax / B2B Details */}
+            {isInstitutePlan(selectedPlan) && (
+              <div className="mb-6 p-4 bg-background/50 rounded-2xl border border-outline-variant/30">
+                <label className="flex items-center gap-2 font-bold text-sm text-on-surface mb-3">
+                  <IconBuilding size={16} className="text-primary" /> Institutional B2B Invoice Details (Optional)
+                </label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                      Institution / Business Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Institution / Business Name"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                      GSTIN (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="GSTIN (e.g. 07AAAAA0000A1Z5)"
+                      value={gstin}
+                      onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                      disabled={isLoading}
+                      className="w-full px-4 py-3 rounded-xl bg-background border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary text-sm font-mono uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment Button */}
             <div className="mt-4">

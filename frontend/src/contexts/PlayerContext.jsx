@@ -260,22 +260,22 @@ export function PlayerProvider({ children, user }) {
 
   const [systemNotice, setSystemNotice] = useState(null);
 
-  const fetchWithRetry = useCallback(async (fetcherFn, resourceName, retries = 4, backoff = 1000) => {
+  const fetchWithRetry = useCallback(async (fetcherFn, resourceName, retries = 4, backoff = 1000, showNotice = true) => {
     for (let i = 0; i < retries; i++) {
       if (!isMountedRef.current) throw new Error('Unmounted');
       try {
         const data = await fetcherFn();
         if (!isMountedRef.current) throw new Error('Unmounted');
-        setSystemNotice(null);
+        if (showNotice) setSystemNotice(null);
         return data;
       } catch (err) {
         if (!isMountedRef.current || err.message === 'Unmounted') throw err;
         if (i < retries - 1) {
-          setSystemNotice(`Network error fetching ${resourceName} (Attempt ${i + 1}/${retries}). Retrying in ${backoff / 1000}s...`);
+          if (showNotice) setSystemNotice(`Network error fetching ${resourceName} (Attempt ${i + 1}/${retries}). Retrying in ${backoff / 1000}s...`);
           await new Promise(res => setTimeout(res, backoff));
           backoff *= 2;
         } else {
-          setSystemNotice(`Failed to fetch ${resourceName}. Some features may be unavailable or operating in degraded mode.`);
+          if (showNotice) setSystemNotice(`Failed to fetch ${resourceName}. Some features may be unavailable or operating in degraded mode.`);
           throw err;
         }
       }
@@ -323,7 +323,7 @@ export function PlayerProvider({ children, user }) {
       const r = await fetch(`${API_URL}/api/ad-config`);
       if (!r.ok) throw new Error('Fetch failed');
       return r.json();
-    }, 'ad config').then(data => {
+    }, 'ad config', 4, 1000, false).then(data => {
       if (isMounted) setAdConfig(data);
     }).catch((err) => {
       if (isMounted && err.message !== 'Unmounted') setAdConfig(null);

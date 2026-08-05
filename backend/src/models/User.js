@@ -32,6 +32,22 @@ const userSchema = new mongoose.Schema({
   membershipExpiry: {
     type: Date,
   },
+  instituteSeats: {
+    type: Number,
+    default: 0
+  },
+  instituteSeatsUsed: {
+    type: Number,
+    default: 0
+  },
+  gstin: {
+    type: String,
+    default: ''
+  },
+  businessName: {
+    type: String,
+    default: ''
+  },
   progress: [
     {
       courseId: {

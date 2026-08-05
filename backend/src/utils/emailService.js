@@ -25,7 +25,6 @@ export const formatPlanName = (plan) => {
   const lower = plan.toLowerCase();
   if (lower === 'inst_20') return '20-User Institute Batch Access';
   if (lower === 'inst_50') return '50-User Institute Batch Access';
-  if (lower === 'scale_plan') return 'Scale Plan (Institute Batch)';
   if (lower === 'book_order') return 'NeetBand Physical Book Order';
   if (lower === 'premium' || lower === 'premium_scholar') return 'Premium Scholar Plan';
   return plan.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -34,7 +33,7 @@ export const formatPlanName = (plan) => {
 export const isInstitutePlan = (plan) => {
   if (!plan) return false;
   const lower = plan.toLowerCase();
-  return lower.startsWith('inst_') || lower === 'scale_plan' || lower.includes('institute') || lower.includes('batch');
+  return lower.startsWith('inst_') || lower.includes('institute') || lower.includes('batch');
 };
 
 export const sendOrderReceiptEmail = async ({ user, order, claim }) => {

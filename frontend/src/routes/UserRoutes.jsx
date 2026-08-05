@@ -49,6 +49,7 @@ const BookCheckout = lazyWithRetry(() => import('../components/Offers/BookChecko
 const EyeCheckupOffer = lazyWithRetry(() => import('../components/Offers/EyeCheckupOffer'));
 const MemberBenefits = lazyWithRetry(() => import('../components/MemberBenefits'));
 const PricingPage = lazyWithRetry(() => import('../components/PricingPage'));
+const ReceiptPage = lazyWithRetry(() => import('../components/ReceiptPage'));
 import VideoReviewsGallery from '../components/VideoReviewsGallery';
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
@@ -276,6 +277,12 @@ export default function UserRoutes() {
                 login(updatedUser);
                 localStorage.setItem('neetband_current_user', JSON.stringify(updatedUser));
               }} />} />
+
+            <Route path="/receipt/:id" element={
+              <ProtectedRoute isLoggedIn={user?.isLoggedIn} isAuthLoading={isAuthLoading} portalName="Receipt" loginRoute="/login">
+                <ReceiptPage />
+              </ProtectedRoute>
+            } />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

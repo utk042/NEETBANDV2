@@ -6,6 +6,7 @@ import { createPaymentOrder, verifyPayment, verifyPromo } from '../../services/a
 import { useUserAuth } from '../../contexts/UserAuthContext';
 import { useDialog } from '../../contexts/DialogContext';
 import { loadRazorpayScript } from '../../utils/razorpayUtils';
+import { getRazorpayLogo } from '../../utils/logoBase64';
 
 export default function BookCheckout() {
   const navigate = useNavigate();
@@ -156,8 +157,9 @@ export default function BookCheckout() {
         key: order.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
-        name: 'NeetBand',
-        description: 'NeetBand Mastery Guide Book Order',
+        name: 'NEET Band',
+        description: 'NEET Band Mastery Guide Book Order',
+        image: getRazorpayLogo(),
         order_id: order.id,
         handler: async function (response) {
           try {
