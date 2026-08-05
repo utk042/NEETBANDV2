@@ -40,47 +40,19 @@ export default function Careers() {
     fetchPositions();
   }, []);
 
-  const scrollToPositions = () => {
-    const elem = document.getElementById('open-positions');
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <section className="py-20 md:py-28 px-gutter bg-transparent relative min-h-screen transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
 
         {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-6">
-            <IconSparkles size={16} />
-            <span>We Are Hiring</span>
-          </div>
-
+        <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="font-headline-lg font-extrabold text-3xl sm:text-4xl md:text-5xl text-on-surface mb-6 tracking-tight leading-tight">
             Build the Future of Audio Learning with <span className="text-primary">NEET BAND</span>
           </h1>
 
-          <p className="font-body-md text-base md:text-lg text-on-surface-variant leading-relaxed mb-8 max-w-2xl mx-auto">
+          <p className="font-body-md text-base md:text-lg text-on-surface-variant leading-relaxed max-w-2xl mx-auto">
             Join a mission-driven team changing how competitive exam aspirants study. We turn complex academic concepts into memorable study songs.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <button
-              onClick={scrollToPositions}
-              className="px-6 py-3.5 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-md shadow-primary/20 hover:opacity-90 transition-all cursor-pointer flex items-center gap-2"
-            >
-              <span>Explore Open Positions</span>
-              <IconArrowRight size={18} />
-            </button>
-            <button
-              onClick={() => navigate('/contact')}
-              className="px-6 py-3.5 rounded-xl bg-surface-container/60 hover:bg-surface-variant text-on-surface font-semibold text-sm border border-outline-variant/30 transition-all cursor-pointer"
-            >
-              General Application
-            </button>
-          </div>
         </div>
 
         {/* Dynamic Open Positions Section */}
