@@ -22,6 +22,9 @@ import { startBackgroundCleanup } from './utils/cleanup.js';
 
 import benefitRoutes from './routes/benefits.js';
 import careerRoutes from './routes/careerRoutes.js';
+import pricingPlanRoutes from './routes/pricingPlanRoutes.js';
+import faqRoutes from './routes/faqRoutes.js';
+import testimonialRoutes from './routes/testimonialRoutes.js';
 
 dotenv.config();
 
@@ -92,6 +95,9 @@ app.use('/categories', categoryRoutes);
 app.use('/benefits', benefitRoutes);
 app.use('/careers', careerRoutes);
 app.use('/api/careers', careerRoutes);
+app.use('/api/pricing-plans', pricingPlanRoutes);
+app.use('/api/faqs', faqRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 // Base route
 app.get('/', (req, res) => {

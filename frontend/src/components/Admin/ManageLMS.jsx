@@ -9,6 +9,7 @@ import { IconPlus, IconBook2, IconSettings, IconUsers, IconTrash, IconPencil, Ic
 import CourseDesigner from './CourseDesigner';
 import SearchableSelect from '../ui/SearchableSelect';
 import { useClassAndSubjectOptions } from '../../hooks/useClassAndSubjectOptions';
+import ManageTestimonials from './ManageTestimonials';
 
 export default function ManageLMS({ subTab = 'courses', user }) {
   const { confirm, toast } = useDialog();
@@ -554,6 +555,10 @@ export default function ManageLMS({ subTab = 'courses', user }) {
         )}
       </div>
     );
+  }
+
+  if (subTab === 'testimonials') {
+    return <ManageTestimonials />;
   }
 
   if (subTab === 'settings') {

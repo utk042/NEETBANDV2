@@ -48,8 +48,7 @@ export default function AffiliateRoutes() {
   // Theme state for Affiliate
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return stored || 'light';
   });
 
   useEffect(() => {

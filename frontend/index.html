@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
 
@@ -36,7 +36,7 @@
   <link rel="icon" type="image/png" href="/favicon.png"/>
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"/>
-  <link rel="shortcut icon" href="/icons/icon-192x192.png"/>
+  <link rel="shortcut icon" href="/favicon.png"/>
 
   <!-- Canonical link -->
   <link rel="canonical" href="https://neetband.com/"/>
@@ -62,12 +62,11 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
-  <!-- Early theme init — prevents FOUC -->
+  <!-- Early theme init — defaults to light mode -->
   <script>
     (function() {
       var theme = localStorage.getItem('theme');
-      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (theme === 'dark' || (!theme && prefersDark)) {
+      if (theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');

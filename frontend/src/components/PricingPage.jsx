@@ -4,12 +4,12 @@ import {
   IconHeadset
 } from '@tabler/icons-react';
 import Pricing from './Pricing';
-import PartnerScroller from './PartnerScroller';
+
 import FAQ from './FAQ';
 
 export default function PricingPage({ user, navigate }) {
-  const handleSelectPlan = (planId, isYearly = true) => {
-    const billing = isYearly ? 'yearly' : 'monthly';
+  const handleSelectPlan = (planId) => {
+    const billing = 'yearly';
     if (!user || !user.isLoggedIn) {
       navigate('/login', { state: { from: { pathname: `/checkout?plan=${planId}&billing=${billing}` } } });
       return;
@@ -17,28 +17,7 @@ export default function PricingPage({ user, navigate }) {
     navigate(`/checkout?plan=${planId}&billing=${billing}`);
   };
 
-  const faqItems = [
-    {
-      question: "What is included in the Premium Scholar plan?",
-      answer: "Premium Scholar gives you unlimited access to our entire library of NEET audio study songs across subjects. It includes offline PWA downloads, 100% ad-free listening, free eye checkup vouchers, and physical textbook discount coupons."
-    },
-    {
-      question: "How do Institute & Coaching plans work?",
-      answer: "Our Institute plans are structured for coaching batches of 20 seats (5% discount) or 50 seats (10% discount). Every enrolled student gets full Premium Scholar access to all study tracks and benefits."
-    },
-    {
-      question: "Can I download tracks and listen offline?",
-      answer: "Yes! Premium Scholar members can save tracks directly inside the NeetBand PWA app on mobile or desktop so you can revise anytime without an internet connection."
-    },
-    {
-      question: "What payment methods are supported?",
-      answer: "We support all major Indian and international payment options via Razorpay, including UPI (GPay, PhonePe, Paytm, BHIM), Credit Cards, Debit Cards, Net Banking, and Wallets."
-    },
-    {
-      question: "Can I cancel my subscription anytime?",
-      answer: "Absolutely. You can cancel your subscription at any time with a single click in your dashboard. You will continue to have full access until the end of your billing cycle."
-    }
-  ];
+  // Dynamic FAQs are fetched by the FAQ component
 
   const comparisonFeatures = [
     { name: "Audio Study Songs & Mnemonics", free: "Free Sample Tracks", premium: "Full Library Access" },
@@ -72,8 +51,7 @@ export default function PricingPage({ user, navigate }) {
           onSelectPlan={handleSelectPlan}
         />
 
-        {/* Partner & Client Scroller */}
-        <PartnerScroller />
+
 
         {/* Feature Comparison Matrix */}
         <div id="compare-plans-table" className="mt-20 md:mt-28">
@@ -92,7 +70,7 @@ export default function PricingPage({ user, navigate }) {
                 <tr className="border-b border-outline-variant/30 bg-surface-container-high/60">
                   <th className="py-5 px-6 font-bold text-base text-on-surface w-1/2">Features</th>
                   <th className="py-5 px-4 font-bold text-sm text-center text-on-surface-variant w-1/4">Free Plan (₹0)</th>
-                  <th className="py-5 px-4 font-bold text-sm text-center text-primary w-1/4">Premium Scholar (₹299/mo)</th>
+                  <th className="py-5 px-4 font-bold text-sm text-center text-primary w-1/4">Premium Scholar (₹2,508/yr)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 font-body-md text-sm text-on-surface">
@@ -155,7 +133,7 @@ export default function PricingPage({ user, navigate }) {
 
         {/* Pricing FAQs Section */}
         <FAQ 
-          items={faqItems} 
+          pageName="pricing"
           title="Frequently Asked Questions" 
           subtitle="Got questions about billing or subscription plans? We've got answers."
         />

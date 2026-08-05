@@ -100,7 +100,7 @@ export default function Footer({ navigate }) {
           
           {/* Brand Info */}
           <div className="flex flex-col items-start gap-4 min-w-[200px] flex-[2]">
-            <img alt="NeetBand Logo" className="h-12 w-auto object-contain" src={logoImg} width={512} height={236}/>
+            <img alt="NeetBand Logo" className="h-16 md:h-20 w-auto object-contain" src={logoImg} width={512} height={236}/>
             <p className="font-body-md text-sm text-on-surface-variant/80 max-w-[300px] leading-relaxed">
               Premium curriculum-aligned study songs designed to boost active recall and reduce screen fatigue. Turn textbooks into sound.
             </p>
@@ -236,6 +236,13 @@ export default function Footer({ navigate }) {
 
           </div>
 
+        </div>
+
+        {/* Disclaimer Note */}
+        <div className="mt-8 pt-8 border-t border-[var(--border-nav-layout)] flex flex-col items-center justify-center text-center w-full">
+          <p className="font-body-md text-xs text-on-surface-variant/70 max-w-4xl mx-auto leading-relaxed">
+            <strong>NEET BAND</strong> is a brand of WisdomArrow Ventures Private Limited, a company incorporated under the Ministry of Corporate Affairs (MCA) and registered with the Department for Promotion of Industry and Internal Trade (DPIIT) as a <strong>Startup India-recognised platform</strong> (verifiable at the Startup India portal).
+          </p>
         </div>
 
       </div>

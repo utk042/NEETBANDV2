@@ -17,6 +17,9 @@ import ManageCoupons from './ManageCoupons';
 import AdSettings from './AdSettings';
 import ManageInstitutePurchases from './ManageInstitutePurchases';
 import ManageCareers from './ManageCareers';
+import ManageBenefits from './ManageBenefits';
+import ManagePricingPlans from './ManagePricingPlans';
+import ManageFaqs from './ManageFaqs';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -50,7 +53,10 @@ import {
   IconChartBar,
   IconMailOpened,
   IconEye,
-  IconGift
+  IconGift,
+  IconReceipt2,
+  IconMessageQuestion,
+  IconMessage2
 } from '@tabler/icons-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -259,6 +265,16 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           >
             <IconUsers size={20} stroke={2.5} /> Students
           </button>
+          <button
+            onClick={() => changeTab('lms-testimonials')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'lms-testimonials' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconMessage2 size={20} stroke={2.5} /> Testimonials
+          </button>
 
           <button
             onClick={() => changeTab('institute-purchases')}
@@ -313,6 +329,39 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconTag size={20} stroke={2.5} /> Discount Codes
+          </button>
+
+          <button
+            onClick={() => changeTab('benefits')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'benefits' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconGift size={20} stroke={2.5} /> Member Benefits
+          </button>
+
+          <button
+            onClick={() => changeTab('pricing-plans')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'pricing-plans' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconReceipt2 size={20} stroke={2.5} /> Pricing Plans
+          </button>
+
+          <button
+            onClick={() => changeTab('faqs')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'faqs' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconMessageQuestion size={20} stroke={2.5} /> Manage FAQs
           </button>
 
           {user?.role === 'owner' && (
@@ -482,7 +531,10 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
                     <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 tracking-tight">{stats.loading ? '-' : stats.learningModules}</h2>
                     <p className="text-on-surface-variant text-xs md:text-sm mb-4">Organized modules</p>
                     <button onClick={() => changeTab('lms-courses')} className="text-purple-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                      Manage <IconArrowRight size={16} />
+                      Courses &rarr;
+                    </button>
+                    <button onClick={() => changeTab('lms-testimonials')} className="text-purple-500 font-medium text-xs md:text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                      Testimonials &rarr;
                     </button>
                   </div>
                   <div className="absolute top-5 right-5 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-purple-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10 border border-purple-500/20">
@@ -647,6 +699,30 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             <div className="max-w-6xl mx-auto pb-8">
               <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
                 <ManageCoupons />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'benefits' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageBenefits />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'pricing-plans' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManagePricingPlans />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'faqs' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageFaqs />
               </div>
             </div>
           )}

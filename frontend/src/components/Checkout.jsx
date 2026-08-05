@@ -10,7 +10,7 @@ import { IconCheck, IconDownload, IconMail, IconPhone, IconBuilding, IconArrowRi
 export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }) {
   const [searchParams] = useSearchParams();
   const selectedPlan = planProp || searchParams.get('plan') || 'premium_scholar';
-  const billingCycle = searchParams.get('billing') || 'yearly';
+  const billingCycle = 'yearly';
   
   const [promoCode, setPromoCode] = useState(() => {
     try {
@@ -44,27 +44,21 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState(null);
 
-  const planMonthlyPrices = {
-    premium: 299,
-    inst_20: 5681,
-    inst_50: 13455,
-  };
-
   const planYearlyPrices = {
     premium: 2508,
+    premium_scholar: 2508,
     inst_20: 47652,
     inst_50: 112860,
   };
 
   const planNames = {
     premium: 'Premium Scholar Subscription',
+    premium_scholar: 'Premium Scholar Subscription',
     inst_20: '20-User Institute Batch Access',
     inst_50: '50-User Institute Batch Access',
   };
 
-  const basePrice = billingCycle === 'yearly'
-    ? (planYearlyPrices[selectedPlan] || 2508)
-    : (planMonthlyPrices[selectedPlan] || 299);
+  const basePrice = planYearlyPrices[selectedPlan] || 2508;
   const planDisplayName = planNames[selectedPlan] || 'Premium Scholar Subscription';
 
   // Require login
@@ -463,7 +457,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-on-surface-variant">Billing:</span>
-                <span className="font-semibold text-on-surface text-right">{billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}</span>
+                <span className="font-semibold text-on-surface text-right">Yearly (Annual)</span>
               </div>
               <div className="flex justify-between items-center border-t border-outline-variant/30 pt-5 mt-2">
                 <span className="text-on-surface-variant">Subtotal:</span>

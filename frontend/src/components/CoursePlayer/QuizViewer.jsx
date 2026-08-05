@@ -332,7 +332,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
             </div>
           </div>
 
-          <p className="text-sm sm:text-base font-bold text-on-surface leading-relaxed">
+          <p className="text-base sm:text-lg font-bold text-on-surface leading-relaxed">
             {q.question}
           </p>
 
@@ -398,7 +398,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
                     key={oIdx}
                     disabled={quizSubmitted}
                     onClick={() => setQuizAnswers(prev => ({ ...prev, [currentIdx]: oIdx }))}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-xs sm:text-sm transition-all duration-150 flex items-center justify-between ${btnStyle}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm sm:text-base transition-all duration-150 flex items-center justify-between ${btnStyle}`}
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${indexStyle}`}>

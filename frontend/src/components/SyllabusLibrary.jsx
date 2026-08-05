@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
+import ErrorReport from './ErrorReport';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { useDialog } from '../contexts/DialogContext';
@@ -524,6 +525,7 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
           </div>
 
         </div>
+        <ErrorReport />
       </div>
     </section>
     </>

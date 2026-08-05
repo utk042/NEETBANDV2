@@ -128,11 +128,11 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
           
           <nav className="hidden lg:flex items-center gap-5">
             <a className={linkClass('home')} href="#" onClick={(e) => handleNav(e, 'home')}>Home</a>
-            <a className={linkClass('pricing')} href="#" onClick={(e) => handleNav(e, 'pricing')}>Pricing</a>
             <a className={linkClass('library')} href="#" onClick={(e) => handleNav(e, 'library')}>Study Songs</a>
             <a className={linkClass('course')} href="#" onClick={(e) => handleNav(e, 'course')}>Courses</a>
             <a className={linkClass('benefits')} href="#" onClick={(e) => handleNav(e, 'benefits')}>Member Benefits</a>
             <a className={linkClass('blog')} href="#" onClick={(e) => handleNav(e, 'blog')}>Blog</a>
+            <a className={linkClass('pricing')} href="#" onClick={(e) => handleNav(e, 'pricing')}>Pricing</a>
             <a className={linkClass('contact')} href="#" onClick={(e) => handleNav(e, 'contact')}>Contact</a>
           </nav>
           
@@ -226,11 +226,11 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
           {/* Animated Links */}
           <div className={`flex flex-col items-center gap-6 w-full transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
-            <a onClick={(e) => handleNav(e, 'pricing')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'pricing' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Pricing</a>
             <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Study Songs</a>
             <a onClick={(e) => handleNav(e, 'course')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
             <a onClick={(e) => handleNav(e, 'benefits')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'benefits' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Member Benefits</a>
             <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
+            <a onClick={(e) => handleNav(e, 'pricing')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'pricing' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Pricing</a>
             <a onClick={(e) => handleNav(e, 'contact')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'contact' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Contact Us</a>
             {!user.isLoggedIn && (
               <a 

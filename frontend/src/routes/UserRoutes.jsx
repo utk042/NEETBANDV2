@@ -13,6 +13,8 @@ import FullPlayerModal from '../components/FullPlayerModal';
 import PremiumModal from '../components/PremiumModal';
 import MobileNavbar from '../components/MobileNavbar';
 import FAQ from '../components/FAQ';
+import PartnerScroller from '../components/PartnerScroller';
+import ErrorReport from '../components/ErrorReport';
 import LoadingScreen from '../components/LoadingScreen';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 const Dashboard = lazyWithRetry(() => import('../components/Dashboard'));
@@ -21,7 +23,7 @@ const StudentHub = lazyWithRetry(() => import('../components/StudentHub'));
 const Blog = lazyWithRetry(() => import('../components/Blog'));
 const AboutUs = lazyWithRetry(() => import('../components/AboutUs'));
 const ContactUs = lazyWithRetry(() => import('../components/ContactUs'));
-import PWAInstallPrompt from '../components/PWAInstallPrompt';
+
 import useScrollAnimations from '../hooks/useScrollAnimations';
 import useSeoHead from '../hooks/useSeoHead';
 const LoginSignup = lazyWithRetry(() => import('../components/LoginSignup'));
@@ -51,6 +53,7 @@ const MemberBenefits = lazyWithRetry(() => import('../components/MemberBenefits'
 const PricingPage = lazyWithRetry(() => import('../components/PricingPage'));
 const ReceiptPage = lazyWithRetry(() => import('../components/ReceiptPage'));
 import VideoReviewsGallery from '../components/VideoReviewsGallery';
+import TextTestimonials from '../components/TextTestimonials';
 import { getCourses } from '../services/api';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -114,8 +117,7 @@ export default function UserRoutes() {
 
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return stored || 'light';
   });
 
   useEffect(() => {
@@ -185,12 +187,17 @@ export default function UserRoutes() {
               <Hero currentTrack={currentTrack} isPlaying={isAnyAudioActive} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
               <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
               <CourseCarousel lmsCourses={lmsCourses} />
+              <ErrorReport />
               <Features />
               <VideoReviewsGallery />
+              <TextTestimonials />
               <StatsSection appReady={!isLoading} />
               <WhatIsNeetBand />
-              <Pricing onUpgrade={handleUpgradeClick} onSelectPlan={(planId, isYearly) => navigate(`/checkout?plan=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`)} user={user} />
-              <FAQ />
+              <Pricing onUpgrade={handleUpgradeClick} onSelectPlan={(planId) => navigate(`/checkout?plan=${planId}&billing=yearly`)} user={user} />
+              <div className="mt-8">
+                <PartnerScroller />
+              </div>
+              <FAQ pageName="homepage" />
             </>} />
 
             <Route path="/pricing" element={<PricingPage user={user} navigate={navigate} />} />
@@ -305,7 +312,6 @@ export default function UserRoutes() {
       {!['login', 'checkout'].includes(currentPage) && <MobileNavbar currentPage={currentPage} navigate={navigate} user={user} />}
       {!['login', 'checkout'].includes(currentPage) && <FollowUsSidebar />}
 
-      <PWAInstallPrompt />
 
       <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} onUpgrade={() => { setIsPremiumModalOpen(false); handleUpgradeClick(); }} />
       

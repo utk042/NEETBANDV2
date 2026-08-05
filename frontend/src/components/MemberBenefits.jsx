@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   IconSparkles, 
@@ -14,52 +14,7 @@ import {
   IconBook,
   IconStethoscope
 } from '@tabler/icons-react';
-
-const STATIC_BENEFITS = [
-  {
-    _id: 'benefit-eye-checkup',
-    title: 'Biannual Eye Check-up',
-    provider: 'Partner Vision Clinics',
-    category: 'Health',
-    offerType: 'Free Service',
-    timing: 'Biannual',
-    description: 'Complimentary biannual comprehensive eye examination and vision health check-up for enrolled members.',
-    memberValue: 'Free',
-    link: '/offers/eye-checkup',
-    code: 'EYEFREE2026',
-    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800',
-    isAvailable: true,
-    isComingSoon: false
-  },
-  {
-    _id: 'benefit-book-discount',
-    title: 'Book Discount',
-    provider: 'NEET Study Store & Publishers',
-    category: 'Learning',
-    offerType: '25% Discount',
-    timing: 'Ongoing',
-    description: 'Exclusive 25% discount on medical textbooks, reference guides, practice question banks and prep material.',
-    memberValue: '25% off',
-    code: 'NEETBOOKS25',
-    link: '/offers/book',
-    imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=800',
-    isAvailable: true,
-    isComingSoon: false
-  },
-  {
-    _id: 'benefit-wellness-growth',
-    title: 'Student Growth & Wellness Offers',
-    provider: 'Wellness & Mentorship Partners',
-    category: 'Lifestyle',
-    offerType: 'Special Perk Pack',
-    timing: 'Coming Soon',
-    description: 'Curated mental health & student wellness sessions, fitness perks, and 1-on-1 expert mentorship benefits launching soon.',
-    memberValue: 'Coming Soon',
-    imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800',
-    isAvailable: true,
-    isComingSoon: true
-  }
-];
+import { getBenefits } from '../services/api';
 
 export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgradeClick }) {
   const navigate = useNavigate();
@@ -67,24 +22,43 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBenefit, setSelectedBenefit] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [benefits, setBenefits] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBenefits = async () => {
+      try {
+        setLoading(true);
+        const data = await getBenefits();
+        // Filter out unavailable benefits for end-users, just in case
+        const available = (data || []).filter(b => b.isAvailable !== false);
+        setBenefits(available);
+      } catch (err) {
+        console.error('Failed to load benefits:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBenefits();
+  }, []);
 
   const isPremium = user?.isLoggedIn && (user?.isPremium || user?.role === 'admin' || user?.role === 'owner');
   const isLoggedInFree = user?.isLoggedIn && !isPremium;
 
-  // Category counters from static benefits
+  // Category counters from dynamic benefits
   const categoryCounts = {
-    All: STATIC_BENEFITS.length,
-    Health: STATIC_BENEFITS.filter(b => b.category === 'Health').length,
-    Learning: STATIC_BENEFITS.filter(b => b.category === 'Learning').length,
-    Lifestyle: STATIC_BENEFITS.filter(b => b.category === 'Lifestyle').length,
+    All: benefits.length,
+    Health: benefits.filter(b => b.category === 'Health').length,
+    Learning: benefits.filter(b => b.category === 'Learning').length,
+    Lifestyle: benefits.filter(b => b.category === 'Lifestyle').length,
   };
 
-  const filteredBenefits = STATIC_BENEFITS.filter(b => {
+  const filteredBenefits = benefits.filter(b => {
     const matchesTab = activeTab === 'All' || b.category === activeTab;
     const matchesSearch = 
-      b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.provider.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.description.toLowerCase().includes(searchTerm.toLowerCase());
+      b.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.provider?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.description?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
@@ -222,7 +196,12 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
         </div>
 
         {/* Benefits Grid */}
-        {filteredBenefits.length === 0 ? (
+        {loading ? (
+          <div className="py-20 text-center bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-8">
+            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="font-body-md text-sm text-on-surface-variant">Loading member benefits...</p>
+          </div>
+        ) : filteredBenefits.length === 0 ? (
           <div className="py-20 text-center bg-surface-container-lowest rounded-3xl border border-[var(--border-floating-card)] p-8">
             <IconGift size={48} className="mx-auto text-primary/40 mb-3" />
             <h3 className="font-headline-md text-lg font-bold text-on-surface mb-1">No benefits found</h3>

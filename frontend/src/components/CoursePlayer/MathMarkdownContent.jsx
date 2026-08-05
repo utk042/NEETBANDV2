@@ -37,8 +37,8 @@ export default React.memo(function MathMarkdownContent({ content, className = ''
           pre: ({node, ...props}) => <pre className="p-3 rounded-xl bg-surface-container overflow-x-auto text-xs my-2 border border-outline/10" {...props} />,
           ul: ({node, ...props}) => <ul className="space-y-1 my-1.5 list-none text-left inline-block" {...props} />,
           ol: ({node, ...props}) => <ol className="space-y-1 my-1.5 list-decimal ml-4 text-left inline-block" {...props} />,
-          li: ({node, ...props}) => <li className="ml-2 list-disc pl-1 mb-0.5 text-on-surface font-medium text-sm sm:text-base" {...props} />,
-          p: ({node, ...props}) => <p className="mb-1.5 last:mb-0 leading-relaxed font-semibold text-on-surface text-sm sm:text-base" {...props} />,
+          li: ({node, ...props}) => <li className="ml-2 list-disc pl-1 mb-0.5 text-on-surface font-medium text-base sm:text-lg" {...props} />,
+          p: ({node, ...props}) => <p className="mb-1.5 last:mb-0 leading-relaxed font-semibold text-on-surface text-base sm:text-lg" {...props} />,
           blockquote: ({node, ...props}) => <blockquote className="pl-3 mb-2 border-l-2 border-primary/40 text-on-surface/90 text-sm leading-relaxed" {...props} />
         }}
       >

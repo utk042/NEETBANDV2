@@ -56,6 +56,10 @@ const benefitSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  isComingSoon: {
+    type: Boolean,
+    default: false,
+  },
   order: {
     type: Number,
     default: 0,

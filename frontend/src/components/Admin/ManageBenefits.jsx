@@ -101,6 +101,7 @@ export default function ManageBenefits() {
     badgeText: 'Member-exclusive',
     isFeatured: false,
     isAvailable: true,
+    isComingSoon: false,
     order: 0,
   });
 
@@ -137,6 +138,7 @@ export default function ManageBenefits() {
       badgeText: 'Member-exclusive',
       isFeatured: false,
       isAvailable: true,
+      isComingSoon: false,
       order: benefits.length + 1,
     });
     setIsModalOpen(true);
@@ -158,6 +160,7 @@ export default function ManageBenefits() {
       badgeText: benefit.badgeText || 'Member-exclusive',
       isFeatured: benefit.isFeatured || false,
       isAvailable: benefit.isAvailable !== undefined ? benefit.isAvailable : true,
+      isComingSoon: benefit.isComingSoon || false,
       order: benefit.order || 0,
     });
     setIsModalOpen(true);
@@ -563,7 +566,7 @@ export default function ManageBenefits() {
                 />
               </div>
 
-              <div className="flex items-center gap-6 pt-2">
+              <div className="flex flex-wrap items-center gap-6 pt-2">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-on-surface">
                   <input
                     type="checkbox"
@@ -582,6 +585,16 @@ export default function ManageBenefits() {
                     className="w-4 h-4 rounded text-primary focus:ring-primary"
                   />
                   Featured Badge
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-on-surface">
+                  <input
+                    type="checkbox"
+                    checked={formData.isComingSoon}
+                    onChange={(e) => setFormData({ ...formData, isComingSoon: e.target.checked })}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary"
+                  />
+                  Coming Soon
                 </label>
               </div>
 

@@ -9,7 +9,7 @@ import {
   IconCertificate, IconX, IconPencil, IconCrown, IconEye, IconShoppingCart,
   IconTag, IconLock, IconGift, IconMessageCircle, IconLayoutDashboard, IconDownload
 } from '@tabler/icons-react';
-import { getUserProfile, uploadFile, updateUserProfile, getUserOrders } from '../services/api';
+import { getUserProfile, uploadFile, updateUserProfile, getUserOrders, getBenefits } from '../services/api';
 import { printReceipt } from '../utils/receiptGenerator';
 import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
@@ -17,46 +17,7 @@ import Button from './ui/Button';
 import HeartButton from './Common/HeartButton';
 import CommunityForum from './CommunityForum';
 
-const DASHBOARD_BENEFITS = [
-  {
-    _id: 'benefit-eye-checkup',
-    title: 'Biannual Eye Check-up',
-    provider: 'Partner Vision Clinics',
-    category: 'Health',
-    offerType: 'Free Service',
-    timing: 'Biannual',
-    description: 'Complimentary biannual comprehensive eye examination and vision health check-up for enrolled members.',
-    memberValue: 'Free',
-    link: '/offers/eye-checkup',
-    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800',
-    isComingSoon: false
-  },
-  {
-    _id: 'benefit-book-discount',
-    title: 'Book Discount',
-    provider: 'NEET Study Store & Publishers',
-    category: 'Learning',
-    offerType: '25% Discount',
-    timing: 'Ongoing',
-    description: 'Exclusive 25% discount on medical textbooks, reference guides, practice question banks and prep material.',
-    memberValue: '25% off',
-    link: '/offers/book',
-    imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=800',
-    isComingSoon: false
-  },
-  {
-    _id: 'benefit-wellness-growth',
-    title: 'Student Growth & Wellness Offers',
-    provider: 'Wellness & Mentorship Partners',
-    category: 'Lifestyle',
-    offerType: 'Special Perk Pack',
-    timing: 'Coming Soon',
-    description: 'Curated mental health & student wellness sessions, fitness perks, and 1-on-1 expert mentorship benefits launching soon.',
-    memberValue: 'Coming Soon',
-    imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800',
-    isComingSoon: true
-  }
-];
+
 
 export default function Dashboard({ 
   navigate, 
@@ -86,6 +47,16 @@ export default function Dashboard({
   const [profileData, setProfileData] = useState(null);
   const [profileFile, setProfileFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [dashboardBenefits, setDashboardBenefits] = useState([]);
+  
+  useEffect(() => {
+    getBenefits()
+      .then(data => {
+        const available = (data || []).filter(b => b.isAvailable !== false);
+        setDashboardBenefits(available.slice(0, 3));
+      })
+      .catch(err => console.error("Failed to load benefits:", err));
+  }, []);
   
   // Fetch real profile data on mount
   useEffect(() => {
@@ -412,7 +383,7 @@ export default function Dashboard({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {DASHBOARD_BENEFITS.map((benefit) => (
+              {dashboardBenefits.map((benefit) => (
                 <div
                   key={benefit._id}
                   className={`bg-surface-container-lowest rounded-2xl border border-outline/10 hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden shadow-sm hover:shadow-xl group ${

@@ -5,104 +5,127 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    const type = req.body.type || 'others'; 
-    const uploadPath = path.join(__dirname, '../../uploads', type);
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename(req, file, cb) {
-    let ext = path.extname(file.originalname).toLowerCase();
-    
-    if (!ext) {
-      if (file.mimetype === 'audio/mpeg' || file.mimetype === 'audio/mp3') {
-        ext = '.mp3';
-      } else if (file.mimetype === 'audio/wav' || file.mimetype === 'audio/x-wav') {
-        ext = '.wav';
-      } else if (file.mimetype === 'audio/flac') {
-        ext = '.flac';
-      } else if (file.mimetype === 'audio/aac') {
-        ext = '.aac';
-      } else if (file.mimetype === 'audio/ogg') {
-        ext = '.ogg';
-      } else if (file.mimetype === 'audio/mp4') {
-        ext = '.m4a';
-      } else if (file.mimetype === 'audio/webm' || file.mimetype === 'video/webm') {
-        ext = '.webm';
-      } else if (file.mimetype === 'audio/3gpp' || file.mimetype === 'video/3gpp') {
-        ext = '.3gp';
-      }
-    }
-
-    const originalBase = path.basename(file.originalname, ext || path.extname(file.originalname));
-    const safeBase = originalBase.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-    const suffix = safeBase ? `-${safeBase}` : '';
-
-    cb(
-      null,
-      `${file.fieldname}-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}${ext}`
-    );
-  },
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post('/', upload.single('file'), (req, res) => {
-  const type = req.body.type || 'others';
-  // The static middleware in index.js serves the 'uploads' directory at /uploads
-  // So the file will be accessible at /uploads/type/filename
-  res.json({
-    url: `/uploads/${type}/${req.file.filename}`,
-    originalName: req.file.originalname
-  });
-});
+function getFileExtension(file) {
+  let ext = path.extname(file.originalname).toLowerCase();
+  if (!ext && file.mimetype) {
+    if (file.mimetype === 'audio/mpeg' || file.mimetype === 'audio/mp3') {
+      ext = '.mp3';
+    } else if (file.mimetype === 'audio/wav' || file.mimetype === 'audio/x-wav') {
+      ext = '.wav';
+    } else if (file.mimetype === 'audio/flac') {
+      ext = '.flac';
+    } else if (file.mimetype === 'audio/aac') {
+      ext = '.aac';
+    } else if (file.mimetype === 'audio/ogg') {
+      ext = '.ogg';
+    } else if (file.mimetype === 'audio/mp4') {
+      ext = '.m4a';
+    } else if (file.mimetype === 'audio/webm' || file.mimetype === 'video/webm') {
+      ext = '.webm';
+    } else if (file.mimetype === 'audio/3gpp' || file.mimetype === 'video/3gpp') {
+      ext = '.3gp';
+    }
+  }
+  return ext;
+}
 
-router.post('/parse', upload.single('file'), async (req, res) => {
+router.post('/', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    const filePath = req.file.path;
+
+    const type = req.body.type || 'others';
+    const uploadDir = path.join(__dirname, '../../uploads', type);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const ext = getFileExtension(req.file);
+    const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tiff', '.avif']);
+    const isImage = (req.file.mimetype && req.file.mimetype.startsWith('image/')) || imageExtensions.has(ext);
+
+    const originalBase = path.basename(req.file.originalname, ext || path.extname(req.file.originalname));
+    const safeBase = originalBase.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    const suffix = safeBase ? `-${safeBase}` : '';
+
+    let filename;
+    let bufferToWrite;
+
+    if (isImage) {
+      bufferToWrite = await sharp(req.file.buffer)
+        .webp({ lossless: true, quality: 100 })
+        .toBuffer();
+      filename = `${req.file.fieldname}-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}.webp`;
+    } else {
+      bufferToWrite = req.file.buffer;
+      filename = `${req.file.fieldname}-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}${ext}`;
+    }
+
+    const filePath = path.join(uploadDir, filename);
+    await fs.promises.writeFile(filePath, bufferToWrite);
+
+    return res.json({
+      url: `/uploads/${type}/${filename}`,
+      originalName: req.file.originalname
+    });
+  } catch (error) {
+    console.error('Error handling file upload:', error);
+    return res.status(500).json({ error: 'Failed to upload file: ' + error.message });
+  }
+});
+
+router.post('/parse', upload.single('file'), async (req, res) => {
+  let tempFilePath = null;
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
     const ext = path.extname(req.file.originalname).toLowerCase();
-    
+    const tempDir = path.join(__dirname, '../../uploads/temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    tempFilePath = path.join(tempDir, `parse-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    await fs.promises.writeFile(tempFilePath, req.file.buffer);
+
     let text = '';
-    
     if (ext === '.pdf') {
-      const dataBuffer = fs.readFileSync(filePath);
+      const dataBuffer = fs.readFileSync(tempFilePath);
       const parser = new PDFParse({ data: dataBuffer });
       const result = await parser.getText();
       text = result.text;
     } else if (ext === '.docx') {
-      const result = await mammoth.extractRawText({ path: filePath });
+      const result = await mammoth.extractRawText({ path: tempFilePath });
       text = result.value;
     } else if (ext === '.txt' || ext === '.md') {
-      text = fs.readFileSync(filePath, 'utf8');
+      text = fs.readFileSync(tempFilePath, 'utf8');
     } else {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       return res.status(400).json({ error: 'Unsupported file format. Please upload PDF, DOCX, or TXT.' });
     }
-    
-    // Clean up temporary file
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-    
+
     res.json({ text });
   } catch (error) {
     console.error('Error parsing document:', error);
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     res.status(500).json({ error: 'Failed to parse document: ' + error.message });
+  } finally {
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (e) {
+        console.error('Error deleting temp file:', e);
+      }
+    }
   }
 });
 

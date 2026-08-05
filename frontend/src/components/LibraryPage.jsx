@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
+import ErrorReport from './ErrorReport';
 import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
 
 const EQ_STYLES = `
@@ -450,6 +451,7 @@ export default function LibraryPage({
             )}
           </section>
 
+          <ErrorReport />
         </div>
       </div>
     );
@@ -570,6 +572,8 @@ export default function LibraryPage({
             )}
           </div>
         )}
+        
+        <ErrorReport />
       </div>
     </div>
   );

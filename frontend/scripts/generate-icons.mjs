@@ -2,122 +2,143 @@
  * generate-icons.mjs
  * Run with: node scripts/generate-icons.mjs
  *
- * 1. Removes white/near-white background from the source PNG
- * 2. Generates all required PWA icon sizes into public/icons/
- * No splash screens (removed per user request).
+ * Generates light version favicons and PWA app icons:
+ * 1. Extracts logo emblem cleanly with alpha transparency
+ * 2. Generates transparent favicons (favicon.png, favicon-32x32, favicon-16x16)
+ * 3. Generates crisp white-background PWA icons (icon-72x72 through icon-512x512, apple-touch-icon)
+ * 4. Generates light-themed app screenshots
  */
 
 import sharp from 'sharp';
-import { mkdirSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-
-// The user-supplied logo (most recent upload)
-const SOURCE = 'C:/Users/UTKARSH/.gemini/antigravity/brain/406e0d7d-7904-4de4-b673-79a0a2ab2b5a/media__1782401603049.png';
-
 const OUT_DIR = join(ROOT, 'public', 'icons');
 mkdirSync(OUT_DIR, { recursive: true });
 
-/* ──────────────────────────────────────────────────────────
-   Step 1: Remove white background
-   Strategy: get raw RGBA pixels, mark near-white pixels
-   (R>230 & G>230 & B>230) as fully transparent.
-   ────────────────────────────────────────────────────────── */
+// Determine source image
+let sourcePath = join(ROOT, 'public', 'icons', 'icon-512x512.png');
+if (!existsSync(sourcePath)) {
+  sourcePath = join(ROOT, 'public', 'logo.png');
+}
 
-const { data, info } = await sharp(SOURCE)
+console.log(`🔍 Using source icon: ${sourcePath}`);
+
+// Extract emblem and handle transparency
+const { data, info } = await sharp(sourcePath)
   .ensureAlpha()
   .raw()
   .toBuffer({ resolveWithObject: true });
 
-const { width, height, channels } = info; // channels === 4 (RGBA)
 const pixels = new Uint8Array(data);
+const bgR = 7, bgG = 18, bgB = 45; // Dark navy background (#07122d)
 
-for (let i = 0; i < pixels.length; i += 4) {
-  const r = pixels[i];
-  const g = pixels[i + 1];
-  const b = pixels[i + 2];
-
-  // Near-white threshold — adjust if needed
-  if (r > 230 && g > 230 && b > 230) {
-    pixels[i + 3] = 0; // fully transparent
+let isDarkBgSource = false;
+// Sample corners to check if source has dark background
+const corners = [0, (info.width - 1) * 4, ((info.height - 1) * info.width) * 4, ((info.height - 1) * info.width + info.width - 1) * 4];
+for (const idx of corners) {
+  if (Math.abs(pixels[idx] - bgR) < 15 && Math.abs(pixels[idx + 1] - bgG) < 15 && Math.abs(pixels[idx + 2] - bgB) < 15) {
+    isDarkBgSource = true;
+    break;
   }
 }
 
-// Rebuild as transparent PNG
-const transparentPng = await sharp(Buffer.from(pixels), {
-  raw: { width, height, channels },
+if (isDarkBgSource) {
+  console.log('🧹 Removing dark navy background (#07122d)...');
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
+
+    if (dist <= 5) {
+      pixels[i + 3] = 0;
+    } else if (dist < 35) {
+      const alphaFactor = (dist - 5) / 30;
+      pixels[i + 3] = Math.round(pixels[i + 3] * alphaFactor);
+    }
+  }
+}
+
+// Trim whitespace/transparent borders to center emblem tightly
+const emblemBuffer = await sharp(Buffer.from(pixels), {
+  raw: { width: info.width, height: info.height, channels: 4 },
 })
+  .trim()
   .png()
   .toBuffer();
 
-console.log('✅  White background removed');
+const emblemMeta = await sharp(emblemBuffer).metadata();
+console.log(`✅ Emblem extracted (${emblemMeta.width}x${emblemMeta.height}px)`);
 
-/* ──────────────────────────────────────────────────────────
-   Step 2: Generate icon sizes
-   All icons use a dark navy (#07122d) background so they
-   look great on both light and dark OS home screens,
-   and also a transparent version for any maskable usage.
-   ────────────────────────────────────────────────────────── */
+// 1. Save transparent favicons
+const favicon32 = await sharp(emblemBuffer)
+  .resize(32, 32, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png()
+  .toBuffer();
 
+await sharp(favicon32).toFile(join(OUT_DIR, 'favicon-32x32.png'));
+await sharp(favicon32).toFile(join(ROOT, 'public', 'favicon.png'));
+
+const favicon16 = await sharp(emblemBuffer)
+  .resize(16, 16, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png()
+  .toBuffer();
+
+await sharp(favicon16).toFile(join(OUT_DIR, 'favicon-16x16.png'));
+
+console.log('✅ Generated light transparent favicons (favicon.png, favicon-32x32.png, favicon-16x16.png)');
+
+// 2. Generate PWA Icons (Light version: clean pure white #ffffff background)
 const SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
 
 for (const size of SIZES) {
-  // Padding: icon fills ~80% of the frame, 10% padding each side
-  const padding = Math.round(size * 0.1);
+  const padding = Math.round(size * 0.12);
   const iconSize = size - padding * 2;
 
-  const resizedIcon = await sharp(transparentPng)
+  const resizedEmblem = await sharp(emblemBuffer)
     .resize(iconSize, iconSize, {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .toBuffer();
 
-  // Version with navy background (for non-maskable usage)
+  // White background for light theme
   await sharp({
     create: {
       width: size,
       height: size,
       channels: 4,
-      background: { r: 7, g: 18, b: 45, alpha: 1 },
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     },
   })
-    .composite([{ input: resizedIcon, left: padding, top: padding }])
+    .composite([{ input: resizedEmblem, left: padding, top: padding }])
     .png()
     .toFile(join(OUT_DIR, `icon-${size}x${size}.png`));
 
-  console.log(`✅  icon-${size}x${size}.png`);
+  console.log(`✅ Generated icon-${size}x${size}.png (light)`);
 }
 
-// Also save the transparent version for favicon usage (no background)
-const transparentResized = await sharp(transparentPng)
-  .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-  .png()
+// 3. Apple Touch Icon (180x180 with clean white background)
+const appleSize = 180;
+const applePad = Math.round(appleSize * 0.12);
+const appleEmblem = await sharp(emblemBuffer)
+  .resize(appleSize - applePad * 2, appleSize - applePad * 2, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .toBuffer();
 
-// Save as a dedicated transparent icon for favicon
-await sharp(transparentResized)
-  .resize(32, 32)
-  .toFile(join(OUT_DIR, 'favicon-32x32.png'));
-
-await sharp(transparentResized)
-  .resize(16, 16)
-  .toFile(join(OUT_DIR, 'favicon-16x16.png'));
-
-// Also copy transparent 512 for the apple-touch-icon (will show on light OS)
-await sharp(transparentPng)
-  .resize(180, 180, { fit: 'contain', background: { r: 7, g: 18, b: 45, alpha: 1 } })
+await sharp({
+  create: { width: appleSize, height: appleSize, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
+})
+  .composite([{ input: appleEmblem, left: applePad, top: applePad }])
   .png()
   .toFile(join(OUT_DIR, 'apple-touch-icon.png'));
 
-console.log('✅  favicon-32x32.png');
-console.log('✅  favicon-16x16.png');
-console.log('✅  apple-touch-icon.png');
+console.log('✅ Generated apple-touch-icon.png (light)');
 
-// Screenshots placeholders (required by manifest)
+// 4. Screenshots with light background
 const screenshotDir = join(ROOT, 'public', 'screenshots');
 mkdirSync(screenshotDir, { recursive: true });
 
@@ -129,17 +150,17 @@ for (const { name, w, h } of [
   const left = Math.round((w - iconSize) / 2);
   const top  = Math.round((h - iconSize) / 2);
 
-  const icon = await sharp(transparentPng)
+  const icon = await sharp(emblemBuffer)
     .resize(iconSize, iconSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .toBuffer();
 
   await sharp({
-    create: { width: w, height: h, channels: 4, background: { r: 7, g: 18, b: 45, alpha: 1 } },
+    create: { width: w, height: h, channels: 4, background: { r: 248, g: 250, b: 252, alpha: 1 } },
   })
     .composite([{ input: icon, left, top }])
     .png()
     .toFile(join(screenshotDir, name));
-  console.log(`✅  screenshots/${name}`);
+  console.log(`✅ Generated screenshots/${name} (light)`);
 }
 
-console.log('\n🎉  All PWA assets generated in public/icons/ and public/screenshots/');
+console.log('\n🎉 All light version PWA assets and favicons successfully generated!');

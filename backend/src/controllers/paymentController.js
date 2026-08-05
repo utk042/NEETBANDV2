@@ -361,8 +361,8 @@ export const fulfillOrderInternal = async ({
 // @access  Private
 export const createOrder = async (req, res) => {
   try {
-    const { plan, discountCode, shippingDetails, billingCycle: rawBillingCycle } = req.body;
-    const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
+    const { plan, discountCode, shippingDetails } = req.body;
+    const billingCycle = 'yearly';
     
     const validPlans = ['premium_scholar', 'book_order', 'inst_20', 'inst_50', 'premium'];
     if (!plan || !validPlans.includes(plan)) {
@@ -374,12 +374,12 @@ export const createOrder = async (req, res) => {
     if (validatedPlan === 'book_order') {
       amount = 49900; // ₹499
     } else if (validatedPlan === 'inst_20') {
-      amount = billingCycle === 'yearly' ? 4765200 : 568100; // ₹47,652 yearly or ₹5,681 monthly
+      amount = 4765200; // ₹47,652 yearly
     } else if (validatedPlan === 'inst_50') {
-      amount = billingCycle === 'yearly' ? 11286000 : 1345500; // ₹1,12,860 yearly or ₹13,455 monthly
+      amount = 11286000; // ₹1,12,860 yearly
     } else {
       // premium_scholar or premium
-      amount = billingCycle === 'yearly' ? 250800 : 29900; // ₹2508 yearly or ₹299 monthly
+      amount = 250800; // ₹2,508 yearly
     }
 
     // Apply Coupon/Discount Logic
@@ -599,13 +599,13 @@ export const razorpayWebhook = async (req, res) => {
 // @access  Private
 export const redeemFreeCoupon = async (req, res) => {
   try {
-    const { plan, discountCode, shippingDetails, billingCycle: rawBillingCycle } = req.body;
+    const { plan, discountCode, shippingDetails } = req.body;
 
     if (!discountCode || !discountCode.trim()) {
       return res.status(400).json({ message: 'Discount code is required' });
     }
 
-    const billingCycle = rawBillingCycle === 'yearly' ? 'yearly' : 'monthly';
+    const billingCycle = 'yearly';
     const validPlans = ['premium_scholar', 'inst_20', 'inst_50', 'premium'];
     if (!plan || !validPlans.includes(plan)) {
       return res.status(400).json({ message: 'Invalid or unsupported plan type' });
@@ -616,12 +616,12 @@ export const redeemFreeCoupon = async (req, res) => {
     if (validatedPlan === 'book_order') {
       baseAmount = 49900;
     } else if (validatedPlan === 'inst_20') {
-      baseAmount = billingCycle === 'yearly' ? 4765200 : 568100;
+      baseAmount = 4765200;
     } else if (validatedPlan === 'inst_50') {
-      baseAmount = billingCycle === 'yearly' ? 11286000 : 1345500;
+      baseAmount = 11286000;
     } else {
       // premium_scholar or premium
-      baseAmount = billingCycle === 'yearly' ? 250800 : 29900;
+      baseAmount = 250800;
     }
 
     const normalizedCode = discountCode.trim().toUpperCase();

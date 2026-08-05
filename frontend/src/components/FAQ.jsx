@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconChevronDown } from '@tabler/icons-react';
+import { getFaqs } from '../services/api';
 
 const FAQ_ITEMS = [
   {
@@ -25,11 +26,40 @@ const FAQ_ITEMS = [
 ];
 
 export default function FAQ({ 
-  items = FAQ_ITEMS, 
+  items, 
   title = "Frequently Asked Questions", 
-  subtitle = "Got questions? We’ve got answers." 
+  subtitle = "Got questions? We’ve got answers.",
+  pageName = null
 }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [dynamicItems, setDynamicItems] = useState(FAQ_ITEMS);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If items are passed explicitly (like from a parent that already fetched), use them
+    if (items && items.length > 0) {
+      setDynamicItems(items);
+      return;
+    }
+    
+    // Otherwise, fetch them if pageName is provided
+    if (pageName) {
+      const fetchFaqs = async () => {
+        try {
+          setLoading(true);
+          const data = await getFaqs(pageName);
+          if (data && data.length > 0) {
+            setDynamicItems(data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch FAQs:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFaqs();
+    }
+  }, [items, pageName]);
 
   const toggleFAQ = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -46,7 +76,11 @@ export default function FAQ({
         </div>
         
         <div className="space-y-4" data-gsap="faq-list">
-          {items.map((item, idx) => {
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : dynamicItems.map((item, idx) => {
             const isOpen = activeIndex === idx;
             return (
               <div 
@@ -75,8 +109,9 @@ export default function FAQ({
                     isOpen ? 'max-h-[350px] opacity-100' : 'max-h-0 opacity-0'
                   } overflow-hidden`}
                 >
-                  <div className="px-6 pb-6 pt-2 font-body-md text-sm md:text-base text-on-surface-variant leading-relaxed border-t border-[var(--border-floating-card)]/50">
-                    {item.answer}
+                  <div className="px-6 pb-6 pt-2 font-body-md text-sm md:text-base text-on-surface-variant leading-relaxed border-t border-[var(--border-floating-card)]/50 prose prose-sm max-w-none dark:prose-invert prose-a:text-primary"
+                       dangerouslySetInnerHTML={{ __html: item.answer }}
+                  >
                   </div>
                 </div>
               </div>
