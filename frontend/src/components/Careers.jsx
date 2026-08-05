@@ -199,50 +199,6 @@ export default function Careers() {
           </div>
         </div>
 
-        {/* 3-Step Simple Hiring Process */}
-        <div className="mb-20 bg-surface-container-lowest border border-[var(--border-floating-card)] rounded-3xl p-8 md:p-10 shadow-[var(--shadow-floating-card)]">
-          <div className="text-center max-w-md mx-auto mb-10">
-            <h2 className="font-headline-lg font-bold text-2xl text-on-surface mb-2">
-              Our Simple Hiring Process
-            </h2>
-            <p className="text-xs text-on-surface-variant/80">
-              Respectful of your time and designed to give you clarity at every stage.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-            <div className="flex flex-col items-center text-center p-4">
-              <div className="w-10 h-10 rounded-full bg-primary text-on-primary font-bold flex items-center justify-center mb-3 text-sm shadow-md">
-                1
-              </div>
-              <h3 className="font-bold text-on-surface text-sm mb-1">Intro Conversation</h3>
-              <p className="text-on-surface-variant text-xs leading-relaxed">
-                A brief chat to align on your background, aspirations, and role fit.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center p-4">
-              <div className="w-10 h-10 rounded-full bg-primary text-on-primary font-bold flex items-center justify-center mb-3 text-sm shadow-md">
-                2
-              </div>
-              <h3 className="font-bold text-on-surface text-sm mb-1">Portfolio or Task Review</h3>
-              <p className="text-on-surface-variant text-xs leading-relaxed">
-                A short practical assignment or portfolio review relevant to the role.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center p-4">
-              <div className="w-10 h-10 rounded-full bg-primary text-on-primary font-bold flex items-center justify-center mb-3 text-sm shadow-md">
-                3
-              </div>
-              <h3 className="font-bold text-on-surface text-sm mb-1">Final Discussion</h3>
-              <p className="text-on-surface-variant text-xs leading-relaxed">
-                Aligning on expectations, compensation, culture, and onboarding details.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* General Application Banner */}
         <div className="bg-primary/10 border border-primary/20 rounded-3xl p-8 md:p-10 text-center max-w-3xl mx-auto flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center">
