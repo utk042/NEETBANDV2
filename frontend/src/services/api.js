@@ -534,11 +534,11 @@ export const verifyPayment = async (verificationData) => {
   return res.json();
 };
 
-export const redeemFreeCoupon = async (plan, discountCode, billingCycle) => {
+export const redeemFreeCoupon = async (plan, discountCode, billingCycle, shippingDetails = null) => {
   const res = await apiFetch(`${API_URL}/payments/redeem-free`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, discountCode, billingCycle }),
+    headers: getHeaders(),
+    body: JSON.stringify({ plan, discountCode, billingCycle, shippingDetails }),
   });
   return handleResponse(res);
 };
@@ -1038,4 +1038,121 @@ export const getInstitutePurchases = async () => {
   return res.json();
 };
 
+export const recordPurchase = async (purchaseData) => {
+  const res = await apiFetch(`${API_URL}/admin/record-purchase`, {
+    method: 'POST',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(purchaseData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to record purchase');
+    } catch {
+      throw new Error(errText || 'Failed to record purchase');
+    }
+  }
+  return res.json();
+};
+
+// Careers & Open Positions APIs
+export const getPublicJobPositions = async () => {
+  const res = await apiFetch(`${API_URL}/careers/positions`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const submitJobApplication = async (applicationData) => {
+  const res = await apiFetch(`${API_URL}/careers/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(applicationData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to submit application');
+    } catch {
+      throw new Error(errText || 'Failed to submit application');
+    }
+  }
+  return res.json();
+};
+
+export const getAdminJobPositions = async () => {
+  const res = await apiFetch(`${API_URL}/careers/admin/positions`, {
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const createJobPosition = async (positionData) => {
+  const res = await apiFetch(`${API_URL}/careers/admin/positions`, {
+    method: 'POST',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(positionData),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    try {
+      const parsed = JSON.parse(errText);
+      throw new Error(parsed.message || 'Failed to create position');
+    } catch {
+      throw new Error(errText || 'Failed to create position');
+    }
+  }
+  return res.json();
+};
+
+export const updateJobPosition = async (id, positionData) => {
+  const res = await apiFetch(`${API_URL}/careers/admin/positions/${id}`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(positionData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const deleteJobPosition = async (id) => {
+  const res = await apiFetch(`${API_URL}/careers/admin/positions/${id}`, {
+    method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getJobApplications = async (jobId = '') => {
+  const url = jobId ? `${API_URL}/careers/admin/applications?jobId=${jobId}` : `${API_URL}/careers/admin/applications`;
+  const res = await apiFetch(url, {
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const updateJobApplicationStatus = async (id, updateData) => {
+  const res = await apiFetch(`${API_URL}/careers/admin/applications/${id}/status`, {
+    method: 'PUT',
+    headers: getLmsHeaders(),
+    body: JSON.stringify(updateData),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const deleteJobApplication = async (id) => {
+  const res = await apiFetch(`${API_URL}/careers/admin/applications/${id}`, {
+    method: 'DELETE',
+    headers: getLmsHeaders(),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
 export default api;
+

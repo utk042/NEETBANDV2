@@ -21,6 +21,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import { startBackgroundCleanup } from './utils/cleanup.js';
 
 import benefitRoutes from './routes/benefits.js';
+import careerRoutes from './routes/careerRoutes.js';
 
 dotenv.config();
 
@@ -70,10 +71,14 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API Routes
 app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/songs', songRoutes);
 app.use('/lms', lmsRoutes);
+app.use('/api/lms', lmsRoutes);
 app.use('/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/blogs', blogRoutes);
 app.use('/forums', forumRoutes);
 app.use('/affiliates', affiliateRoutes);
@@ -85,6 +90,8 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/ad-config', adConfigRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/benefits', benefitRoutes);
+app.use('/careers', careerRoutes);
+app.use('/api/careers', careerRoutes);
 
 // Base route
 app.get('/', (req, res) => {

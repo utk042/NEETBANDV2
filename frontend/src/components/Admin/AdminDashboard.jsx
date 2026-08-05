@@ -16,10 +16,12 @@ import ManageEyeCheckups from './ManageEyeCheckups';
 import ManageCoupons from './ManageCoupons';
 import AdSettings from './AdSettings';
 import ManageInstitutePurchases from './ManageInstitutePurchases';
+import ManageCareers from './ManageCareers';
 import api from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
   IconTag,
+  IconBriefcase,
   IconMusic, 
   IconBook, 
   IconLayoutDashboard, 
@@ -259,6 +261,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           </button>
 
           <button
+            onClick={() => changeTab('institute-purchases')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'institute-purchases' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconCash size={20} stroke={2.5} /> All Purchases
+          </button>
+
+          <button
             onClick={() => changeTab('blogs')}
             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
               activeTab === 'blogs' 
@@ -327,6 +340,17 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           </button>
 
           <button
+            onClick={() => changeTab('careers')}
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
+              activeTab === 'careers' 
+                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
+                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <IconBriefcase size={20} stroke={2.5} /> Careers & Jobs
+          </button>
+
+          <button
             onClick={() => changeTab('news-scroll')}
             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
               activeTab === 'news-scroll' 
@@ -368,16 +392,6 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             }`}
           >
             <IconEye size={20} stroke={2.5} /> Eye Checkups
-          </button>
-          <button
-            onClick={() => changeTab('institute-purchases')}
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
-              activeTab === 'institute-purchases' 
-                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
-                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <IconSchool size={20} stroke={2.5} /> Institute Purchases
           </button>
         </nav>
 
@@ -640,6 +654,14 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
           {activeTab === 'contact-messages' && (
             <div className="max-w-6xl mx-auto pb-8">
               <ManageContactMessages />
+            </div>
+          )}
+
+          {activeTab === 'careers' && (
+            <div className="max-w-6xl mx-auto pb-8">
+              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
+                <ManageCareers />
+              </div>
             </div>
           )}
 
