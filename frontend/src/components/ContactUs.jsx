@@ -70,7 +70,7 @@ export default function ContactUs() {
                   </div>
                   <div>
                     <h4 className="font-label-md font-bold text-sm text-on-surface-variant mb-1">Email Support</h4>
-                    <a href="mailto:support@neetband.com" className="font-body-md text-on-surface hover:text-primary transition-colors">support@neetband.com</a>
+                    <a href="mailto:support@neetband.com" className="font-body-md text-on-surface hover:text-blue-500 transition-colors">support@neetband.com</a>
                   </div>
                 </div>
 
@@ -80,7 +80,7 @@ export default function ContactUs() {
                   </div>
                   <div>
                     <h4 className="font-label-md font-bold text-sm text-on-surface-variant mb-1">Call Us</h4>
-                    <a href="tel:+918047193393" className="font-body-md text-on-surface hover:text-primary transition-colors">+91 80 4719 3393</a>
+                    <a href="tel:+918047193393" className="font-body-md text-on-surface hover:text-blue-500 transition-colors">+91 80 4719 3393</a>
                   </div>
                 </div>
 
@@ -105,7 +105,7 @@ export default function ContactUs() {
                 href="https://wa.me/918047193393" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="font-label-md text-sm font-bold text-primary hover:underline inline-flex items-center gap-1"
+                className="font-label-md text-sm font-bold text-blue-500 hover:underline inline-flex items-center gap-1"
               >
                 Chat on WhatsApp &rarr;
               </a>

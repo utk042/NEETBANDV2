@@ -1,0 +1,29 @@
+# NeetBand — Audio Learning for NEET Aspirants
+
+> NeetBand is an educational auditory learning platform created specifically for NEET (National Eligibility cum Entrance Test) aspirants in India (Class 11 & 12). It translates dense NCERT textbooks into high-retention audio tracks, songs, audio summaries, and quizzes.
+
+## Core Capabilities & Features
+
+- **Audio-First Science Learning**: Music-based memory mnemonics for Class 11 & 12 Biology, Chemistry, and Physics.
+- **Eye Health & Screen Reduction**: Designed to reduce visual strain and eye fatigue by allowing students to study hands-free and screen-free.
+- **Full NEET Syllabus Alignment**: Aligned with the official NTA NCERT NEET UG curriculum.
+- **Interactive Quizzes & Practice**: Q&A, active recall modules, and syllabus tracking.
+- **PWA & Offline Access**: Progressive Web App capabilities allowing students to download tracks and listen anywhere without internet connection.
+
+## Key Subject Coverage
+
+- **Biology**: Cell Biology, Plant Physiology, Human Physiology, Genetics & Evolution, Biotechnology, Ecology.
+- **Chemistry**: Physical Chemistry formulas, Organic Chemistry reaction mechanisms, Inorganic Chemistry memory tracks.
+- **Physics**: Core formulas, definitions, laws of motion, electrodynamics, optics mnemonics.
+
+## Primary Canonical Links
+
+- [NeetBand Official Platform](https://neetband.com)
+- [NEET Course Library](https://neetband.com/course)
+- [Syllabus & Audio Player](https://neetband.com/library)
+- [About NeetBand Mission](https://neetband.com/about)
+- [NEET Preparation Blog](https://neetband.com/blog)
+- [Student Hub](https://neetband.com/hub)
+
+## Target Audience
+Class 11, Class 12, and repeater NEET aspirants seeking high-retention revision methods while minimizing eye strain.

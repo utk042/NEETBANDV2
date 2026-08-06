@@ -88,7 +88,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
             <div className="flex flex-col items-center justify-center py-20 text-center w-full">
               <IconAlertCircle className="text-error mb-3" size={32} />
               <p className="text-sm text-on-surface-variant">
-                Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+                Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-blue-500 font-bold hover:underline">contact admin</Link> or try again later.
               </p>
             </div>
           }
@@ -122,7 +122,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
           <div className="flex flex-col items-center justify-center py-20 text-center w-full h-full">
             <IconAlertCircle className="text-error mb-3" size={32} />
             <p className="text-sm text-on-surface-variant">
-              Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+              Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-blue-500 font-bold hover:underline">contact admin</Link> or try again later.
             </p>
           </div>
         ) : (
@@ -154,7 +154,7 @@ export default function DocumentViewer({ fileUrl, fileType, title, onError }) {
     <div className="w-full bg-surface rounded-xl overflow-hidden shadow-sm border border-outline/10 p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
       <IconAlertCircle className="text-error mb-3" size={32} />
       <p className="text-sm text-on-surface-variant">
-        Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-primary font-bold hover:underline">contact admin</Link> or try again later.
+        Failed to load notes. Please <Link to="/contact" state={{ subject: 'Report Bug / Issue' }} className="text-blue-500 font-bold hover:underline">contact admin</Link> or try again later.
       </p>
     </div>
   );

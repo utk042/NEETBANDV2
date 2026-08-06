@@ -125,8 +125,8 @@ export default function Advertise() {
             <p className="mt-6 text-sm text-on-surface-variant/70">
               <strong className="text-on-surface">NEET BAND</strong>
               <br />Address: Dr Biresh Guha Street, Kolkata-700017
-              <br />Email: <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a>
-              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://neetband.com/</a>
+              <br />Email: <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a>
+              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">https://neetband.com/</a>
             </p>
           </div>
 

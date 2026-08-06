@@ -332,7 +332,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
             </div>
           </div>
 
-          <p className="text-base sm:text-lg font-bold text-on-surface leading-relaxed">
+          <p className="text-lg sm:text-xl font-bold text-on-surface leading-relaxed">
             {q.question}
           </p>
 
@@ -345,7 +345,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
                   disabled={quizSubmitted}
                   value={quizAnswers[currentIdx] || ''}
                   onChange={(e) => setQuizAnswers(prev => ({ ...prev, [currentIdx]: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 bg-background transition-colors ${
+                  className={`w-full px-4 py-3 rounded-xl border text-base focus:outline-none focus:ring-2 bg-background transition-colors ${
                     quizSubmitted 
                       ? (checkBlankAnswer(quizAnswers[currentIdx], q.correctText) ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 focus:ring-0' : 'border-rose-500 text-rose-400 bg-rose-500/10 focus:ring-0')
                       : 'border-outline-variant/30 text-on-surface focus:ring-amber-500/30 focus:border-amber-500/40'
@@ -398,7 +398,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
                     key={oIdx}
                     disabled={quizSubmitted}
                     onClick={() => setQuizAnswers(prev => ({ ...prev, [currentIdx]: oIdx }))}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm sm:text-base transition-all duration-150 flex items-center justify-between ${btnStyle}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl border text-base sm:text-lg transition-all duration-150 flex items-center justify-between ${btnStyle}`}
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${indexStyle}`}>
@@ -432,7 +432,7 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
           </div>
 
           {quizSubmitted && q.explanation && (
-            <div className="text-xs text-on-surface-variant/80 mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 leading-relaxed">
+            <div className="text-sm sm:text-base text-on-surface-variant/80 mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 leading-relaxed">
               <strong className="text-amber-400 block mb-1">Explanation:</strong>
               {q.explanation}
             </div>

@@ -297,7 +297,7 @@ export default function Checkout({ user, navigate, onCheckoutSuccess, planProp }
               </p>
               <div className="bg-surface/80 rounded-lg p-3 text-xs text-on-surface space-y-1.5 border border-outline-variant/20">
                 <div className="font-bold text-on-surface-variant uppercase tracking-wider mb-1">Need Immediate Assistance? Contact Us:</div>
-                <div className="flex items-center gap-2"><IconMail size={14} className="text-primary" /> Email: <a href="mailto:support@neetband.com" className="text-primary font-bold hover:underline">support@neetband.com</a></div>
+                <div className="flex items-center gap-2"><IconMail size={14} className="text-primary" /> Email: <a href="mailto:support@neetband.com" className="text-blue-500 font-bold hover:underline">support@neetband.com</a></div>
                 <div className="flex items-center gap-2"><IconPhone size={14} className="text-primary" /> Phone: <span className="font-bold">+91 98765 43210</span></div>
               </div>
             </div>

@@ -8,7 +8,7 @@ import heroVideo from '../assets/vid1.mp4';
 export default function Hero({ currentTrack, isPlaying, togglePlay, onUpgradeClick }) {
   const navigate = useNavigate();
   return (
-    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden w-full pt-44 md:pt-52 pb-24 md:pb-32">
+    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden w-full pt-32 md:pt-36 pb-32 md:pb-48">
       {/* Background Video */}
       <div className="absolute inset-0 z-0" data-gsap="hero-bg">
         <video 

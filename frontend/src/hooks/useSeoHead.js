@@ -23,18 +23,13 @@ const ROUTE_META = {
     public: true,
   },
   '/library': {
-    title: 'Full Audio Syllabus Library | NeetBand',
+    title: 'Full Audio Songs Library | NeetBand',
     description: 'Browse complete auditory tracks and memory songs for NEET preparation across all subjects.',
     public: true,
   },
   '/favourites': {
     title: 'Saved Tracks & Study Playlist | NeetBand',
     description: 'Your personalized collection of NEET audio tracks and revision songs.',
-    public: true,
-  },
-  '/hub': {
-    title: 'Student Learning Hub | NeetBand',
-    description: 'Interactive audio study tools, summaries, and revision guides for NEET aspirants.',
     public: true,
   },
   '/blog': {

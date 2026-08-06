@@ -64,7 +64,7 @@
   --color-primary-fixed: 255 224 142; /* #ffe08e */
   --color-surface: 248 249 255; /* #f8f9ff */
   --color-surface-container-lowest: 255 255 255; /* #ffffff */
-  --color-on-surface-variant: 77 70 53; /* #4d4635 */
+  --color-on-surface-variant: 51 51 51; /* #333333 */
   --color-primary-fixed-dim: 236 194 70; /* #ecc246 */
   --color-surface-tint: 117 91 0; /* #755b00 */
   --color-on-primary-fixed-variant: 88 68 0; /* #584400 */
@@ -169,7 +169,7 @@
   --color-primary-fixed: 255 224 142; /* #ffe08e */
   --color-surface: 7 18 45; /* #07122d */
   --color-surface-container-lowest: 3 13 39; /* #030d27 */
-  --color-on-surface-variant: 209 197 175; /* #d1c5af */
+  --color-on-surface-variant: 230 230 230; /* #e6e6e6 */
   --color-primary-fixed-dim: 236 194 70; /* #ecc246 */
   --color-surface-tint: 236 194 70; /* #ecc246 */
   --color-on-primary-fixed-variant: 88 68 0; /* #584400 */

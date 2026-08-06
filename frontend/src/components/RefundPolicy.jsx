@@ -46,7 +46,7 @@ export default function RefundPolicy() {
           <div>
             <h2 className="font-headline-md text-lg font-bold text-on-surface mb-3">4. Requesting Technical Refund Resolution</h2>
             <p>
-              If a payment is deducted but access is not activated due to a technical error, contact our support team at <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a> with your Transaction ID, registered email, and payment date for manual activation or refund processing.
+              If a payment is deducted but access is not activated due to a technical error, contact our support team at <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a> with your Transaction ID, registered email, and payment date for manual activation or refund processing.
             </p>
           </div>
 
@@ -61,9 +61,9 @@ export default function RefundPolicy() {
             <h2 className="font-headline-md text-lg font-bold text-on-surface mb-3">Questions?</h2>
             <p>
               Contact us at{' '}
-              <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a>
+              <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a>
               {' '}or call{' '}
-              <a href="tel:+919143240488" className="text-primary hover:underline">+91 9143240488</a>.
+              <a href="tel:+919143240488" className="text-blue-500 hover:underline">+91 9143240488</a>.
               <br />Address: NEET BAND, Dr Biresh Guha Street, Kolkata-700017.
             </p>
           </div>

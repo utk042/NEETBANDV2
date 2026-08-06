@@ -171,7 +171,7 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                               {plan.name}
                             </h3>
 
-                            <div className="flex items-baseline gap-1.5 my-1">
+                            <div className="flex items-baseline flex-wrap gap-1.5 my-1">
                               {plan.originalPrice > 0 && (
                                 <span className="text-base font-extrabold text-on-surface-variant/40 line-through decoration-rose-500/80 decoration-2">
                                   ₹{plan.originalPrice}
@@ -180,19 +180,19 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                               <span className="font-display-lg text-3xl font-black text-on-surface tracking-tight">
                                 {displayPrice}
                               </span>
-                              <span className="text-xs text-on-surface-variant font-medium">
+                              <span className="text-xs text-on-surface-variant font-medium whitespace-nowrap">
                                 {plan.monthlyPrice === 0 ? '/ month' : '/ user / month'}
                               </span>
                             </div>
 
                             {/* Subtext block - aligned height */}
-                            <div className="text-[11px] text-on-surface-variant font-medium mt-0.5 h-8 flex flex-col justify-center">
+                            <div className="text-xs md:text-sm text-on-surface-variant font-medium mt-1 min-h-[3.5rem] flex flex-col justify-center">
                               <p>{plan.subtextLine1}</p>
-                              <p className="text-[10px] opacity-70">{plan.subtextLine2}</p>
+                              <p className="text-xs opacity-70 mt-0.5">{plan.subtextLine2}</p>
                             </div>
 
                             {/* Description block - aligned height */}
-                            <p className="text-xs text-on-surface-variant mt-2 leading-snug opacity-90 h-10 flex items-center">
+                            <p className="text-sm text-on-surface-variant mt-2 leading-snug opacity-90 min-h-[3.5rem] flex items-center">
                               {plan.description}
                             </p>
                           </div>
@@ -231,14 +231,14 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                           </div>
 
                           {/* Features List */}
-                          <div className="border-t border-outline-variant/20 pt-3.5">
-                            <p className="text-[10px] font-extrabold tracking-wider text-on-surface-variant/70 uppercase mb-2">
+                          <div className="border-t border-outline-variant/20 pt-4 mt-4">
+                            <p className="text-xs font-extrabold tracking-wider text-on-surface-variant/70 uppercase mb-3">
                               What's Included
                             </p>
                             <ul className="space-y-2">
                               {plan.features.map((feat, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-xs text-on-surface font-medium leading-snug">
-                                  <IconCircleCheck size={16} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                                <li key={idx} className="flex items-start gap-2 text-sm text-on-surface font-medium leading-relaxed">
+                                  <IconCircleCheck size={18} className="text-emerald-500 flex-shrink-0 mt-0.5" />
                                   <span>{feat}</span>
                                 </li>
                               ))}
@@ -296,7 +296,7 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                               {plan.name}
                             </h3>
 
-                            <div className="flex items-baseline gap-1.5 my-1">
+                            <div className="flex items-baseline flex-wrap gap-1.5 my-1">
                               {plan.originalPrice > 0 && (
                                 <span className="text-sm md:text-base font-extrabold text-on-surface-variant/40 line-through decoration-rose-500/80 decoration-2">
                                   ₹{plan.originalPrice.toLocaleString('en-IN')}
@@ -306,20 +306,20 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                                 {displayPrice}
                               </span>
                               {!plan.customPrice && (
-                                <span className="text-xs text-on-surface-variant font-medium">
+                                <span className="text-xs text-on-surface-variant font-medium whitespace-nowrap">
                                   / month
                                 </span>
                               )}
                             </div>
 
                             {/* Subtext block - aligned height across all cards */}
-                            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold h-8 flex flex-col justify-center">
+                            <div className="text-xs md:text-sm text-emerald-600 dark:text-emerald-400 font-bold min-h-[3.5rem] flex flex-col justify-center mt-1">
                               <p>{plan.subtextLine1}</p>
-                              <p className="text-[10px] text-on-surface-variant font-normal opacity-80">{plan.subtextLine2}</p>
+                              <p className="text-xs text-on-surface-variant font-normal opacity-80 mt-0.5">{plan.subtextLine2}</p>
                             </div>
 
                             {/* Description block - aligned height across all cards */}
-                            <p className="text-xs text-on-surface-variant mt-2 leading-snug opacity-90 h-10 flex items-center">
+                            <p className="text-sm text-on-surface-variant mt-2 leading-snug opacity-90 min-h-[3.5rem] flex items-center">
                               {plan.description}
                             </p>
                           </div>
@@ -354,14 +354,14 @@ export default function Pricing({ onUpgrade, onSelectPlan, isLoading, user }) {
                           </div>
 
                           {/* Features List */}
-                          <div className="border-t border-outline-variant/20 pt-3.5">
-                            <p className="text-[10px] font-extrabold tracking-wider text-on-surface-variant/70 uppercase mb-2">
+                          <div className="border-t border-outline-variant/20 pt-4 mt-4">
+                            <p className="text-xs font-extrabold tracking-wider text-on-surface-variant/70 uppercase mb-3">
                               Batch Inclusions
                             </p>
                             <ul className="space-y-2">
                               {plan.features.map((feat, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-xs text-on-surface font-medium leading-snug">
-                                  <IconCircleCheck size={16} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                                <li key={idx} className="flex items-start gap-2 text-sm text-on-surface font-medium leading-relaxed">
+                                  <IconCircleCheck size={18} className="text-emerald-500 flex-shrink-0 mt-0.5" />
                                   <span>{feat}</span>
                                 </li>
                               ))}

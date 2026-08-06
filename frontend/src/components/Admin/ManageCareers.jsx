@@ -450,7 +450,7 @@ export default function ManageCareers() {
                             href={app.resumeUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary hover:underline font-semibold"
+                            className="inline-flex items-center gap-1 text-blue-500 hover:underline font-semibold"
                           >
                             <span>Open Resume</span>
                             <IconExternalLink size={14} />
@@ -682,7 +682,7 @@ export default function ManageCareers() {
                   href={selectedAppDetail.resumeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold bg-primary/10 px-3 py-2 rounded-lg border border-primary/20"
+                  className="inline-flex items-center gap-1.5 text-blue-500 hover:underline font-semibold bg-primary/10 px-3 py-2 rounded-lg border border-primary/20"
                 >
                   <span>{selectedAppDetail.resumeUrl}</span>
                   <IconExternalLink size={14} />

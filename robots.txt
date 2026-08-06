@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /course
+Allow: /library
+Allow: /favourites
+Allow: /hub
+Allow: /blog
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /refund
+
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /lms/
+Disallow: /feed
+Disallow: /offers/
+Disallow: /auth/
+
+Sitemap: https://neetband.com/sitemap.xml

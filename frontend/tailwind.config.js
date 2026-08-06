@@ -85,24 +85,26 @@ export default {
         "sm": "12px"
       },
       fontFamily: {
-        "display-lg": ["Outfit", "sans-serif"],
-        "body-md": ["Outfit", "sans-serif"],
-        "headline-lg-mobile": ["Outfit", "sans-serif"],
-        "headline-lg": ["Outfit", "sans-serif"],
-        "label-sm": ["Outfit", "sans-serif"],
-        "body-lg": ["Outfit", "sans-serif"],
-        "headline-md": ["Outfit", "sans-serif"],
-        "label-md": ["Outfit", "sans-serif"]
+        "display-lg": ["Playfair Display", "serif"],
+        "body-md": ["Inter", "sans-serif"],
+        "headline-lg-mobile": ["Playfair Display", "serif"],
+        "headline-lg": ["Playfair Display", "serif"],
+        "label-sm": ["Inter", "sans-serif"],
+        "body-lg": ["Inter", "sans-serif"],
+        "headline-md": ["Playfair Display", "serif"],
+        "label-md": ["Inter", "sans-serif"],
+        "menu": ["Inter", "sans-serif"],
+        "special": ["Amiri", "serif"]
       },
       fontSize: {
-        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
-        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
-        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
-        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
-        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
-        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
-        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
-        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+        "display-lg": ["50px", { "lineHeight": "58px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+        "body-md": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+        "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "700" }],
+        "headline-lg": ["34px", { "lineHeight": "42px", "fontWeight": "700" }],
+        "label-sm": ["14px", { "lineHeight": "18px", "fontWeight": "500" }],
+        "body-lg": ["20px", { "lineHeight": "30px", "fontWeight": "400" }],
+        "headline-md": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+        "label-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0.05em", "fontWeight": "600" }]
       },
       animation: {
         marquee: 'marquee 25s linear infinite',

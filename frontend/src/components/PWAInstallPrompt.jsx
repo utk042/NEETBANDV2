@@ -6,35 +6,61 @@ import { IconDownload, IconX } from '@tabler/icons-react';
  * Shows a native-feeling install banner when the browser fires
  * the `beforeinstallprompt` event (Chrome/Edge/Android).
  * iOS users see a Share-to-Home-Screen tip instead (no JS API available).
+ *
+ * Persistence rules:
+ *  - Dismissing only hides it for the current session (no permanent flag).
+ *  - On every page refresh the prompt re-appears if the app is not installed.
+ *  - Once the user installs, `pwa-installed` is stored in localStorage so the
+ *    prompt stays hidden permanently… until the app is uninstalled.
+ *  - After uninstall, the browser fires `beforeinstallprompt` again; we detect
+ *    that and clear `pwa-installed` so the cycle starts over.
  */
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner]         = useState(false);
   const [isIOS, setIsIOS]                   = useState(false);
-  const [dismissed, setDismissed]           = useState(false);
+  // sessionDismissed is in-memory only — resets every page load
+  const [sessionDismissed, setSessionDismissed] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed (running in standalone mode)
+    // Already running as an installed PWA — never show the prompt
     if (window.matchMedia('(display-mode: standalone)').matches) return;
-    // Don't show if previously dismissed
-    if (localStorage.getItem('pwa-prompt-dismissed')) return;
+
+    // User already installed the app (we recorded it) — hide until uninstalled
+    if (localStorage.getItem('pwa-installed')) return;
 
     const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(isIOSDevice);
 
     if (isIOSDevice) {
-      // Show iOS tip after 4s
+      // iOS: show the tip after 4 s on every page load until installed
       const t = setTimeout(() => setShowBanner(true), 4000);
       return () => clearTimeout(t);
     }
 
+    // Chrome/Edge/Android: intercept the native install prompt
     const handler = (e) => {
       e.preventDefault();
+      // If we previously stored "installed" but the browser is offering the
+      // prompt again, the user must have uninstalled — clear the flag.
+      localStorage.removeItem('pwa-installed');
       setDeferredPrompt(e);
       setShowBanner(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+
+    // Listen for the actual install completing
+    const onInstalled = () => {
+      localStorage.setItem('pwa-installed', '1');
+      setShowBanner(false);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', onInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -42,18 +68,20 @@ export default function PWAInstallPrompt() {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
+      // appinstalled event will also fire, but handle here as a fallback
+      localStorage.setItem('pwa-installed', '1');
       setShowBanner(false);
     }
     setDeferredPrompt(null);
   };
 
+  // Dismiss only hides for this session — no localStorage write
   const handleDismiss = () => {
     setShowBanner(false);
-    setDismissed(true);
-    localStorage.setItem('pwa-prompt-dismissed', '1');
+    setSessionDismissed(true);
   };
 
-  if (!showBanner || dismissed) return null;
+  if (!showBanner || sessionDismissed) return null;
 
   return (
     <div

@@ -152,7 +152,7 @@ export default React.memo(function FlashcardViewer({ activeDetails }) {
 
               {/* Question Content */}
               <div className="flex-1 w-full min-h-0 overflow-y-auto show-scrollbar flex flex-col items-center justify-center p-2 text-center">
-                <div className="w-full text-center">
+                <div className="w-full text-center text-lg sm:text-xl font-medium leading-relaxed">
                   <MathMarkdownContent content={pair?.question} className="text-center" />
                 </div>
               </div>
@@ -175,7 +175,7 @@ export default React.memo(function FlashcardViewer({ activeDetails }) {
 
               {/* Answer Content */}
               <div className="flex-1 w-full min-h-0 overflow-y-auto show-scrollbar flex flex-col items-center justify-center p-2 text-center">
-                <div className="w-full text-center">
+                <div className="w-full text-center text-lg sm:text-xl font-medium leading-relaxed">
                   <MathMarkdownContent content={pair?.answer} className="text-center" />
                 </div>
               </div>

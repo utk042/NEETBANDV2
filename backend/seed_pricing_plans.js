@@ -46,8 +46,6 @@ const seedPlans = [
       'Unrestricted access to all NEET Audio Songs',
       '100% Ad-Free uninterrupted playback',
       'Offline PWA downloads for mobile & desktop',
-      'Free Biannual Eye Check-up Clinic Voucher',
-      '25% Off Medical Books & Study Material Voucher',
       'Full access to Student Hub & syllabus library'
     ],
     order: 2
@@ -73,9 +71,7 @@ const seedPlans = [
     features: [
       '20 Full Premium Student Access Accounts',
       'Full access to Physics, Chemistry & Biology songs',
-      'Offline PWA downloads for enrolled students',
-      '20x Free Eye Check-up Clinic Vouchers',
-      '25% Off Medical Books & Prep Vouchers'
+      'Offline PWA downloads for enrolled students'
     ],
     order: 1
   },
@@ -100,9 +96,7 @@ const seedPlans = [
     features: [
       '50 Full Premium Student Access Accounts',
       'Full access to Physics, Chemistry & Biology songs',
-      'Offline PWA downloads for enrolled students',
-      '50x Free Eye Check-up Clinic Vouchers',
-      '25% Off Medical Books & Prep Vouchers'
+      'Offline PWA downloads for enrolled students'
     ],
     order: 2
   },

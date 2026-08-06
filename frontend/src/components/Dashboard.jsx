@@ -15,7 +15,6 @@ import logoImg from '../assets/logo.png';
 import { Card, CardHeader, CardBody } from './ui/Card';
 import Button from './ui/Button';
 import HeartButton from './Common/HeartButton';
-import CommunityForum from './CommunityForum';
 
 
 
@@ -77,14 +76,13 @@ export default function Dashboard({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
-  // Tab navigation state (Overview vs Community Feed)
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(activeTabParam === 'feed' ? 'feed' : 'overview');
+  const [activeTab, setActiveTab] = useState(activeTabParam === 'benefits' ? 'benefits' : 'overview');
 
   useEffect(() => {
-    if (activeTabParam === 'feed') {
-      setActiveTab('feed');
+    if (activeTabParam === 'benefits') {
+      setActiveTab('benefits');
     } else {
       setActiveTab('overview');
     }
@@ -92,8 +90,8 @@ export default function Dashboard({
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    if (tab === 'feed') {
-      setSearchParams({ tab: 'feed' }, { replace: true });
+    if (tab === 'benefits') {
+      setSearchParams({ tab: 'benefits' }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
@@ -249,7 +247,7 @@ export default function Dashboard({
   // Generate a nice avatar URL based on the user's name using Dicebear
   const avatarUrl = user?.profilePicture 
     ? (user.profilePicture.startsWith('http') ? user.profilePicture : `${API_URL}${user.profilePicture}`)
-    : `https://api.dicebear.com/9.x/avataaars/svg?seed=${profileName || 'Student'}&backgroundColor=b6e3f4`;
+    : `https://api.dicebear.com/9.x/initials/svg?seed=${profileName || 'Student'}&backgroundColor=b6e3f4`;
 
   return (
     <div className="min-h-screen bg-surface pt-32 pb-32 transition-colors duration-300 relative overflow-hidden">
@@ -294,51 +292,145 @@ export default function Dashboard({
             </button>
 
             <button
-              onClick={() => handleTabChange('feed')}
+              onClick={() => handleTabChange('benefits')}
               className={`px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                activeTab === 'feed'
+                activeTab === 'benefits'
                   ? 'bg-primary text-on-primary shadow-md'
                   : 'bg-surface-container/60 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
               }`}
             >
-              <IconMessageCircle size={20} /> Community Feed
-              {!isPremiumUser && (
-                <span className="flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                  <IconLock size={12} /> PRO
-                </span>
-              )}
+              <IconGift size={20} /> Member Benefits
             </button>
           </div>
 
-          {activeTab === 'feed' ? (
+          {activeTab === 'benefits' ? (
             <div className="animate-in fade-in duration-300">
-              {isPremiumUser ? (
-                <CommunityForum user={user} />
-              ) : (
-                <div className="bg-surface-container-lowest rounded-3xl p-8 sm:p-12 text-center border border-outline/10 max-w-2xl mx-auto my-8 shadow-xl">
-                  <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-6">
-                    <IconCrown size={32} />
-                  </div>
-                  <h2 className="text-2xl font-extrabold text-on-surface mb-3">
-                    Premium Access Required
+              {/* PREMIUM OFFERS */}
+              <div className="mb-16">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold tracking-tight text-on-surface flex items-center gap-2">
+                    <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
                   </h2>
-                  <p className="text-on-surface-variant text-base leading-relaxed mb-8 max-w-lg mx-auto">
-                    The Community Feed is exclusively available to NEET Band Premium members. Upgrade your plan to join discussions, ask questions, and connect with fellow medical aspirants.
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (onUpgradeClick) onUpgradeClick();
-                      else navigate('/pricing');
-                    }}
-                    className="px-8 py-3.5 bg-primary hover:opacity-90 text-on-primary rounded-xl font-extrabold text-base transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 mx-auto cursor-pointer"
-                  >
-                    <IconCrown size={20} /> Upgrade to Premium
-                  </button>
+                  {navigate && (
+                    <button 
+                      onClick={() => navigate('/benefits')} 
+                      className="text-sm font-semibold text-primary hover:text-primary/70 transition-colors flex items-center gap-1"
+                    >
+                      View All <IconArrowRight size={16} />
+                    </button>
+                  )}
                 </div>
-              )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {dashboardBenefits.map((benefit) => (
+                    <div
+                      key={benefit._id}
+                      className={`bg-surface-container-lowest rounded-2xl border border-outline/10 hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden shadow-sm hover:shadow-xl group ${
+                        benefit.isComingSoon ? 'opacity-90' : ''
+                      }`}
+                    >
+                      {/* Image Container with Floating Badges */}
+                      <div className="h-32 sm:h-36 bg-surface-container relative overflow-hidden">
+                        <img
+                          src={benefit.imageUrl}
+                          alt={benefit.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
+
+                        {/* Category Badge */}
+                        <div className="absolute top-4 left-4 bg-[#0F1B33]/90 backdrop-blur-md px-3.5 py-1 rounded-full text-[11px] font-bold text-on-surface shadow-md border border-white/10 flex items-center gap-1">
+                          {benefit.category}
+                        </div>
+
+                        {/* Coming Soon Badge overlay */}
+                        {benefit.isComingSoon && (
+                          <div className="absolute top-4 right-4 bg-amber-500/20 border border-amber-500/40 text-amber-400 backdrop-blur-md px-3.5 py-1 rounded-full text-[11px] font-bold shadow-md flex items-center gap-1">
+                            <IconClock size={12} /> Coming Soon
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Area */}
+                      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                          {/* Meta Tags Row */}
+                          <div className="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant mb-1.5">
+                            <span className="inline-flex items-center gap-1 text-amber-400 font-bold">
+                              <IconTag size={13} /> {benefit.offerType}
+                            </span>
+                            <span className="opacity-40">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <IconClock size={13} /> {benefit.timing}
+                            </span>
+                          </div>
+
+                          {/* Title & Provider */}
+                          <h3 className="text-base font-bold text-on-surface mb-0.5 leading-snug group-hover:text-primary transition-colors">
+                            {benefit.title}
+                          </h3>
+                          <p className="text-[11px] text-on-surface-variant font-medium mb-2">
+                            by <span className="text-on-surface font-semibold">{benefit.provider}</span>
+                          </p>
+
+                          {/* Description */}
+                          <p className="text-xs text-on-surface-variant/80 leading-snug line-clamp-2">
+                            {benefit.description}
+                          </p>
+                        </div>
+
+                        {/* Footer Row (Benefit Value + Action Button) */}
+                        <div className="pt-3 border-t border-outline/10 flex items-center justify-between mt-auto">
+                          <div>
+                            <div className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-0.5">
+                              BENEFIT VALUE
+                            </div>
+                            <div className="text-sm font-extrabold text-on-surface">
+                              {benefit.memberValue}
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          {benefit.isComingSoon ? (
+                            <button
+                              disabled
+                              className="px-3 py-1.5 bg-surface-container-high/50 border border-outline/10 text-on-surface-variant/50 rounded-xl text-[11px] font-bold cursor-not-allowed flex items-center gap-1 opacity-80"
+                            >
+                              <IconClock size={13} /> Coming Soon...
+                            </button>
+                          ) : user?.isPremium ? (
+                            <button
+                              onClick={() => {
+                                if (benefit.link.startsWith('/')) navigate(benefit.link);
+                                else window.open(benefit.link, '_blank');
+                              }}
+                              className="px-3.5 py-1.5 bg-primary text-on-primary rounded-xl text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1 cursor-pointer"
+                            >
+                              <IconGift size={13} /> Redeem
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                if (onUpgradeClick) onUpgradeClick();
+                                else navigate('/pricing');
+                              }}
+                              className="px-3.5 py-1.5 bg-surface-container/80 border border-outline/20 text-on-surface hover:border-primary/40 hover:text-primary rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <IconLock size={13} className="text-amber-400" /> Unlock
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
-            <>
+            <div className="animate-in fade-in duration-300">
 
           <div className="grid grid-cols-1 md:grid-cols-3 mb-24 border-t border-b border-outline/10 divide-y md:divide-y-0 md:divide-x divide-outline/10">
             <div className="flex flex-col gap-4 py-12 md:py-16 md:px-12 first:md:pl-0 last:md:pr-0">
@@ -366,129 +458,6 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* PREMIUM OFFERS */}
-          <div className="mb-16">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-on-surface flex items-center gap-2">
-                <IconAward className="text-primary" size={28} strokeWidth={1.5} /> Exclusive Offers
-              </h2>
-              {navigate && (
-                <button 
-                  onClick={() => navigate('/benefits')} 
-                  className="text-sm font-semibold text-primary hover:text-primary/70 transition-colors flex items-center gap-1"
-                >
-                  View All <IconArrowRight size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {dashboardBenefits.map((benefit) => (
-                <div
-                  key={benefit._id}
-                  className={`bg-surface-container-lowest rounded-2xl border border-outline/10 hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden shadow-sm hover:shadow-xl group ${
-                    benefit.isComingSoon ? 'opacity-90' : ''
-                  }`}
-                >
-                  {/* Image Container with Floating Badges */}
-                  <div className="h-32 sm:h-36 bg-surface-container relative overflow-hidden">
-                    <img
-                      src={benefit.imageUrl}
-                      alt={benefit.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
-
-                    {/* Category Badge */}
-                    <div className="absolute top-2.5 left-2.5 bg-[#0F1B33]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold text-on-surface shadow-md border border-white/10 flex items-center gap-1">
-                      {benefit.category}
-                    </div>
-
-                    {/* Coming Soon Badge overlay */}
-                    {benefit.isComingSoon && (
-                      <div className="absolute top-2.5 right-2.5 bg-amber-500/20 border border-amber-500/40 text-amber-400 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-md flex items-center gap-1">
-                        <IconClock size={12} /> Coming Soon
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content Area */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      {/* Meta Tags Row */}
-                      <div className="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant mb-1.5">
-                        <span className="inline-flex items-center gap-1 text-amber-400 font-bold">
-                          <IconTag size={13} /> {benefit.offerType}
-                        </span>
-                        <span className="opacity-40">•</span>
-                        <span className="inline-flex items-center gap-1">
-                          <IconClock size={13} /> {benefit.timing}
-                        </span>
-                      </div>
-
-                      {/* Title & Provider */}
-                      <h3 className="text-base font-bold text-on-surface mb-0.5 leading-snug group-hover:text-primary transition-colors">
-                        {benefit.title}
-                      </h3>
-                      <p className="text-[11px] text-on-surface-variant font-medium mb-2">
-                        by <span className="text-on-surface font-semibold">{benefit.provider}</span>
-                      </p>
-
-                      {/* Description */}
-                      <p className="text-xs text-on-surface-variant/80 leading-snug line-clamp-2">
-                        {benefit.description}
-                      </p>
-                    </div>
-
-                    {/* Footer Row (Benefit Value + Action Button) */}
-                    <div className="pt-3 border-t border-outline/10 flex items-center justify-between mt-auto">
-                      <div>
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/70 mb-0.5">
-                          BENEFIT VALUE
-                        </div>
-                        <div className="text-sm font-extrabold text-on-surface">
-                          {benefit.memberValue}
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      {benefit.isComingSoon ? (
-                        <button
-                          disabled
-                          className="px-3 py-1.5 bg-surface-container-high/50 border border-outline/10 text-on-surface-variant/50 rounded-xl text-[11px] font-bold cursor-not-allowed flex items-center gap-1 opacity-80"
-                        >
-                          <IconClock size={13} /> Coming Soon...
-                        </button>
-                      ) : user?.isPremium ? (
-                        <button
-                          onClick={() => {
-                            if (benefit.link.startsWith('/')) navigate(benefit.link);
-                            else window.open(benefit.link, '_blank');
-                          }}
-                          className="px-3.5 py-1.5 bg-primary text-on-primary rounded-xl text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1 cursor-pointer"
-                        >
-                          <IconGift size={13} /> Redeem
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            if (onUpgradeClick) onUpgradeClick();
-                            else navigate('/pricing');
-                          }}
-                          className="px-3.5 py-1.5 bg-surface-container/80 border border-outline/20 text-on-surface hover:border-primary/40 hover:text-primary rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                        >
-                          <IconLock size={13} className="text-amber-400" /> Unlock
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* ENROLLED COURSES */}
           <div className="mb-16">
@@ -843,9 +812,8 @@ export default function Dashboard({
               <IconLogout size={20} strokeWidth={1.5} className="mr-2" /> Log Out
             </button>
           </div>
-          </>
+          </div>
           )}
-
         </div>
       </div>
 

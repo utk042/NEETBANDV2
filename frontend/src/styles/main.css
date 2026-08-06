@@ -182,7 +182,7 @@ body {
 }
 
 .tiptap-editor-content a {
-    color: var(--primary);
+    color: #3b82f6;
     text-decoration: underline;
 }
 

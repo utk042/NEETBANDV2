@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 
 import { UserAuthProvider, useUserAuth } from './contexts/UserAuthContext';
@@ -17,6 +17,10 @@ const AffiliateRoutes = lazyWithRetry(() => import('./routes/AffiliateRoutes'));
 function AppContent() {
   const location = useLocation();
   const { user } = useUserAuth();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   let content;
   if (location.pathname.startsWith('/lms')) {

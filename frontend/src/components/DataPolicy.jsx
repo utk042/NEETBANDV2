@@ -30,8 +30,8 @@ export default function PrivacyPolicy() {
               <p><strong className="text-on-surface">NEET BAND</strong></p>
               <p>Address: Dr Biresh Guha Street, Kolkata-700017</p>
               <p>Phone: +91 9143240488</p>
-              <p>Email: <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a></p>
-              <p>Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://neetband.com/</a></p>
+              <p>Email: <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a></p>
+              <p>Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">https://neetband.com/</a></p>
             </div>
           </div>
 
@@ -265,8 +265,8 @@ export default function PrivacyPolicy() {
               <strong className="text-on-surface">NEET BAND</strong>
               <br />Address: Dr Biresh Guha Street, Kolkata-700017
               <br />Phone: +91 9143240488
-              <br />Email: <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a>
-              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://neetband.com/</a>
+              <br />Email: <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a>
+              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">https://neetband.com/</a>
             </p>
           </div>
 

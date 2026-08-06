@@ -372,19 +372,6 @@ export default function Features() {
 
         </div>
 
-        {/* ── Report Error Notice ─────────────────────────── */}
-        <div className="mt-16 text-center border-t border-outline/10 pt-10">
-          <p className="font-body-md text-sm md:text-base text-on-surface-variant/80 max-w-2xl mx-auto">
-            Found an error in a study song or note?{' '}
-            <Link 
-              to="/contact" 
-              className="text-primary font-semibold underline underline-offset-4 hover:text-primary-fixed transition-colors"
-            >
-              Report it here
-            </Link>{' '}
-            so we can review and correct it.
-          </p>
-        </div>
       </div>
     </section>
   );

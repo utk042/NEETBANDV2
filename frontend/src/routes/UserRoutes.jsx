@@ -19,7 +19,6 @@ import LoadingScreen from '../components/LoadingScreen';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 const Dashboard = lazyWithRetry(() => import('../components/Dashboard'));
 const Favourites = lazyWithRetry(() => import('../components/Favourites'));
-const StudentHub = lazyWithRetry(() => import('../components/StudentHub'));
 const Blog = lazyWithRetry(() => import('../components/Blog'));
 const AboutUs = lazyWithRetry(() => import('../components/AboutUs'));
 const ContactUs = lazyWithRetry(() => import('../components/ContactUs'));
@@ -187,7 +186,6 @@ export default function UserRoutes() {
               <Hero currentTrack={currentTrack} isPlaying={isAnyAudioActive} togglePlay={togglePlay} onUpgradeClick={handleUpgradeClick} />
               <SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} />
               <CourseCarousel lmsCourses={lmsCourses} />
-              <ErrorReport />
               <Features />
               <VideoReviewsGallery />
               <TextTestimonials />
@@ -246,7 +244,6 @@ export default function UserRoutes() {
             } />
             <Route path="/course-player" element={<Navigate to="/course" replace />} />
 
-            <Route path="/hub" element={<div className="pt-36 md:pt-44 pb-32"><StudentHub user={user} onUpgradeClick={() => setIsPremiumModalOpen(true)} /></div>} />
             <Route path="/benefits" element={<MemberBenefits user={user} onUpgradeClick={handleUpgradeClick} />} />
             <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
             <Route path="/feed" element={<Navigate to="/dashboard?tab=feed" replace />} />

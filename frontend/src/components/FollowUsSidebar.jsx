@@ -9,25 +9,25 @@ import {
 const SOCIAL_LINKS = [
   {
     name: 'Facebook',
-    href: 'https://facebook.com',
+    href: 'https://www.facebook.com/NEETBandStudy/',
     icon: IconBrandFacebookFilled,
     hoverColor: 'hover:text-[#1877F2] hover:bg-[#1877F2]/10 hover:border-[#1877F2]/30',
   },
   {
     name: 'Instagram',
-    href: 'https://instagram.com',
+    href: 'https://instagram.com/neetbandstudy',
     icon: IconBrandInstagram,
     hoverColor: 'hover:text-[#E4405F] hover:bg-[#E4405F]/10 hover:border-[#E4405F]/30',
   },
   {
     name: 'YouTube',
-    href: 'https://youtube.com',
+    href: 'https://www.youtube.com/@neetbandstudy',
     icon: IconBrandYoutubeFilled,
     hoverColor: 'hover:text-[#FF0000] hover:bg-[#FF0000]/10 hover:border-[#FF0000]/30',
   },
   {
     name: 'WhatsApp',
-    href: 'https://whatsapp.com',
+    href: 'https://wa.me/919477411701',
     icon: IconBrandWhatsapp,
     hoverColor: 'hover:text-[#25D366] hover:bg-[#25D366]/10 hover:border-[#25D366]/30',
   },

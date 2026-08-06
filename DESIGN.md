@@ -15,26 +15,26 @@ colors:
   success: "#10b981"
 typography:
   display:
-    fontFamily: "Outfit, sans-serif"
-    fontSize: "48px"
+    fontFamily: "Playfair Display, serif"
+    fontSize: "50px"
     fontWeight: 800
-    lineHeight: "56px"
+    lineHeight: "58px"
     letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Outfit, sans-serif"
-    fontSize: "32px"
+    fontFamily: "Playfair Display, serif"
+    fontSize: "34px"
     fontWeight: 700
-    lineHeight: "40px"
+    lineHeight: "42px"
   body:
-    fontFamily: "Outfit, sans-serif"
-    fontSize: "16px"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "17px"
     fontWeight: 400
-    lineHeight: "24px"
+    lineHeight: "25px"
   label:
-    fontFamily: "Outfit, sans-serif"
-    fontSize: "12px"
+    fontFamily: "Inter, sans-serif"
+    fontSize: "13px"
     fontWeight: 500
-    lineHeight: "16px"
+    lineHeight: "17px"
 rounded:
   sm: "0.25rem"
   md: "0.5rem"
@@ -88,17 +88,19 @@ The palette is designed to reduce eye fatigue with deep, calm backgrounds and cl
 
 ## 3. Typography
 
-**Display Font:** Outfit (with sans-serif)
-**Body Font:** Outfit (with sans-serif)
+**Display Font:** Playfair Display (with serif)
+**Body Font:** Inter (with sans-serif)
+**Menu Font:** Inter (with sans-serif)
+**Special Characters Font:** Amiri (with serif)
 
 **Character:** Modern, clean, and highly legible across all sizes, ensuring frictionless reading without strain.
 
 ### Hierarchy
-- **Display** (800, 48px, 56px): Hero headlines and major section titles.
-- **Headline** (700, 32px, 40px): Subsection titles and important callouts.
-- **Title** (600, 24px, 32px): Card titles and minor section headers.
-- **Body** (400, 16px, 24px): Standard reading text. Max line length ~70ch for comfortable scanning.
-- **Label** (500, 12px, 16px): UI micro-copy, metadata, and tags.
+- **Display** (800, 50px, 58px): Hero headlines and major section titles.
+- **Headline** (700, 34px, 42px): Subsection titles and important callouts.
+- **Title** (600, 26px, 34px): Card titles and minor section headers.
+- **Body** (400, 17px, 25px): Standard reading text. Max line length ~70ch for comfortable scanning.
+- **Label** (500, 13px, 17px): UI micro-copy, metadata, and tags.
 
 **The Legibility First Rule.** Text must always prioritize contrast and spacing over stylistic density to minimize eye strain.
 

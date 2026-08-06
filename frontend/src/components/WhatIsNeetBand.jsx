@@ -9,11 +9,11 @@ import {
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 
-export default function WhatIsNeetBand({ videoId = "dQw4w9WgXcQ" }) {
+export default function WhatIsNeetBand({ videoId = "hKBSzHX78Jk" }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // You can customize videoId or pass a YouTube URL / ID prop
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
 
   return (
     <section className="py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden transition-colors duration-300">
@@ -53,12 +53,12 @@ export default function WhatIsNeetBand({ videoId = "dQw4w9WgXcQ" }) {
             <>
               {/* Thumbnail Image */}
               <img
-                src="/neet_band_video_thumbnail.jpg"
+                src="/video_thumb_2.jpg"
                 alt="What is NEET BAND - Educational Video"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => {
                   // Fallback image if thumbnail load fails
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80";
+                  e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                 }}
               />
 

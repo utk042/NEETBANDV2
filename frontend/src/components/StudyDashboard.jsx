@@ -11,13 +11,13 @@ export default function StudyDashboard() {
   };
 
   return (
-    <div className="relative w-full max-w-[360px] h-[400px] mx-auto md:mr-0 z-10 select-none">
+    <div className="relative w-full max-w-[400px] h-[420px] mx-auto md:mr-12 -mt-12 z-10 select-none">
 
       {/* Floating Card 1: Eye-Friendly */}
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
-        className="absolute top-0 left-0 w-[210px] p-4 bg-surface rounded-2xl border border-outline/20 shadow-md transform -rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+        className="absolute top-0 left-[20px] w-[260px] p-5 bg-surface rounded-2xl border border-outline/20 shadow-lg transform -rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default z-40"
       >
         {/* Background Glow Container */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden z-0">
@@ -29,12 +29,12 @@ export default function StudyDashboard() {
           />
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconEye size={20} />
+          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <IconEye size={24} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-base text-on-surface font-extrabold leading-none">Eye-Friendly</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Reduce Screen Strain</div>
+            <div data-gsap="stat-number" className="font-headline-md text-xl text-on-surface font-extrabold leading-none">Eye-Friendly</div>
+            <div className="text-sm text-on-surface-variant mt-1.5">Reduce Screen Strain</div>
           </div>
         </div>
       </div>
@@ -43,7 +43,7 @@ export default function StudyDashboard() {
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
-        className="absolute top-[90px] right-0 w-[210px] p-4 bg-surface rounded-2xl border border-outline/20 shadow-md transform rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+        className="absolute top-[100px] left-[130px] w-[260px] p-5 bg-surface rounded-2xl border border-outline/20 shadow-lg transform rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default z-30"
       >
         {/* Background Glow Container */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden z-0">
@@ -55,12 +55,12 @@ export default function StudyDashboard() {
           />
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconBrain size={20} />
+          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <IconBrain size={24} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">92%</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Active Recall</div>
+            <div data-gsap="stat-number" className="font-headline-md text-2xl text-on-surface font-extrabold leading-none">92%</div>
+            <div className="text-sm text-on-surface-variant mt-1.5">Active Recall</div>
           </div>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function StudyDashboard() {
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
-        className="absolute top-[180px] left-[20px] w-[210px] p-4 bg-surface rounded-2xl border border-outline/20 shadow-md transform -rotate-2 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+        className="absolute top-[200px] left-0 w-[260px] p-5 bg-surface rounded-2xl border border-outline/20 shadow-lg transform -rotate-2 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default z-20"
       >
         {/* Background Glow Container */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden z-0">
@@ -81,12 +81,12 @@ export default function StudyDashboard() {
           />
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconMusic size={20} />
+          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <IconMusic size={24} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-lg text-on-surface font-extrabold leading-none">2000+</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Study Songs & Notes</div>
+            <div data-gsap="stat-number" className="font-headline-md text-2xl text-on-surface font-extrabold leading-none">2000+</div>
+            <div className="text-sm text-on-surface-variant mt-1.5">Study Songs & Notes</div>
           </div>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function StudyDashboard() {
       <div
         data-gsap="dash-card"
         onMouseMove={handleMouseMove}
-        className="absolute top-[280px] left-[30px] w-[210px] p-4 bg-surface rounded-2xl border border-outline/20 shadow-md transform rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+        className="absolute top-[300px] left-[70px] w-[260px] p-5 bg-surface rounded-2xl border border-outline/20 shadow-lg transform rotate-3 hover:rotate-0 hover:-translate-y-1 transition-all duration-300 group cursor-default z-10"
       >
         {/* Background Glow Container */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden z-0">
@@ -107,12 +107,12 @@ export default function StudyDashboard() {
           />
         </div>
         <div className="relative z-10 flex items-center gap-4 w-full h-full">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
-            <IconListCheck size={20} />
+          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <IconListCheck size={24} />
           </div>
           <div>
-            <div data-gsap="stat-number" className="font-headline-md text-base text-on-surface font-extrabold leading-none">Test Yourself</div>
-            <div className="text-[11px] text-on-surface-variant mt-1">Q&As and MCQs</div>
+            <div data-gsap="stat-number" className="font-headline-md text-xl text-on-surface font-extrabold leading-none">Test Yourself</div>
+            <div className="text-sm text-on-surface-variant mt-1.5">Q&As and MCQs</div>
           </div>
         </div>
       </div>

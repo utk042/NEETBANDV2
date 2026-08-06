@@ -11,7 +11,7 @@ export default function TermsAndConditions() {
           </h1>
           <p className="font-body-md text-base text-on-surface-variant leading-relaxed">
             Welcome to NEET BAND. These Terms of Service govern your access to and use of our website, services, audio content, study songs, lyrics, subscription features, free ad-supported access, and related services available through{' '}
-            <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
               https://neetband.com/
             </a>.
           </p>
@@ -305,8 +305,8 @@ export default function TermsAndConditions() {
               <strong className="text-on-surface">NEET BAND</strong>
               <br />Address: Dr Biresh Guha Street, Kolkata-700017
               <br />Phone: +91 9143240488
-              <br />Email: <a href="mailto:Contact@neetband.com" className="text-primary hover:underline">Contact@neetband.com</a>
-              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://neetband.com/</a>
+              <br />Email: <a href="mailto:Contact@neetband.com" className="text-blue-500 hover:underline">Contact@neetband.com</a>
+              <br />Website: <a href="https://neetband.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">https://neetband.com/</a>
             </p>
           </div>
 

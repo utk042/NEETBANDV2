@@ -107,7 +107,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
   };
 
   const linkClass = (page) => 
-    `font-label-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-3 py-2.5 ${currentPage === page ? 'text-primary font-bold hover:opacity-80' : 'text-on-surface hover:text-primary'}`;
+    `relative font-menu text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-3 py-2.5 ${currentPage === page ? 'text-primary font-bold after:content-[""] after:absolute after:bottom-1.5 after:left-3 after:right-3 after:h-[2px] after:bg-primary after:rounded-full' : 'text-on-surface hover:text-primary after:content-[""] after:absolute after:bottom-1.5 after:left-3 after:right-3 after:h-[2px] after:bg-primary after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:origin-left'}`;
 
   return (
     <>
@@ -122,7 +122,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
               className="focus-visible:outline-none rounded-xl active:scale-[0.98] transition-transform duration-200"
               aria-label="NeetBand Home"
             >
-              <img alt="NeetBand Logo" className="h-16 md:h-20 w-[139px] md:w-[174px] object-contain transition-[height,width] duration-300" src={logoImg} width={512} height={236}/>
+              <img alt="NeetBand Logo" className="h-20 md:h-24 w-[174px] md:w-[208px] object-contain transition-[height,width] duration-300" src={logoImg} width={512} height={236}/>
             </button>
           </div>
           
@@ -153,7 +153,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
 
                   <button 
                     onClick={() => navigate('/dashboard')}
-                    className="font-label-md px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed font-bold transition-[colors,box-shadow,transform] duration-200 shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="font-menu px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-fixed hover:text-on-primary-fixed font-bold transition-[colors,box-shadow,transform] duration-200 shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
                     Dashboard
                   </button>
@@ -162,7 +162,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
               currentPage !== 'login' && (
                 <button 
                   onClick={() => navigate('/login')}
-                  className="hidden md:flex group font-label-md text-on-primary bg-primary px-5 py-2.5 rounded-xl hover:bg-primary-fixed hover:text-on-primary-fixed transition-[colors,box-shadow,transform] shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] duration-200 flex items-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  className="hidden md:flex group font-menu text-on-primary bg-primary px-5 py-2.5 rounded-xl hover:bg-primary-fixed hover:text-on-primary-fixed transition-[colors,box-shadow,transform] shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[1px] duration-200 flex items-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                   Log In <IconLogin size={18} className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
                 </button>
@@ -225,13 +225,13 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
         <div className="relative w-full h-full overflow-y-auto flex flex-col justify-start items-center pt-32 pb-40">
           {/* Animated Links */}
           <div className={`flex flex-col items-center gap-6 w-full transition-all duration-700 delay-100 ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <a onClick={(e) => handleNav(e, 'home')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
-            <a onClick={(e) => handleNav(e, 'library')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Study Songs</a>
-            <a onClick={(e) => handleNav(e, 'course')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
-            <a onClick={(e) => handleNav(e, 'benefits')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'benefits' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Member Benefits</a>
-            <a onClick={(e) => handleNav(e, 'blog')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
-            <a onClick={(e) => handleNav(e, 'pricing')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'pricing' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Pricing</a>
-            <a onClick={(e) => handleNav(e, 'contact')} className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'contact' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Contact Us</a>
+            <a onClick={(e) => handleNav(e, 'home')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'home' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Home</a>
+            <a onClick={(e) => handleNav(e, 'library')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'library' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Study Songs</a>
+            <a onClick={(e) => handleNav(e, 'course')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'course' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Courses</a>
+            <a onClick={(e) => handleNav(e, 'benefits')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'benefits' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Member Benefits</a>
+            <a onClick={(e) => handleNav(e, 'blog')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'blog' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Blog</a>
+            <a onClick={(e) => handleNav(e, 'pricing')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'pricing' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Pricing</a>
+            <a onClick={(e) => handleNav(e, 'contact')} className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${currentPage === 'contact' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'}`} href="#">Contact Us</a>
             {!user.isLoggedIn && (
               <a 
                 onClick={(e) => {
@@ -239,7 +239,7 @@ export default function Header({ theme, toggleTheme, currentPage, navigate, user
                   navigate('/login');
                   setMobileMenuOpen(false);
                 }}
-                className={`font-headline-lg text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${
+                className={`font-menu text-3xl md:text-5xl font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-6 py-2 relative z-10 ${
                   currentPage === 'login' ? 'text-primary hover:scale-110' : 'text-on-surface hover:text-primary hover:scale-110'
                 }`}
                 href="#"

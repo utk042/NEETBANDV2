@@ -100,7 +100,7 @@ export default function Footer({ navigate }) {
           
           {/* Brand Info */}
           <div className="flex flex-col items-start gap-4 min-w-[200px] flex-[2]">
-            <img alt="NeetBand Logo" className="h-16 md:h-20 w-auto object-contain" src={logoImg} width={512} height={236}/>
+            <img alt="NeetBand Logo" className="h-20 md:h-24 w-auto object-contain" src={logoImg} width={512} height={236}/>
             <p className="font-body-md text-sm text-on-surface-variant/80 max-w-[300px] leading-relaxed">
               Premium curriculum-aligned study songs designed to boost active recall and reduce screen fatigue. Turn textbooks into sound.
             </p>
@@ -111,8 +111,7 @@ export default function Footer({ navigate }) {
             <h4 className="font-headline-md text-sm text-on-surface font-extrabold uppercase tracking-widest">Platform</h4>
             <nav className="flex flex-col gap-3">
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/pricing'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block font-semibold">Pricing Plans</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Syllabus Library</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/student-hub'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Student Hub</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); setTimeout(() => document.getElementById('syllabus-library')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Songs Library</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">Study Insights</a>
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }} className="font-body-md text-sm text-on-surface-variant/80 hover:text-primary transition-all duration-200 hover:translate-x-1.5 inline-block">About Us</a>
             </nav>
@@ -148,7 +147,7 @@ export default function Footer({ navigate }) {
             </p>
             <div className="flex items-center gap-2">
               <a 
-                href="https://facebook.com" 
+                href="https://www.facebook.com/NEETBandStudy/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 aria-label="Facebook"
@@ -157,7 +156,7 @@ export default function Footer({ navigate }) {
                 <IconBrandFacebookFilled size={16} />
               </a>
               <a 
-                href="https://instagram.com" 
+                href="https://instagram.com/neetbandstudy" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 aria-label="Instagram"
@@ -166,7 +165,7 @@ export default function Footer({ navigate }) {
                 <IconBrandInstagram size={16} />
               </a>
               <a 
-                href="https://youtube.com" 
+                href="https://www.youtube.com/@neetbandstudy" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 aria-label="YouTube"
@@ -175,7 +174,7 @@ export default function Footer({ navigate }) {
                 <IconBrandYoutubeFilled size={16} />
               </a>
               <a 
-                href="https://whatsapp.com" 
+                href="https://wa.me/919477411701" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 aria-label="WhatsApp"
@@ -196,7 +195,7 @@ export default function Footer({ navigate }) {
               </li>
               <li className="flex items-start gap-2.5">
                 <IconPhone size={18} className="text-primary mt-0.5 flex-shrink-0" />
-                <a href="tel:+918047193393" className="hover:text-primary transition-colors">+91 80 4719 3393</a>
+                <a href="tel:+918047193393" className="hover:text-blue-500 transition-colors">+91 80 4719 3393</a>
               </li>
               <li className="flex items-start gap-2.5">
                 <IconMapPin size={18} className="text-primary mt-0.5 flex-shrink-0" />

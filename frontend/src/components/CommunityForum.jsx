@@ -189,7 +189,7 @@ export default function CommunityForum({ user }) {
                       {post.attachments && post.attachments.length > 0 && (
                         <div className="flex flex-wrap gap-3 mb-6">
                           {post.attachments.map((att, i) => (
-                            <a key={i} href={att.url || att} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl text-sm hover:text-primary transition-colors border border-[var(--border-floating-card)]">
+                            <a key={i} href={att.url || att} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl text-sm hover:text-blue-500 transition-colors border border-[var(--border-floating-card)]">
                               <IconPaperclip size={16} /> {att.name || `Attachment ${i + 1}`}
                             </a>
                           ))}
@@ -298,7 +298,7 @@ export default function CommunityForum({ user }) {
                       ) : (
                         <div className="bg-surface-container rounded-xl p-4 text-center">
                           <p className="font-label-md text-xs font-bold text-primary">
-                            Please <Link to="/login" className="underline hover:text-primary-fixed cursor-pointer transition-colors">log in</Link> to participate
+                            Please <Link to="/login" className="underline hover:text-blue-500-fixed cursor-pointer transition-colors">log in</Link> to participate
                           </p>
                         </div>
                       )}
