@@ -12,8 +12,8 @@ import { IconDownload, IconX } from '@tabler/icons-react';
  *  - On every page refresh the prompt re-appears if the app is not installed.
  *  - Once the user installs, `pwa-installed` is stored in localStorage so the
  *    prompt stays hidden permanently… until the app is uninstalled.
- *  - After uninstall, the browser fires `beforeinstallprompt` again; we detect
- *    that and clear `pwa-installed` so the cycle starts over.
+ *  - After uninstall, the browser fires `beforeinstallprompt` again; we ALWAYS
+ *    have a listener attached to catch it, clear `pwa-installed`, and re-show.
  */
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -26,30 +26,44 @@ export default function PWAInstallPrompt() {
     // Already running as an installed PWA — never show the prompt
     if (window.matchMedia('(display-mode: standalone)').matches) return;
 
-    // User already installed the app (we recorded it) — hide until uninstalled
-    if (localStorage.getItem('pwa-installed')) return;
+    // Migrate: clear the old permanent-dismiss key from the previous version
+    // so users who were permanently blocked start seeing the prompt again.
+    localStorage.removeItem('pwa-prompt-dismissed');
 
     const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(isIOSDevice);
 
     if (isIOSDevice) {
-      // iOS: show the tip after 4 s on every page load until installed
-      const t = setTimeout(() => setShowBanner(true), 4000);
-      return () => clearTimeout(t);
+      // iOS has no JS install API — show the tip on every page load unless
+      // the user tapped our Install button (which sets pwa-installed for iOS).
+      if (!localStorage.getItem('pwa-installed')) {
+        const t = setTimeout(() => setShowBanner(true), 4000);
+        return () => clearTimeout(t);
+      }
+      return;
     }
 
-    // Chrome/Edge/Android: intercept the native install prompt
+    // ── Android / Chrome / Edge ────────────────────────────────────────────
+    //
+    // KEY FIX: We ALWAYS attach this listener regardless of pwa-installed.
+    //
+    // Why: If we returned early when pwa-installed is set, we'd never hear
+    // the re-fired beforeinstallprompt that signals an uninstall. The listener
+    // must be alive so we can clear the stale flag and re-show the banner.
+    //
+    // When beforeinstallprompt fires it always means the app is NOT currently
+    // installed (Chrome won't fire it for an already-installed app), so it is
+    // safe to always clear pwa-installed and show the banner here.
     const handler = (e) => {
       e.preventDefault();
-      // If we previously stored "installed" but the browser is offering the
-      // prompt again, the user must have uninstalled — clear the flag.
+      // App is not installed (or was just uninstalled). Clear any stale flag.
       localStorage.removeItem('pwa-installed');
       setDeferredPrompt(e);
       setShowBanner(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Listen for the actual install completing
+    // Fired by the browser after the user completes installation
     const onInstalled = () => {
       localStorage.setItem('pwa-installed', '1');
       setShowBanner(false);
@@ -68,7 +82,7 @@ export default function PWAInstallPrompt() {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      // appinstalled event will also fire, but handle here as a fallback
+      // appinstalled event also fires, but set the flag here as a fallback
       localStorage.setItem('pwa-installed', '1');
       setShowBanner(false);
     }
