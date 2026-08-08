@@ -16,7 +16,7 @@ export function AffiliateAuthProvider({ children }) {
     try {
       const storedUser = localStorage.getItem('neetband_affiliate_user');
       const token = localStorage.getItem('affiliate_token');
-      if (storedUser && token) {
+      if (storedUser && token && token !== 'undefined' && token !== 'null') {
         const parsed = JSON.parse(storedUser);
         return { ...parsed, token, isLoggedIn: true };
       }
@@ -41,7 +41,7 @@ export function AffiliateAuthProvider({ children }) {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('affiliate_token');
-      if (token) {
+      if (token && token !== 'undefined' && token !== 'null') {
         try {
           const profile = await getAffiliateUserProfile();
           const fullUser = { ...profile, token, isLoggedIn: true };
@@ -58,6 +58,7 @@ export function AffiliateAuthProvider({ children }) {
           }
         }
       } else {
+        localStorage.removeItem('affiliate_token');
         localStorage.removeItem('neetband_affiliate_user');
         setAffiliateUser({ isLoggedIn: false, name: '', email: '' });
       }

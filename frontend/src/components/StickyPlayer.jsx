@@ -121,7 +121,7 @@ export default function StickyPlayer({ onOpenFullPlayer }) {
           {playbackError ? (
             <div className="flex items-center gap-1.5 text-xs font-medium text-red-500 truncate">
               <IconAlertTriangle size={15} className="shrink-0" />
-              <span className="truncate">Playback error.</span>
+              <span className="truncate">{typeof playbackError === 'string' ? playbackError : 'Playback error.'}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); retryPlayback?.(); }}
                 className="underline hover:text-red-600 font-semibold shrink-0 cursor-pointer ml-1"

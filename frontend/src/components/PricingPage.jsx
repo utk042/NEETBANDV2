@@ -28,7 +28,6 @@ export default function PricingPage({ user, navigate }) {
     { name: "Biannual Eye Check-up Voucher", free: false, premium: "Complimentary Clinic Voucher" },
     { name: "Academic Books Discount Coupon", free: false, premium: "25% Off Books Voucher" },
     { name: "Student Learning Hub & Notes", free: "Basic Summaries", premium: "Full Access" },
-    { name: "Community Forum & Feed", free: "Read Only", premium: "Full Access & Discussions" },
   ];
 
   return (

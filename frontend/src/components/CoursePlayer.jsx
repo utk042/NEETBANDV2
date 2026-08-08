@@ -43,7 +43,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
     getCourseById(courseId)
       .then(data => {
         setCourse(data);
-        if (user) {
+        if (user?.isLoggedIn) {
           getCourseProgress(courseId).then(progress => {
             setCompletedItems(progress.completedItems || []);
           }).catch(err => console.error("Failed to load progress:", err));
@@ -100,7 +100,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
   }, [selectedSubjectIdx]);
 
   useEffect(() => {
-    if (user && course && selectedSubjectIdx !== null && selectedChapterIdx !== null && selectedItemIdx !== null) {
+    if (user?.isLoggedIn && course && selectedSubjectIdx !== null && selectedChapterIdx !== null && selectedItemIdx !== null) {
       const subject = course.subjects?.[selectedSubjectIdx];
       const chapter = subject?.chapters?.[selectedChapterIdx];
       const items = getChapterItems(chapter);
@@ -372,7 +372,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-on-surface leading-tight">
                     {course?.title || 'Course Curriculum'}
                   </h1>
-                  {user && totalItemsCount > 0 && (
+                  {user?.isLoggedIn && totalItemsCount > 0 && (
                     <div className="flex items-center gap-2 mt-1 lg:mt-0">
                       <div className="w-72 h-2.5 bg-surface-container rounded-full overflow-hidden border border-outline/10">
                         <div 
@@ -417,7 +417,7 @@ export default function CoursePlayer({ currentTrack, user, onUpgradeClick }) {
                 </div>
               )}
 
-              {course?.subjects?.length > 0 && user && (
+              {course?.subjects?.length > 0 && user?.isLoggedIn && (
                 <div className="mb-8">
                   {(() => {
                     let cNext = null;

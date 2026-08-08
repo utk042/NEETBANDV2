@@ -16,7 +16,7 @@ export function LmsAuthProvider({ children }) {
     try {
       const storedUser = localStorage.getItem('neetband_lms_user');
       const token = localStorage.getItem('lms_token');
-      if (storedUser && token) {
+      if (storedUser && token && token !== 'undefined' && token !== 'null') {
         const parsed = JSON.parse(storedUser);
         return { ...parsed, token, isLoggedIn: true };
       }
@@ -41,7 +41,7 @@ export function LmsAuthProvider({ children }) {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('lms_token');
-      if (token) {
+      if (token && token !== 'undefined' && token !== 'null') {
         try {
           const profile = await getLmsUserProfile();
           const fullUser = { ...profile, token, isLoggedIn: true };
@@ -58,6 +58,7 @@ export function LmsAuthProvider({ children }) {
           }
         }
       } else {
+        localStorage.removeItem('lms_token');
         localStorage.removeItem('neetband_lms_user');
         setLmsUser({ isLoggedIn: false, name: '', email: '' });
       }

@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   IconSearch, IconBook2, IconPlayerPlayFilled,
   IconPlayerPauseFilled, IconHeart, IconArrowRight,
-  IconArrowLeft, IconRefresh, IconDna, IconAtom, IconFlask, IconCrown, IconChevronDown
+  IconArrowLeft, IconRefresh, IconDna, IconAtom, IconFlask, IconCrown, IconChevronDown,
+  IconAlertTriangle
 } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
 import ErrorReport from './ErrorReport';
 import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
+import { usePlayer } from '../contexts/PlayerContext';
 
 const EQ_STYLES = `
   @keyframes eqBar1 { 0%{height:25%} 100%{height:100%} }
@@ -74,6 +76,7 @@ function EqBars() {
 
 /* Reusable track row used in both catalog search results and detail view */
 function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentText, onPlay, onFavorite }) {
+  const { playbackError } = usePlayer() || {};
   return (
     <div
       role="button"
@@ -86,7 +89,9 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
     >
       {/* Index / play icon */}
       <div className="w-6 shrink-0 flex items-center justify-center">
-        {isTrackPlaying ? (
+        {isCurrent && playbackError ? (
+          <IconAlertTriangle size={14} className="text-red-500" />
+        ) : isTrackPlaying ? (
           <div className={accentText}><EqBars /></div>
         ) : (
           <>
@@ -110,8 +115,10 @@ function TrackRow({ track, idx, isCurrent, isTrackPlaying, isFavorited, accentTe
           onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}
         />
         {isCurrent && (
-          <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-            {isTrackPlaying
+          <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+            {playbackError
+              ? <IconAlertTriangle size={14} className="text-red-400" />
+              : isTrackPlaying
               ? <IconPlayerPauseFilled size={12} className="text-white" />
               : <IconPlayerPlayFilled size={12} className="text-white" />}
           </div>

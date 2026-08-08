@@ -279,27 +279,27 @@ export default function Dashboard({
           </div>
 
           {/* Dashboard Navigation Tabs */}
-          <div className="flex items-center gap-3 mb-10 border-b border-outline/10 pb-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-10 border-b border-outline/10 pb-4 overflow-x-auto no-scrollbar">
             <button
               onClick={() => handleTabChange('overview')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'overview'
                   ? 'bg-primary text-on-primary shadow-md'
                   : 'bg-surface-container/60 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
               }`}
             >
-              <IconLayoutDashboard size={20} /> Overview
+              <IconLayoutDashboard size={18} className="shrink-0 sm:w-5 sm:h-5" /> Overview
             </button>
 
             <button
               onClick={() => handleTabChange('benefits')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-base transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'benefits'
                   ? 'bg-primary text-on-primary shadow-md'
                   : 'bg-surface-container/60 border border-outline/10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
               }`}
             >
-              <IconGift size={20} /> Member Benefits
+              <IconGift size={18} className="shrink-0 sm:w-5 sm:h-5" /> Member Benefits
             </button>
           </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { IconDownload, IconX } from '@tabler/icons-react';
 
 /**
@@ -6,6 +7,8 @@ import { IconDownload, IconX } from '@tabler/icons-react';
  * Shows a native-feeling install banner when the browser fires
  * the `beforeinstallprompt` event (Chrome/Edge/Android).
  * iOS users see a Share-to-Home-Screen tip instead (no JS API available).
+ *
+ * Suppressed on LMS routes (`/lms`).
  *
  * Persistence rules:
  *  - Dismissing only hides it for the current session (no permanent flag).
@@ -16,6 +19,7 @@ import { IconDownload, IconX } from '@tabler/icons-react';
  *    have a listener attached to catch it, clear `pwa-installed`, and re-show.
  */
 export default function PWAInstallPrompt() {
+  const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner]         = useState(false);
   const [isIOS, setIsIOS]                   = useState(false);
@@ -95,7 +99,8 @@ export default function PWAInstallPrompt() {
     setSessionDismissed(true);
   };
 
-  if (!showBanner || sessionDismissed) return null;
+  // Do not show PWA install prompt on LMS routes
+  if (location.pathname.startsWith('/lms') || !showBanner || sessionDismissed) return null;
 
   return (
     <div

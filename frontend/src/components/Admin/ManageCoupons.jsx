@@ -16,14 +16,35 @@ import {
 } from '@tabler/icons-react';
 import { getCoupons, createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus, bulkCreateCoupons } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
+import Pagination from '../Common/Pagination';
 
 export default function ManageCoupons() {
   const { confirm } = useDialog();
   const [coupons, setCoupons] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  const fetchCouponsList = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await getCoupons({ page, limit: 12, search: searchTerm });
+      setCoupons(res.items || res.data || []);
+      setPagination(res.pagination || null);
+    } catch (err) {
+      setError(err.message || 'Failed to load coupons');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCouponsList(currentPage);
+  }, [currentPage]);
   
   // Selection state for bulk copy
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -74,23 +95,6 @@ export default function ManageCoupons() {
     { id: 'premium_scholar', label: 'Premium Scholar (₹299)' },
     { id: 'book_order', label: 'Book Order (₹499)' }
   ];
-
-  const fetchCouponsList = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await getCoupons();
-      setCoupons(data);
-    } catch (err) {
-      setError(err.message || 'Failed to load coupons');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCouponsList();
-  }, []);
 
   const generateRandomCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -420,21 +424,21 @@ export default function ManageCoupons() {
           id={`isMembershipSpecific${idPrefix}`}
           checked={isMembershipSpecific}
           onChange={(e) => setIsMembershipSpecific(e.target.checked)}
-          className="w-4 h-4 rounded border-outline-variant accent-primary focus:ring-primary"
+          className="w-4 h-4 rounded border-outline-variant accent-primary focus:ring-primary shrink-0"
         />
         <label htmlFor={`isMembershipSpecific${idPrefix}`} className="text-sm font-semibold text-on-surface cursor-pointer">
           Membership Specific Discounts
         </label>
-        <IconInfoCircle size={16} className="text-on-surface-variant/70" title="Limit discount to specific memberships" />
+        <IconInfoCircle size={16} className="text-on-surface-variant/70 shrink-0" title="Limit discount to specific memberships" />
       </div>
 
       {/* Discount Value & Unit */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Discount <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1">
+            Discount <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <input
               type="number"
               min="0"
@@ -442,12 +446,12 @@ export default function ManageCoupons() {
               required
               value={discountValue}
               onChange={(e) => setDiscountValue(e.target.value)}
-              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
+              className="min-w-0 flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
             />
             <select
               value={discountType}
               onChange={(e) => setDiscountType(e.target.value)}
-              className="bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm font-bold text-on-surface focus:outline-none focus:border-primary"
+              className="shrink-0 w-28 bg-surface border border-outline-variant/40 rounded-xl px-3 py-2.5 text-sm font-bold text-on-surface focus:outline-none focus:border-primary"
             >
               <option value="percentage">%</option>
               <option value="fixed">Fixed (₹)</option>
@@ -456,8 +460,8 @@ export default function ManageCoupons() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Discount Mode <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1">
+            Discount Mode <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <select
             value={discountMode}
@@ -472,10 +476,10 @@ export default function ManageCoupons() {
       </div>
 
       {/* Usage Count & Limit per user */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Usage Count (Max total limit) <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1 truncate" title="Usage Count (Max total limit)">
+            Usage Count (Max total limit) <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -485,7 +489,7 @@ export default function ManageCoupons() {
               disabled={!hasUsageCountMax}
               value={usageCountMax}
               onChange={(e) => setUsageCountMax(e.target.value)}
-              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+              className="min-w-0 flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
             />
             <button
               type="button"
@@ -493,20 +497,20 @@ export default function ManageCoupons() {
                 setHasUsageCountMax(!hasUsageCountMax);
                 if (!hasUsageCountMax && !usageCountMax) setUsageCountMax(100);
               }}
-              className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
+              className={`shrink-0 px-3 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-colors ${
                 !hasUsageCountMax 
                   ? 'bg-primary/10 border-primary/30 text-primary' 
                   : 'bg-surface border-outline-variant/30 text-on-surface-variant'
               }`}
             >
-              <IconInfinity size={18} /> Unlimited
+              <IconInfinity size={16} /> Unlimited
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Usage Limit Per User <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1 truncate" title="Usage Limit Per User">
+            Usage Limit Per User <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -516,7 +520,7 @@ export default function ManageCoupons() {
               disabled={!hasUsageLimitPerUser}
               value={usageLimitPerUser}
               onChange={(e) => setUsageLimitPerUser(e.target.value)}
-              className="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+              className="min-w-0 flex-1 bg-surface border border-outline-variant/40 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
             />
             <button
               type="button"
@@ -524,23 +528,23 @@ export default function ManageCoupons() {
                 setHasUsageLimitPerUser(!hasUsageLimitPerUser);
                 if (!hasUsageLimitPerUser && !usageLimitPerUser) setUsageLimitPerUser(1);
               }}
-              className={`px-3 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-1 transition-colors ${
+              className={`shrink-0 px-3 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-colors ${
                 !hasUsageLimitPerUser 
                   ? 'bg-primary/10 border-primary/30 text-primary' 
                   : 'bg-surface border-outline-variant/30 text-on-surface-variant'
               }`}
             >
-              <IconInfinity size={18} /> Unlimited
+              <IconInfinity size={16} /> Unlimited
             </button>
           </div>
         </div>
       </div>
 
       {/* Dropdowns matching screenshot */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Usage limit per user in Timeframe <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1" title="Usage limit per user in Timeframe">
+            <span className="truncate">Usage limit in Timeframe</span> <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <select
             value={usageLimitPerUserTimeframe}
@@ -556,8 +560,8 @@ export default function ManageCoupons() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Allow on Upgrades / Downgrades <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1" title="Allow on Upgrades / Downgrades">
+            <span className="truncate">Upgrades / Downgrades</span> <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <select
             value={allowOnUpgradesDowngrades}
@@ -571,8 +575,8 @@ export default function ManageCoupons() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1 flex items-center gap-1">
-            Allow usage only if customer already used <IconInfoCircle size={14} className="text-on-surface-variant/70" />
+          <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5 flex items-center gap-1" title="Allow usage only if customer already used">
+            <span className="truncate">Already Used Customer</span> <IconInfoCircle size={14} className="text-on-surface-variant/70 shrink-0" />
           </label>
           <select
             value={allowOnlyIfCustomerAlreadyUsed}
@@ -908,6 +912,16 @@ export default function ManageCoupons() {
         </div>
       )}
 
+      {pagination && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.totalItems || 0}
+          pageSize={pagination.limit || 12}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
+      )}
+
       {/* Modal - Add / Edit Coupon (Styled like MemberPress Screenshot) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-center justify-center p-4 overflow-y-auto">
@@ -992,11 +1006,11 @@ export default function ManageCoupons() {
       {/* Bulk Generate Modal */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-center justify-center p-4">
-          <div className="bg-surface rounded-3xl border border-outline-variant/30 w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-surface rounded-3xl border border-outline-variant/30 w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-surface-variant/40 px-6 py-4 border-b border-outline-variant/30 flex items-center justify-between">
               <h3 className="text-xl font-bold text-on-surface flex items-center gap-2">
                 <IconStack2 className="text-violet-500" size={24} />
-                Bulk Generate 100% Free Coupons
+                Bulk Generate Coupons
               </h3>
               <button
                 onClick={() => setIsBulkModalOpen(false)}

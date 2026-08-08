@@ -246,7 +246,7 @@ export default function UserRoutes() {
 
             <Route path="/benefits" element={<MemberBenefits user={user} onUpgradeClick={handleUpgradeClick} />} />
             <Route path="/library" element={<div className="pt-36 md:pt-44"><SyllabusLibrary tracks={globalTracks} currentTrack={currentTrack} isPlaying={isAnyAudioActive} onTrackSelect={handleTrackSelect} currentTime={currentTime} favoritedTrackIds={favoritedTrackIds} onToggleFavorite={handleToggleFavorite} onSeek={handleSeek} /></div>} />
-            <Route path="/feed" element={<Navigate to="/dashboard?tab=feed" replace />} />
+            <Route path="/feed" element={<Navigate to="/dashboard" replace />} />
             <Route path="/blog" element={<Blog user={user} />} />
             <Route path="/blog/:slug" element={<Blog user={user} />} />
             <Route path="/about" element={<AboutUs />} />

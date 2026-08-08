@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart } from '@tabler/icons-react';
+import { IconChevronDown, IconPlayerPlay, IconPlayerPause, IconPlayerPlayFilled, IconPlayerPauseFilled, IconRotate2, IconRotate, IconArrowsShuffle, IconRepeat, IconVolume, IconSearch, IconDownload, IconShare, IconHeart, IconAlertTriangle } from '@tabler/icons-react';
 import logoImg from '../assets/logo.png';
 import HeartButton from './Common/HeartButton';
 import ErrorReport from './ErrorReport';
@@ -12,7 +12,7 @@ import { useClassAndSubjectOptions } from '../hooks/useClassAndSubjectOptions';
 
 export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTrackSelect, currentTime, favoritedTrackIds, onToggleFavorite, onSeek }) {
   const navigate = useNavigate();
-  const { isShuffled, setIsShuffled, repeatMode, cycleRepeat } = usePlayer();
+  const { isShuffled, setIsShuffled, repeatMode, cycleRepeat, playbackError } = usePlayer();
   const { user } = useUserAuth();
   const { alert: customAlert, toast } = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
@@ -447,7 +447,9 @@ export default function SyllabusLibrary({ tracks, currentTrack, isPlaying, onTra
                     <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-[var(--border-floating-card)] flex-shrink-0 bg-surface-container block group-hover:scale-105 transition-transform">
                       <img className={`w-full h-full ${(!track.cover || track.cover === logoImg) ? 'object-contain p-1 bg-black/20' : 'object-cover'}`} alt={track.title} src={track.cover || logoImg} width={40} height={40} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = logoImg; e.target.className = 'w-full h-full object-contain p-1 bg-black/20'; }}/>
                       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-black/60' : 'bg-black/30 group-hover:bg-black/50'}`}>
-                        {isCurrent && isPlaying ? (
+                        {isCurrent && playbackError ? (
+                          <IconAlertTriangle size={20} className="text-red-400" aria-hidden="true" />
+                        ) : isCurrent && isPlaying ? (
                           <IconPlayerPauseFilled size={20} className="text-white" aria-hidden="true" />
                         ) : (
                           <IconPlayerPlayFilled size={20} className={`translate-x-[1px] transition-all duration-300 ${isCurrent ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} aria-hidden="true" />

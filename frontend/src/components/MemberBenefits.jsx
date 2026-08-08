@@ -65,7 +65,10 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
   const handleCardClick = (benefit) => {
     if (benefit.isComingSoon) return;
     if (isPremium) {
-      if (benefit.link && benefit.link.startsWith('/')) {
+      // If a coupon code is provided, always show the redemption modal so premium users can view & copy the code
+      if (benefit.code || !benefit.link) {
+        setSelectedBenefit(benefit);
+      } else if (benefit.link && benefit.link.startsWith('/')) {
         navigate(benefit.link);
       } else if (benefit.link && benefit.link.startsWith('http')) {
         window.open(benefit.link, '_blank');
@@ -86,8 +89,8 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
   const handleCopyCode = (code) => {
     if (!code) return;
     navigator.clipboard.writeText(code);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   return (
@@ -267,6 +270,48 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
                     <p className="font-body-md text-sm text-on-surface-variant leading-relaxed line-clamp-3">
                       {benefit.description}
                     </p>
+
+                    {/* Coupon Code Chip (if benefit.code is provided) */}
+                    {benefit.code && (
+                      <div className="mt-3">
+                        {isPremium ? (
+                          <div className="inline-flex items-center justify-between gap-2 w-full px-3 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-bold shadow-xs">
+                            <div className="flex items-center gap-1.5 font-mono truncate min-w-0">
+                              <IconTag size={14} className="shrink-0 text-primary" />
+                              <span className="truncate">Code: <strong className="tracking-wider text-on-surface font-extrabold">{benefit.code}</strong></span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyCode(benefit.code);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-primary text-on-primary font-sans text-xs font-bold hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                            >
+                              {copiedCode === benefit.code ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                              {copiedCode === benefit.code ? 'Copied!' : 'Copy'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCardClick(benefit);
+                            }}
+                            className="inline-flex items-center justify-between gap-2 w-full px-3 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-on-surface-variant/70 text-xs font-bold hover:border-primary/40 hover:text-primary transition-colors cursor-pointer"
+                            title="Unlock membership to view coupon code"
+                          >
+                            <div className="flex items-center gap-1.5 font-mono">
+                              <IconLock size={14} className="text-primary shrink-0" />
+                              <span>Code: ••••••••</span>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-sans text-xs font-extrabold flex items-center gap-1 shrink-0">
+                              <IconLock size={11} /> Unlock
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer Row (Benefit Value + Redeem/Unlock Button) */}
@@ -318,7 +363,7 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
           <div className="bg-surface border border-[var(--border-floating-card)] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-floating-card animate-in fade-in zoom-in-95 duration-200 relative">
             <button
               onClick={() => setSelectedBenefit(null)}
-              className="absolute top-5 right-5 p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"
+              className="absolute top-5 right-5 p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
             >
               <IconX size={20} />
             </button>
@@ -340,26 +385,50 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
 
             {/* Promo Code Box */}
             {selectedBenefit.code && (
-              <div className="bg-surface-container border border-primary/20 rounded-2xl p-4 mb-6 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Coupon Code</div>
-                  <div className="font-mono text-lg font-extrabold text-primary">{selectedBenefit.code}</div>
-                </div>
+              isPremium ? (
+                <div className="bg-surface-container border border-primary/30 rounded-2xl p-4 mb-6 flex items-center justify-between shadow-sm">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider flex items-center gap-1">
+                      <IconTag size={12} className="text-primary" /> Coupon Code
+                    </div>
+                    <div className="font-mono text-xl font-extrabold text-primary tracking-wider">{selectedBenefit.code}</div>
+                  </div>
 
-                <button
-                  onClick={() => handleCopyCode(selectedBenefit.code)}
-                  className="px-4 py-2 rounded-xl bg-primary text-on-primary font-bold text-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors flex items-center gap-1.5 shadow-sm"
-                >
-                  {copiedCode ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                  {copiedCode ? 'Copied!' : 'Copy Code'}
-                </button>
-              </div>
+                  <button
+                    onClick={() => handleCopyCode(selectedBenefit.code)}
+                    className="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                  >
+                    {copiedCode === selectedBenefit.code ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    {copiedCode === selectedBenefit.code ? 'Copied!' : 'Copy Code'}
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-surface-container border border-outline-variant/30 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider flex items-center gap-1">
+                      <IconLock size={12} className="text-primary" /> Coupon Code Locked
+                    </div>
+                    <div className="font-mono text-xl font-extrabold text-on-surface-variant/50 tracking-wider">••••••••</div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedBenefit(null);
+                      if (onUpgradeClick) onUpgradeClick();
+                      else navigate('/pricing');
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:bg-primary-fixed transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <IconLock size={14} /> Upgrade to View
+                  </button>
+                </div>
+              )
             )}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setSelectedBenefit(null)}
-                className="px-5 py-2.5 rounded-xl border border-[var(--border-floating-card)] text-on-surface font-bold text-xs hover:bg-surface-container transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-[var(--border-floating-card)] text-on-surface font-bold text-xs hover:bg-surface-container transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -375,7 +444,7 @@ export default function MemberBenefits({ user = { isLoggedIn: false }, onUpgrade
                       window.open(link, '_blank');
                     }
                   }}
-                  className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors flex items-center gap-2 shadow-md"
+                  className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors flex items-center gap-2 shadow-md cursor-pointer"
                 >
                   Claim & Proceed <IconExternalLink size={16} />
                 </button>

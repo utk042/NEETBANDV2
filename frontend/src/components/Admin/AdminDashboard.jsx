@@ -65,7 +65,8 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
   const { confirm } = useDialog();
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('tab') || 'dashboard';
+    const tab = params.get('tab');
+    return (tab && tab !== 'feed') ? tab : 'dashboard';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
@@ -298,16 +299,6 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             <IconBrandBlogger size={20} stroke={2.5} /> Blogs
           </button>
 
-          <button
-            onClick={() => changeTab('feed')}
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${
-              activeTab === 'feed' 
-                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
-                : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <IconMessageCircle size={20} stroke={2.5} /> Feed
-          </button>
 
           <button
             onClick={() => changeTab('affiliates')}
@@ -679,13 +670,6 @@ export default function AdminDashboard({ navigate, user, theme, setTheme }) {
             </div>
           )}
 
-          {activeTab === 'feed' && (
-            <div className="max-w-6xl mx-auto pb-8">
-              <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 md:p-8 transition-colors duration-300">
-                <AdminForums api={api} />
-              </div>
-            </div>
-          )}
 
           {activeTab === 'affiliates' && (
             <div className="max-w-6xl mx-auto pb-8">

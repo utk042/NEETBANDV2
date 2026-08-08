@@ -17,7 +17,7 @@ export function UserAuthProvider({ children }) {
     try {
       const storedUser = localStorage.getItem('neetband_current_user');
       const token = localStorage.getItem('user_token');
-      if (storedUser && token) {
+      if (storedUser && token && token !== 'undefined' && token !== 'null') {
         const parsed = JSON.parse(storedUser);
         return { ...parsed, token, isLoggedIn: true };
       }
@@ -42,7 +42,7 @@ export function UserAuthProvider({ children }) {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('user_token');
-      if (token) {
+      if (token && token !== 'undefined' && token !== 'null') {
         try {
           const profile = await getUserProfile();
           const fullUser = { ...profile, token, isLoggedIn: true };
@@ -59,6 +59,7 @@ export function UserAuthProvider({ children }) {
           }
         }
       } else {
+        localStorage.removeItem('user_token');
         localStorage.removeItem('neetband_current_user');
         setUser({ isLoggedIn: false, name: '', email: '' });
       }

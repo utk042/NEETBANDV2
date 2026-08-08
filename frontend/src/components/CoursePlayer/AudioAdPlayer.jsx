@@ -87,7 +87,7 @@ export default React.memo(function AudioAdPlayer({ item, user }) {
           {isThisTrackCurrent && playbackError && (
             <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium">
               <IconAlertTriangle size={14} />
-              Playback failed. Tap to retry.
+              {typeof playbackError === 'string' ? playbackError : 'Playback failed. Tap to retry.'}
             </div>
           )}
 

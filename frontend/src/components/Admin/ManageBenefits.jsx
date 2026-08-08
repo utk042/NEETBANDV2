@@ -4,7 +4,8 @@ import {
   createBenefit, 
   updateBenefit, 
   deleteBenefit, 
-  toggleBenefitAvailability 
+  toggleBenefitAvailability,
+  uploadFile
 } from '../../services/api';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -19,7 +20,12 @@ import {
   IconSparkles,
   IconTag,
   IconClock,
-  IconChevronDown
+  IconChevronDown,
+  IconUpload,
+  IconCloudUpload,
+  IconPhoto,
+  IconLoader2,
+  IconRefresh
 } from '@tabler/icons-react';
 
 function CustomSelect({ options, value, onChange, placeholder = "Select option" }) {
@@ -86,6 +92,59 @@ export default function ManageBenefits() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBenefit, setEditingBenefit] = useState(null);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
+
+  const handleImageFile = async (file) => {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      dialogAlert('Invalid File', 'Please select a valid image file (PNG, JPG, WEBP, GIF, etc.).');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setUploadProgress(0);
+      const res = await uploadFile(file, 'benefits', (percent) => {
+        setUploadProgress(percent);
+      });
+      if (res && res.url) {
+        setFormData(prev => ({ ...prev, imageUrl: res.url }));
+      } else {
+        throw new Error('No URL returned from upload service');
+      }
+    } catch (err) {
+      console.error('Image upload error:', err);
+      dialogAlert('Upload Failed', err.message || 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  };
 
   const [formData, setFormData] = useState({
     title: '',
@@ -342,7 +401,7 @@ export default function ManageBenefits() {
               {/* Card Body */}
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium mb-2">
+                  <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium mb-2 flex-wrap">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">
                       <IconTag size={12} /> {benefit.offerType}
                     </span>
@@ -350,6 +409,14 @@ export default function ManageBenefits() {
                     <span className="inline-flex items-center gap-1">
                       <IconClock size={12} /> {benefit.timing}
                     </span>
+                    {benefit.code && (
+                      <>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-mono font-bold text-[11px]">
+                          Code: {benefit.code}
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   <h3 className="font-bold text-on-surface text-base mb-1 line-clamp-1 group-hover:text-primary transition-colors">
@@ -542,15 +609,110 @@ export default function ManageBenefits() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-on-surface mb-1">Image URL</label>
-                  <input
-                    type="text"
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-surface-variant/30 border border-outline-variant/50 text-on-surface text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-on-surface">Image (Upload or URL)</label>
+                    {formData.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                        className="text-xs text-error hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                      >
+                        <IconTrash size={12} /> Clear Image
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-2xl p-4 transition-all duration-200 cursor-pointer text-center flex flex-col items-center justify-center ${
+                      isDragging
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30 scale-[1.01]'
+                        : 'border-outline-variant/50 hover:border-primary/60 hover:bg-surface-variant/30 bg-surface-variant/15'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleImageFile(e.target.files[0]);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    {uploadingImage ? (
+                      <div className="py-2 flex flex-col items-center gap-2">
+                        <IconLoader2 size={28} className="animate-spin text-primary" />
+                        <span className="text-xs font-bold text-on-surface">Uploading image... {uploadProgress}%</span>
+                        <div className="w-48 bg-surface-variant/60 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-primary h-full transition-all duration-150"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : formData.imageUrl ? (
+                      <div className="flex items-center gap-4 w-full p-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative group shrink-0">
+                          <img
+                            src={formData.imageUrl}
+                            alt="Benefit Preview"
+                            className="w-16 h-16 object-cover rounded-xl border border-outline-variant/40 shadow-sm bg-surface-variant"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/150?text=No+Image';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-center gap-1 text-xs font-bold text-primary mb-0.5">
+                            <IconPhoto size={14} /> Image Loaded
+                          </div>
+                          <p className="text-xs text-on-surface-variant truncate font-mono bg-surface-variant/40 px-2 py-1 rounded-md border border-outline-variant/30">
+                            {formData.imageUrl}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1.5 text-xs font-bold rounded-xl bg-surface-variant hover:bg-primary/10 hover:text-primary text-on-surface transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                        >
+                          <IconRefresh size={14} /> Replace
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-3 flex flex-col items-center gap-1 text-on-surface-variant">
+                        <div className="p-3 rounded-full bg-primary/10 text-primary mb-1">
+                          <IconCloudUpload size={24} />
+                        </div>
+                        <p className="text-xs font-semibold text-on-surface">
+                          Drag and drop an image here, or <span className="text-primary font-bold underline">click to browse</span>
+                        </p>
+                        <p className="text-[11px] text-on-surface-variant/70">
+                          Supports PNG, JPG, WEBP, GIF (Auto-optimized to WebP)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Direct Image URL input option */}
+                  <div className="pt-1">
+                    <input
+                      type="text"
+                      placeholder="Or paste direct image URL (https://images.unsplash.com/...)"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-surface-variant/30 border border-outline-variant/50 text-on-surface text-xs focus:ring-2 focus:ring-primary/50 focus:outline-none placeholder:text-on-surface-variant/40 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 

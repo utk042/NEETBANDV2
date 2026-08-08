@@ -421,42 +421,51 @@ export function PlayerProvider({ children, user }) {
     audioRetryCountRef.current = 0;
     cancelPendingRetry();
 
-    if (audioRef.current && currentTrack?.audioUrl) {
-      let latestUrl = currentTrack.audioUrl;
-      try {
-        const trackId = currentTrack._id || currentTrack.id;
+    if (!currentTrack) return;
+
+    let latestUrl = currentTrack.audioUrl;
+    try {
+      const trackId = currentTrack._id || currentTrack.id;
+      if (trackId) {
         const r = await fetch(`${API_URL}/api/songs/${trackId}`);
         if (r.ok) {
           const freshTrack = await r.json();
-          if (freshTrack.audioUrl) latestUrl = freshTrack.audioUrl;
-        }
-      } catch (e) {
-        console.warn('Failed to fetch fresh URL, falling back to cached', e);
-      }
-
-      if (audioRef.current) {
-        const targetUrl = resolveAudioUrl(latestUrl);
-        const cacheBusterUrl = (targetUrl.startsWith('blob:') || targetUrl.startsWith('data:'))
-          ? targetUrl
-          : (targetUrl.includes('?') ? `${targetUrl}&retry=${Date.now()}` : `${targetUrl}?retry=${Date.now()}`);
-
-        const failedTime = audioRef.current.currentTime || 0;
-        updatePendingSeekTime(failedTime);
-        audioRef.current.src = cacheBusterUrl;
-        lastLoadedTrackIdRef.current = currentTrack._id || currentTrack.id;
-        audioRef.current.load();
-        safePlay(audioRef.current, activePlayRequestIdRef.current).then(() => {
-          setIsPlaying(true);
-          setIsBuffering(false);
-        }).catch(err => {
-          if (err?.name !== 'AbortError') {
-            console.error('Manual retry play failed:', err);
-            setIsPlaying(false);
-            setIsBuffering(false);
-            setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
+          if (freshTrack.audioUrl) {
+            latestUrl = freshTrack.audioUrl;
+            setCurrentTrack(prev => prev ? { ...prev, audioUrl: resolveAudioUrl(freshTrack.audioUrl) } : prev);
           }
-        });
+        }
       }
+    } catch (e) {
+      console.warn('Failed to fetch fresh URL, falling back to cached', e);
+    }
+
+    if (latestUrl && audioRef.current) {
+      const targetUrl = resolveAudioUrl(latestUrl);
+      const cacheBusterUrl = (targetUrl.startsWith('blob:') || targetUrl.startsWith('data:'))
+        ? targetUrl
+        : (targetUrl.includes('?') ? `${targetUrl}&retry=${Date.now()}` : `${targetUrl}?retry=${Date.now()}`);
+
+      const failedTime = audioRef.current.currentTime || 0;
+      updatePendingSeekTime(failedTime);
+      audioRef.current.src = cacheBusterUrl;
+      lastLoadedTrackIdRef.current = currentTrack._id || currentTrack.id;
+      audioRef.current.load();
+      safePlay(audioRef.current, activePlayRequestIdRef.current).then(() => {
+        setIsPlaying(true);
+        setIsBuffering(false);
+      }).catch(err => {
+        if (err?.name !== 'AbortError') {
+          console.error('Manual retry play failed:', err);
+          setIsPlaying(false);
+          setIsBuffering(false);
+          setPlaybackError("Failed to load audio stream after multiple retries. Please check your internet connection.");
+        }
+      });
+    } else {
+      setIsPlaying(false);
+      setIsBuffering(false);
+      setPlaybackError("Audio URL is missing");
     }
   }, [currentTrack, safePlay, cancelPendingRetry]);
 
@@ -642,7 +651,14 @@ export function PlayerProvider({ children, user }) {
   const playWithAds = useCallback((track, skipStartRolls = false) => {
     if (!track) return;
     if (!track.audioUrl) {
-      if (toast) toast.error("Audio URL is missing");
+      stopAllAdAudio();
+      updatePendingSeekTime(null);
+      setCurrentTime(0);
+      setDuration(0);
+      setCurrentTrack(track);
+      setIsPlaying(false);
+      setIsBuffering(false);
+      setPlaybackError("Audio URL is missing");
       return;
     }
     activePlayRequestIdRef.current += 1;

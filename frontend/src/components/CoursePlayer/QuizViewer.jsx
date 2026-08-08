@@ -485,14 +485,6 @@ export default React.memo(function QuizViewer({ activeDetails, onRetryFallback }
               <IconArrowLeft size={14} /> Prev
             </button>
 
-            {!quizSubmitted && (
-              <button
-                onClick={() => setShowSubmitModal(true)}
-                className="px-4 py-2 rounded-xl bg-amber-500 text-black text-xs font-extrabold flex items-center gap-1.5 hover:brightness-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(201,162,39,0.2)] shrink-0"
-              >
-                <IconSend size={14} /> Submit Quiz
-              </button>
-            )}
 
             {currentIdx < activeDetails.questions.length - 1 && (
               <button

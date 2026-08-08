@@ -268,7 +268,9 @@ export default function FullPlayerModal({ isOpen, onClose }) {
                   <IconAlertTriangle size={24} />
                 </div>
                 <span className="text-sm font-bold text-white mb-1">Playback Error</span>
-                <span className="text-xs text-white/75 max-w-xs mb-4 leading-relaxed">Failed to load audio stream. Please check your connection.</span>
+                <span className="text-xs text-white/75 max-w-xs mb-4 leading-relaxed">
+                  {typeof playbackError === 'string' ? playbackError : 'Failed to load audio stream. Please check your connection.'}
+                </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); retryPlayback?.(); }}
                   className="px-4 py-1.5 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold text-xs rounded-full shadow-md transition-all flex items-center gap-1.5"

@@ -78,7 +78,7 @@ export default function MobilePlayer({ onOpenFullPlayer }) {
               {playbackError ? (
                 <span className="flex items-center gap-1">
                   <IconAlertTriangle size={12} className="shrink-0" />
-                  Playback error • Tap to retry
+                  {typeof playbackError === 'string' ? playbackError : 'Playback error'} • Tap to retry
                 </span>
               ) : isAudioRollActive ? (
                 activeRollType === 'guestAd' 

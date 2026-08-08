@@ -54,9 +54,10 @@ export const apiFetch = async (url, options = {}) => {
 
 const getHeaders = () => {
   const isLms = typeof window !== 'undefined' && window.location.pathname.startsWith('/lms');
-  const token = isLms
+  let token = isLms
     ? (localStorage.getItem('lms_token') || localStorage.getItem('user_token'))
     : (localStorage.getItem('user_token') || localStorage.getItem('lms_token'));
+  if (token === 'undefined' || token === 'null') token = null;
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -65,7 +66,8 @@ const getHeaders = () => {
 };
 
 const getLmsHeaders = () => {
-  const token = localStorage.getItem('lms_token');
+  let token = localStorage.getItem('lms_token');
+  if (token === 'undefined' || token === 'null') token = null;
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
